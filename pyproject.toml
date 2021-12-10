@@ -1,0 +1,41 @@
+[tool.poetry]
+name = "pioupiou"
+version = "0.1.0"
+description = "A CLI tool"
+authors = ["Julien Brayere <julien.brayere@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+homepage = "https://github.com/andarius/pioupiou"
+repository = "https://github.com/andarius/pioupiou"
+keywords = ["cli"]
+classifiers = [
+    "Environment :: Console",
+    "Operating System :: OS Independent"
+]
+include = [
+    "LICENSE",
+]
+
+
+[tool.poetry.dependencies]
+python = "^3.9"
+rich = "^10.11.0"
+pydantic = { version = "^1.8.2", optional = true }
+
+[tool.poetry.extras]
+pydantic = ["pydantic"]
+
+[tool.poetry.dev-dependencies]
+pytest = "^6.2.5"
+pytest-cov = "^2.12.1"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+addopts = "--cov=cli -s -q -x"
+testpaths = [
+    "tests"
+]
+python_files = "*.py"
