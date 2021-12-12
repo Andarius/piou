@@ -27,13 +27,17 @@ jobs:
           path: htmlcov
 
   build-publish:
-    test-build:
+    executor: test-build
+    steps:
        - run:
           name: Building
           command: poetry build
-      - run:
+       - run:
+          name: test
+          command: echo $PYPI_TOKEN
+       - run:
           name: Publishing
-          command: poetry publish
+          command: poetry publish -u __token__ -p $PYPI_TOKEN
 
 workflows:
 
@@ -57,3 +61,5 @@ workflows:
       equal: [ master, << pipeline.git.branch >> ]
     jobs:
       - run-tests
+      - build-publish:
+          context: piou-deploy
