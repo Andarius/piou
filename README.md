@@ -1,4 +1,4 @@
-# Piouhpiou  
+# Piou  
 
 
 A CLI tool to build beautiful command-line interfaces with type validation.
