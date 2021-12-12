@@ -1,4 +1,4 @@
-# Pioupiou  
+# Piouhpiou  
 
 
 A CLI tool to build beautiful command-line interfaces with type validation.
@@ -6,7 +6,7 @@ A CLI tool to build beautiful command-line interfaces with type validation.
 It is as simple as 
 
 ```python
-from pioupiou import Parser, CmdArg
+from piouhpiou import Parser, CmdArg
 
 parser = Parser(description='A CLI tool')
 

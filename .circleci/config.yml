@@ -26,6 +26,14 @@ jobs:
       - store_artifacts:
           path: htmlcov
 
+  build-publish:
+    test-build:
+       - run:
+          name: Building
+          command: poetry build
+      - run:
+          name: Publishing
+          command: poetry publish
 
 workflows:
 

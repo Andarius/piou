@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "pioupiou"
+name = "piouhpiou"
 version = "0.1.0"
 description = "A CLI tool"
 authors = ["Julien Brayere <julien.brayere@gmail.com>"]
@@ -34,7 +34,7 @@ requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
-addopts = "--cov=pioupiou -s -q -x"
+addopts = "--cov=piouhpiou -s -q -x"
 testpaths = [
     "tests"
 ]

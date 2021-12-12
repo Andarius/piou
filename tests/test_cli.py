@@ -2,8 +2,8 @@ import pytest
 
 
 def test_raises_error_on_duplicate_args():
-    from pioupiou.command import Command
-    from pioupiou.utils import CommandArgs, CmdArg
+    from piouhpiou.command import Command
+    from piouhpiou.utils import CommandArgs, CmdArg
 
     with pytest.raises(ValueError,
                        match='Duplicate keyword args found "--foo"'):
