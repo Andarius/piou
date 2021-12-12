@@ -9,7 +9,7 @@ executors:
 jobs:
 
   run-tests:
-    executor: all
+    executor: test-build
     steps:
       - checkout
       - run:
