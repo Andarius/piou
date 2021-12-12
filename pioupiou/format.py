@@ -9,7 +9,6 @@ from .command import Command, Option
 
 @dataclass
 class RichFormatter:
-
     _console: Console = field(init=False, default=Console(markup=True))
 
     def print_help(self,

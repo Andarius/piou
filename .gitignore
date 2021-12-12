@@ -107,3 +107,4 @@ venv.bak/
 .idea/
 .pytest_cache/
 tmp/
+*-ignore.py

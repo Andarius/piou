@@ -1,7 +1,7 @@
-import pytest
+# import pytest
 
-from cli.cli import CmdArg
-from cli.utils import Parameter
+# from pioupiou import CmdArg, Parameter
+# from pioupiou.utils import
 
 
 # @pytest.mark.parametrize('parameters, cmd_args, expected_output', [

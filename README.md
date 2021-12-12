@@ -6,7 +6,7 @@ A CLI tool to build beautiful command-line interfaces with type validation.
 It is as simple as 
 
 ```python
-from cli import Parser, CmdArg
+from pioupiou import Parser, CmdArg
 
 parser = Parser(description='A CLI tool')
 

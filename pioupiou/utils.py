@@ -1,7 +1,6 @@
 import re
 from dataclasses import dataclass, field
-from typing import Any, NamedTuple, List, Union
-
+from typing import Any, List
 
 _split_reg = re.compile(r'\s?(-\w|--\w+)[=\s]')
 
@@ -9,15 +8,15 @@ _split_reg = re.compile(r'\s?(-\w|--\w+)[=\s]')
 @dataclass
 class CommandArgs:
     default: Any
-    help: str
-    optional_args: List[str] = None
+    help: str = None
+    keyword_args: List[str] = None
 
-    _name: str = field(init=False)
-    _data_type: Any = field(init=False)
+    name: str = field(init=False, default=None)
+    data_type: Any = field(init=False, default=Any)
 
-    @property
-    def name(self):
-        return self._name
+    # @property
+    # def name(self):
+    #     return self._name
 
 
 def CmdArg(
@@ -25,11 +24,11 @@ def CmdArg(
         help: str = None
 ):
     default = ... if args[0] is ... else None
-    optional_args = args if default is None else []
+    keyword_args = args if default is None else []
     return CommandArgs(
         default=default,
         help=help,
-        optional_args=optional_args
+        keyword_args=keyword_args
     )
 
 
@@ -38,7 +37,7 @@ CommandParams = List[CommandArgs]
 
 def _get_cmd_args(cmd: str):
     positional_args = []
-    optional_args = {}
+    keywork_params = {}
 
     is_positional_arg = True
     last_position = 0
@@ -52,9 +51,9 @@ def _get_cmd_args(cmd: str):
             positional_args.append(_arg)
         elif i > last_position:
             last_position = i + 1
-            optional_args[_arg] = cmd_split[last_position]
+            keywork_params[_arg] = cmd_split[last_position]
 
-    return positional_args, optional_args
+    return positional_args, keywork_params
 
 
 class PosParamsCountError(Exception):
@@ -67,8 +66,8 @@ class ParamNotFoundError(Exception):
 
 def parse_args(cmd_args: List[str],
                positional_params: CommandParams,
-               optional_params: CommandParams) -> dict:
-    positional_args, optional_args = _get_cmd_args(' '.join(cmd_args))
+               keyword_params: CommandParams) -> dict:
+    positional_args, keyword_args = _get_cmd_args(' '.join(cmd_args))
 
     # Positional arguments
 
@@ -79,17 +78,18 @@ def parse_args(cmd_args: List[str],
         for _param, _param_value in zip(positional_params, positional_args)
     }
 
-    # Optional Arguments
-    _optional_mapping = {
-        _optional_arg: cmd.name
-        for cmd in optional_params
-        for _optional_arg in cmd.optional_args
+    # Keyword Arguments
+
+    _keyword_mapping = {
+        _keyword_arg: cmd.name
+        for cmd in keyword_params
+        for _keyword_arg in cmd.keyword_args
     }
 
-    for _optional_arg_key, _optional_arg_value in optional_args.items():
-        _optional_param = _optional_mapping.get(_optional_arg_key)
-        if not _optional_param:
-            raise ParamNotFoundError(f'Could not found param {_optional_arg_key}')
-        fn_args[_optional_param] = _optional_arg_value
+    for _keyword_arg_key, _keyword_arg_value in keyword_args.items():
+        _keyword_param = _keyword_mapping.get(_keyword_arg_key)
+        if not _keyword_param:
+            raise ParamNotFoundError(f'Could not found param {_keyword_arg_key}')
+        fn_args[_keyword_param] = _keyword_arg_value
 
     return fn_args

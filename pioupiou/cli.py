@@ -1,10 +1,10 @@
-from dataclasses import dataclass, field
 import sys
+from dataclasses import dataclass, field
 from functools import wraps
-from typing import Optional, get_type_hints, List, Tuple
+from typing import get_type_hints, List
 
-from .format import RichFormatter
 from .command import Command, Option
+from .format import RichFormatter
 from .utils import parse_args, CommandArgs
 
 
@@ -38,7 +38,7 @@ class Parser:
             return
         _args_dict = parse_args(args,
                                 _command.positional_params,
-                                _command.optional_params)
+                                _command.keyword_params)
         _command.run(**_args_dict)
 
     def command(self, cmd: str, help: str = None):
@@ -51,8 +51,8 @@ class Parser:
             defaults: List[CommandArgs] = f.__defaults__ or []
             for (param_name, param_type), cmd_args in zip(get_type_hints(f).items(),
                                                           defaults):
-                cmd_args._name = param_name
-                cmd_args._data_type = param_type
+                cmd_args.name = param_name
+                cmd_args.data_type = param_type
                 if cmd_args.default is ...:
                     positional_params.append(cmd_args)
                 else:
@@ -61,7 +61,7 @@ class Parser:
             self._commands[cmd] = Command(name=cmd,
                                           fn=wrapper,
                                           positional_params=positional_params,
-                                          optional_params=optional_params,
+                                          keyword_params=optional_params,
                                           help=help)
             return wrapper
 

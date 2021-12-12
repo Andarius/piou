@@ -1,0 +1,51 @@
+version: 2.1
+
+
+executors:
+  test-build:
+    docker:
+      - image: circleci/python:3.9
+
+jobs:
+
+  run-tests:
+    executor: all
+    steps:
+      - checkout
+      - run:
+          name: Install python dependencies
+          command: poetry install
+      - run:
+          name: Run tests
+          command: |
+            poetry run pytest -vv
+            poetry run coverage xml -o tests/coverage.xml
+            poetry run coverage html
+      - store_test_results:
+          path: tests
+      - store_artifacts:
+          path: htmlcov
+
+
+workflows:
+
+  features:
+    when:
+      matches:
+        pattern: "^(feat|feature)\\/.*$"
+        value: << pipeline.git.branch >>
+    jobs:
+      - run-tests
+
+
+  staging:
+    when:
+      equal: [ dev, << pipeline.git.branch >> ]
+    jobs:
+      - run-tests
+
+  production:
+    when:
+      equal: [ master, << pipeline.git.branch >> ]
+    jobs:
+      - run-tests
