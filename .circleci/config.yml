@@ -29,6 +29,7 @@ jobs:
   build-publish:
     executor: test-build
     steps:
+       - checkout
        - run:
           name: Building
           command: poetry build
@@ -62,4 +63,5 @@ workflows:
     jobs:
       - run-tests
       - build-publish:
+          requires: [ run-tests ]
           context: piou-deploy
