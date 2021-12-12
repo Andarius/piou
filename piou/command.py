@@ -28,7 +28,6 @@ class Command:
         _keyword_args = set()
         for _param in self.keyword_params:
             for _keyword_arg in _param.keyword_args:
-                print(_keyword_arg, _keyword_args)
                 if _keyword_arg in _keyword_args:
                     raise ValueError(f'Duplicate keyword args found "{_keyword_arg}"')
                 _keyword_args.add(_keyword_arg)

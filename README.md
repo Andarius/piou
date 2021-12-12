@@ -3,10 +3,10 @@
 
 A CLI tool to build beautiful command-line interfaces with type validation.
 
-It is as simple as 
+It is as simple as
 
 ```python
-from piouhpiou import Parser, CmdArg
+from piou import Parser, CmdArg
 
 parser = Parser(description='A CLI tool')
 
