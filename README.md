@@ -36,4 +36,4 @@ if __name__ == '__main__':
 ```
 The output will look like this: 
 
-![example](./docs/example.png)
+![example](https://github.com/Andarius/piou/blob/master/docs/example.png?raw=true)

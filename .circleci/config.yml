@@ -34,11 +34,14 @@ jobs:
           name: Building
           command: poetry build
        - run:
-          name: test
-          command: echo $PYPI_TOKEN
-       - run:
           name: Publishing
           command: poetry publish -u __token__ -p $PYPI_TOKEN
+      - run:
+          name: Creating Github release
+          command: |
+            VERSION=$(poetry version -s)
+            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${VERSION} ./artifacts/
+            
 
 workflows:
 
