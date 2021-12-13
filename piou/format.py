@@ -24,8 +24,11 @@ class RichFormatter:
                 name = _command.args
             else:
                 first_arg, *other_args = _command.args
-                other_args = ', '.join(other_args)
-                name = f'{first_arg} [bright_white]({other_args})[/bright_white]'
+                if other_args:
+                    other_args = ', '.join(other_args)
+                    name = f'{first_arg} [bright_white]({other_args})[/bright_white]'
+                else:
+                    name = first_arg
             table.add_row(name, _command.help)
         self._console.print(help, table)
 

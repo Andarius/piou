@@ -34,3 +34,6 @@ if __name__ == '__main__':
     parser.print_help()
     parser.run()
 ```
+The output will look like this: 
+
+![example](./docs/example.png)
