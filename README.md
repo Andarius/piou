@@ -1,6 +1,11 @@
 # Piou  
 
 
+# Example for specific branch:
+[![CircleCI](https://circleci.com/gh/Andarius/piou/tree/master.svg?style=shield)](https://app.circleci.com/pipelines/github/Andarius/piou?branch=master)
+[![Latest PyPI version](https://img.shields.io/pypi/v/piou?logo=pypi)](https://pypi.python.org/pypi/piou)
+[![Latest conda-forge version](https://img.shields.io/conda/vn/conda-forge/piou?logo=conda-forge)](https://anaconda.org/conda-forge/piou)  
+
 A CLI tool to build beautiful command-line interfaces with type validation.
 
 It is as simple as
