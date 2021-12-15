@@ -1,5 +1,7 @@
 version: 2.1
 
+orbs:
+  gh: circleci/github-cli@1.0
 
 executors:
   test-build:
@@ -12,9 +14,16 @@ jobs:
     executor: test-build
     steps:
       - checkout
+      - restore_cache:
+          keys:
+            - deps-{{ checksum "poetry.lock" }}
       - run:
           name: Install python dependencies
           command: poetry install
+      - save_cache:
+          key: deps-{{ checksum "poetry.lock" }}
+          paths:
+            - /home/circleci/.cache/pypoetry/virtualenvs
       - run:
           name: Running type checking
           command: poetry run pyright
@@ -36,15 +45,11 @@ jobs:
        - run:
           name: Building
           command: poetry build
-       - run:
-          name: Publishing
-          command: poetry publish -u __token__ -p $PYPI_TOKEN
-      - run:
-          name: Creating Github release
-          command: |
-            VERSION=$(poetry version -s)
-            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${VERSION} ./artifacts/
-            
+      - store_artifacts:
+          path: dist
+#       - run:
+#          name: Publishing
+#          command: poetry publish -u __token__ -p $PYPI_TOKEN
 
 workflows:
 
@@ -55,6 +60,14 @@ workflows:
         value: << pipeline.git.branch >>
     jobs:
       - run-tests
+      - build-publish:
+          requires: [ run-tests ]
+          context: piou-deploy
+      - gh/release:
+          requires: [ build-publish ]
+          notes-file: CHANGELOG.md
+          tag: 1.1.0
+          context: piou-deploy
 
 
   staging:
@@ -70,4 +83,9 @@ workflows:
       - run-tests
       - build-publish:
           requires: [ run-tests ]
+          context: piou-deploy
+      - gh/release:
+          requires: [ build-publish ]
+          notes-file: CHANGELOG.md
+          tag: 1.1.0
           context: piou-deploy
