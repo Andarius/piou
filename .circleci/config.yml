@@ -45,7 +45,7 @@ jobs:
        - run:
           name: Building
           command: poetry build
-      - store_artifacts:
+       - store_artifacts:
           path: dist
 #       - run:
 #          name: Publishing
