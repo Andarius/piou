@@ -65,9 +65,9 @@ workflows:
         pattern: "^(feat|feature)\\/.*$"
         value: << pipeline.git.branch >>
     jobs:
-      - run-tests
+#      - run-tests
       - build-publish:
-          requires: [ run-tests ]
+#          requires: [ run-tests ]
           context: piou-deploy
 #      - gh/release:
 #          requires: [ build-publish ]
