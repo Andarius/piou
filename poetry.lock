@@ -59,6 +59,14 @@ optional = false
 python-versions = "*"
 
 [[package]]
+name = "nodeenv"
+version = "1.6.0"
+description = "Node.js virtual environment builder"
+category = "dev"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "packaging"
 version = "21.0"
 description = "Core utilities for Python packages"
@@ -94,7 +102,7 @@ name = "pydantic"
 version = "1.8.2"
 description = "Data validation and settings management using python 3.6 type hinting"
 category = "main"
-optional = false
+optional = true
 python-versions = ">=3.6.1"
 
 [package.dependencies]
@@ -119,6 +127,21 @@ description = "Python parsing module"
 category = "dev"
 optional = false
 python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
+
+[[package]]
+name = "pyright"
+version = "0.0.13"
+description = "Command line wrapper for pyright"
+category = "dev"
+optional = false
+python-versions = ">=3"
+
+[package.dependencies]
+nodeenv = ">=1.6.0"
+
+[package.extras]
+all = ["twine (>=3.4.1)"]
+dev = ["twine (>=3.4.1)"]
 
 [[package]]
 name = "pytest"
@@ -186,13 +209,16 @@ name = "typing-extensions"
 version = "3.10.0.2"
 description = "Backported and Experimental Type Hints for Python 3.5+"
 category = "main"
-optional = false
+optional = true
 python-versions = "*"
+
+[extras]
+pydantic = ["pydantic"]
 
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "62b5a57b2552a12d3205818a6ab314a1be31c3be6bd28006fbdc657c3b781c4a"
+content-hash = "d266a99eb4b5e914500baf89822abb2b4881690749f0add68eece68691383ce8"
 
 [metadata.files]
 atomicwrites = [
@@ -252,6 +278,10 @@ iniconfig = [
     {file = "iniconfig-1.1.1-py2.py3-none-any.whl", hash = "sha256:011e24c64b7f47f6ebd835bb12a743f2fbe9a26d4cecaa7f53bc4f35ee9da8b3"},
     {file = "iniconfig-1.1.1.tar.gz", hash = "sha256:bc3af051d7d14b2ee5ef9969666def0cd1a000e121eaea580d4a313df4b37f32"},
 ]
+nodeenv = [
+    {file = "nodeenv-1.6.0-py2.py3-none-any.whl", hash = "sha256:621e6b7076565ddcacd2db0294c0381e01fd28945ab36bcf00f41c5daf63bef7"},
+    {file = "nodeenv-1.6.0.tar.gz", hash = "sha256:3ef13ff90291ba2a4a7a4ff9a979b63ffdd00a464dbe04acf0ea6471517a4c2b"},
+]
 packaging = [
     {file = "packaging-21.0-py3-none-any.whl", hash = "sha256:c86254f9220d55e31cc94d69bade760f0847da8000def4dfe1c6b872fd14ff14"},
     {file = "packaging-21.0.tar.gz", hash = "sha256:7dc96269f53a4ccec5c0670940a4281106dd0bb343f47b7471f779df49c2fbe7"},
@@ -295,6 +325,10 @@ pygments = [
 pyparsing = [
     {file = "pyparsing-2.4.7-py2.py3-none-any.whl", hash = "sha256:ef9d7589ef3c200abe66653d3f1ab1033c3c419ae9b9bdb1240a85b024efc88b"},
     {file = "pyparsing-2.4.7.tar.gz", hash = "sha256:c203ec8783bf771a155b207279b9bccb8dea02d8f0c9e5f8ead507bc3246ecc1"},
+]
+pyright = [
+    {file = "pyright-0.0.13-py3-none-any.whl", hash = "sha256:520458c87dc456ed0d405a08a565066aaf5b76281d23861759cfaa3c73f5bda0"},
+    {file = "pyright-0.0.13.tar.gz", hash = "sha256:ca97f9121927847d0aea5d2e757a0bf6d3c25c116c90a3ce6263b4167a12dfc4"},
 ]
 pytest = [
     {file = "pytest-6.2.5-py3-none-any.whl", hash = "sha256:7310f8d27bc79ced999e760ca304d69f6ba6c6649c0b60fb0e04a4a77cacc134"},

@@ -1,18 +1,18 @@
 import sys
 from dataclasses import dataclass, field
 from functools import wraps
-from typing import get_type_hints, List
+from typing import get_type_hints, List, Any
 
 from .command import Command, Option
-from .format import RichFormatter
 from .utils import parse_args, CommandArgs
+from .formatter import Formatter, RichFormatter
 
 
 @dataclass
 class Parser:
     description: str
 
-    formatter = RichFormatter()
+    formatter: Formatter = RichFormatter()
     _options: List[Option] = field(init=False, default_factory=list)
     _commands: dict[str, Command] = field(init=False, default_factory=dict)
 

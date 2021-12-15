@@ -1,6 +1,6 @@
 import re
 from dataclasses import dataclass, field
-from typing import Any, List
+from typing import Any, Optional
 
 _split_reg = re.compile(r'\s?(-\w|--\w+)[=\s]')
 
@@ -8,10 +8,10 @@ _split_reg = re.compile(r'\s?(-\w|--\w+)[=\s]')
 @dataclass
 class CommandArgs:
     default: Any
-    help: str = None
-    keyword_args: List[str] = None
+    help: Optional[str] = None
+    keyword_args: tuple[str, ...] = field(default_factory=tuple)
 
-    name: str = field(init=False, default=None)
+    name: Optional[str] = field(init=False, default=None)
     data_type: Any = field(init=False, default=Any)
 
     # @property
@@ -20,11 +20,11 @@ class CommandArgs:
 
 
 def CmdArg(
-        *args,
+        *args: str,
         help: str = None
 ):
     default = ... if args[0] is ... else None
-    keyword_args = args if default is None else []
+    keyword_args = args if default is None else tuple()
     return CommandArgs(
         default=default,
         help=help,
@@ -32,7 +32,7 @@ def CmdArg(
     )
 
 
-CommandParams = List[CommandArgs]
+CommandParams = list[CommandArgs]
 
 
 def _get_cmd_args(cmd: str):
@@ -64,7 +64,7 @@ class ParamNotFoundError(Exception):
     pass
 
 
-def parse_args(cmd_args: List[str],
+def parse_args(cmd_args: list[str],
                positional_params: CommandParams,
                keyword_params: CommandParams) -> dict:
     positional_args, keyword_args = _get_cmd_args(' '.join(cmd_args))

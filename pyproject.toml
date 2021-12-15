@@ -28,6 +28,7 @@ pydantic = ["pydantic"]
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.5"
 pytest-cov = "^2.12.1"
+pyright = "^0.0.13"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -39,3 +40,12 @@ testpaths = [
     "tests"
 ]
 python_files = "*.py"
+
+
+[tool.pyright]
+include = ["piou"]
+exclude = []
+
+pythonVersion = "3.9"
+pythonPlatform = "Linux"
+reportPrivateImportUsage = false

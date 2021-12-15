@@ -1,18 +1,19 @@
-from dataclasses import dataclass
-from typing import Callable, List, Tuple
+from dataclasses import dataclass, field
+from typing import Callable, Optional
+
 from .utils import CommandParams
 
 
 @dataclass
 class Command:
     name: str
-    help: str
+    help: Optional[str]
     fn: Callable
-    positional_params: CommandParams = None
-    keyword_params: CommandParams = None
+    positional_params: CommandParams = field(default_factory=list)
+    keyword_params: CommandParams = field(default_factory=list)
 
     @property
-    def parameters(self) -> 'List[Command]':
+    def params(self) -> CommandParams:
         return [
             *self.positional_params,
             *self.keyword_params
@@ -35,5 +36,5 @@ class Command:
 
 @dataclass
 class Option:
-    help: str
-    args: Tuple[str]
+    help: Optional[str]
+    args: tuple[str, ...]
