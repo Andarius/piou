@@ -41,21 +41,21 @@ jobs:
   build-publish:
     executor: test-build
     steps:
-       - gh/setup
-       - checkout
-       - run:
+      - gh/setup
+      - checkout
+      - run:
           name: Building
           command: poetry build
-       - store_artifacts:
+      - store_artifacts:
           path: dist
-       - run:
+      - run:
+          name: Publishing
+          command: poetry publish -u __token__ -p $PYPI_TOKEN
+      - run:
           command: |
-              export TAG=$(poetry version -s)
-              gh release create --draft -F CHANGELOG.md $TAG ./dist/*.whl
+            export TAG=$(poetry version -s)
+            gh release create -F CHANGELOG.md $TAG ./dist/*.whl
           name: Create Pull Request
-#       - run:
-#          name: Publishing
-#          command: poetry publish -u __token__ -p $PYPI_TOKEN
 
 workflows:
 
@@ -65,16 +65,7 @@ workflows:
         pattern: "^(feat|feature)\\/.*$"
         value: << pipeline.git.branch >>
     jobs:
-#      - run-tests
-      - build-publish:
-#          requires: [ run-tests ]
-          context: piou-deploy
-#      - gh/release:
-#          requires: [ build-publish ]
-#          notes-file: CHANGELOG.md
-#          tag: 1.1.0
-#          context: piou-deploy
-#          draft: true
+      - run-tests
 
   staging:
     when:
@@ -89,9 +80,4 @@ workflows:
       - run-tests
       - build-publish:
           requires: [ run-tests ]
-          context: piou-deploy
-      - gh/release:
-          requires: [ build-publish ]
-          notes-file: CHANGELOG.md
-          tag: 1.1.0
           context: piou-deploy
