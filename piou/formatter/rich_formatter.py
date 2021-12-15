@@ -3,7 +3,7 @@ from rich import box
 from rich.console import Console
 from rich.table import Table
 
-from command import Command, Option
+from ..command import Command, Option
 from .base import Formatter
 
 
