@@ -1,6 +1,6 @@
 # Changelog 
 
 
-## [0.1.1] First release
+## [0.1.2] First release
 
 First release
