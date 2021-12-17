@@ -21,6 +21,7 @@ include = [
 python = "^3.9"
 rich = "^10.11.0"
 pydantic = { version = "^1.8.2", optional = true }
+future-typing = "^0.4.1"
 
 [tool.poetry.extras]
 pydantic = ["pydantic"]
