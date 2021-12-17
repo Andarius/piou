@@ -20,7 +20,7 @@ def test_command_arg(cmd, is_required, is_positional):
     (int, '123', 123),
     (float, '123', 123),
     (float, '0.123', 0.123),
-    (bytes, 'foo'.encode('utf-8'), b'foo'),
+    # (bytes, 'foo'.encode('utf-8'), b'foo'),
     (Path, str(Path(__file__).parent / 'conftest.py'), Path(__file__).parent / 'conftest.py'),
     (list, '1 2 3', ['1', '2', '3']),
     (list[str], '1 2 3', ['1', '2', '3']),

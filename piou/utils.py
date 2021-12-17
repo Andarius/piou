@@ -15,8 +15,8 @@ def validate_type(data_type: Any, value: str):
         return int(value)
     elif data_type is float:
         return float(value)
-    elif data_type is bytes:
-        return bytes(value)
+    # elif data_type is bytes:
+    #     return bytes(value)
     elif data_type is dt.date:
         return dt.date.fromisoformat(value)
     elif data_type is dt.datetime:
@@ -42,7 +42,7 @@ class CommandArg:
     help: Optional[str] = None
     keyword_args: tuple[str, ...] = field(default_factory=tuple)
 
-    name: Optional[str] = field(init=False, default=None)
+    name: str = field(init=False)
     data_type: Any = field(init=False, default=Any)
 
     @property

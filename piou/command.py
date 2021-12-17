@@ -37,4 +37,4 @@ class Command:
 
     @property
     def options(self) -> list[Option]:
-        return [Option(help=x.help, args=x.keyword_args or [x.name]) for x in self.command_args]
+        return [Option(help=x.help, args=x.keyword_args or (x.name,)) for x in self.command_args]
