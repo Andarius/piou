@@ -1,4 +1,5 @@
 import inspect
+import itertools
 import sys
 from dataclasses import dataclass, field
 from functools import wraps
@@ -72,12 +73,14 @@ class CommandGroup:
         cls = type(self)
         return cls(description=description)  # noqa
 
-    def add_option(self, default: Any, *args: str, help: str = None):
-        self._options.append(CommandOption(
+    def add_option(self, default: Any, *args: str, help: str = None, data_type: Any = None):
+        opt = CommandOption(
             default=default,
             help=help,
             keyword_args=args,
-        ))
+        )
+        opt.data_type = data_type
+        self._options.append(opt)
 
     @property
     def command_names(self) -> set[str]:
@@ -123,6 +126,7 @@ class CommandGroup:
         return _command
 
     def run_with_args(self, *args):
+
         cmd, global_options, cmd_options = parse_input_args(args, self.command_names)
 
         if set(global_options) & {'-h', '--help'}:
@@ -135,12 +139,15 @@ class CommandGroup:
             self._formatter.print_cmd_error(cmd)
             return
 
-        command, command_group = self._commands.get(cmd), self._command_groups.get(cmd)
-        _command = command or command_group
+        command_group = self._command_groups.get(cmd)
+        if command_group:
+            return command_group.run_with_args(*itertools.chain(global_options, cmd_options))
+
+        command = self._commands[cmd]
         try:
             _cmd_args_dict = convert_args_to_dict(
                 cmd_options,
-                _command.options
+                command.options
             )
             _global_args_dict = convert_args_to_dict(
                 global_options, self._options)
@@ -154,9 +161,10 @@ class CommandGroup:
             if command:
                 self._formatter.print_cmd_help(command, self._options)
             else:
-                self._formatter.print_cmd_group_help(command=command_group,
+                self._formatter.print_cmd_group_help(command_name=command_group.name,
                                                      commands=command_group.commands,
-                                                     options=command_group.options)
+                                                     options=command_group.options,
+                                                     global_options=self.options)
             return
 
         _args_dict = {**_global_args_dict, **_cmd_args_dict}
@@ -171,10 +179,10 @@ class CommandGroup:
 
 @dataclass
 class Cli:
-    formatter: Formatter = RichFormatter()
+    formatter: Formatter = None
     description: str = None
 
-    _group: CommandGroup = CommandGroup()
+    _group: CommandGroup = None
 
     @property
     def commands(self):
@@ -190,11 +198,14 @@ class Cli:
             return
         return self._group.run_with_args(*args)
 
+    def run_with_args(self, *args):
+        self._group.run_with_args(*args)
+
     def command(self, cmd: str, help: str = None):
         return self._group.command(cmd=cmd, help=help)
 
-    def add_option(self, default: None, *args, help: str = None):
-        self._group.add_option(default, *args, help=help)
+    def add_option(self, default: None, *args, help: str = None, data_type: Any = bool):
+        self._group.add_option(default, *args, help=help, data_type=data_type)
 
     def add_sub_parser(self, cmd: str, description: Optional[str] = None) -> CommandGroup:
         cmd_group = CommandGroup(name=cmd, help=description)
@@ -203,4 +214,6 @@ class Cli:
         return cmd_group
 
     def __post_init__(self):
+        self.formatter = self.formatter or RichFormatter()
+        self._group = CommandGroup()
         self._group.help = self.description

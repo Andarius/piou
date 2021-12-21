@@ -1,7 +1,8 @@
-from pathlib import Path
 import datetime as dt
+from pathlib import Path
 
 import pytest
+
 
 @pytest.mark.parametrize('arg, expected', [
     ('-q', 'q'),
@@ -17,9 +18,9 @@ def test_keyword_arg_to_name(arg, expected):
     ([...], True, True),
     ([None, '--foo'], False, True)
 ])
-def test_command_arg(cmd, is_required, is_positional):
-    from piou.utils import CommandArg
-    cmd = CommandArg(*cmd)
+def test_command_option(cmd, is_required, is_positional):
+    from piou.utils import CommandOption
+    cmd = CommandOption(*cmd)
     assert cmd.is_required == is_required
     assert cmd.is_positional_arg == is_positional
 
@@ -77,16 +78,15 @@ def test_get_cmd_args(input_str, expected_pos_args, expected_key_args):
 
 ])
 def test_validate_arguments(input_str, args, expected):
-    from piou.utils import parse_args, CmdArg
+    from piou.utils import convert_args_to_dict, Option
     cmd_args = []
     for _arg in args:
-        arg = CmdArg(_arg['default'], *_arg.get('keyword_args', []))
+        arg = Option(_arg['default'], *_arg.get('keyword_args', []))
         arg.name = _arg['name']
         cmd_args.append(arg)
-    output = parse_args(input_str.split(' '),
-                        command_args=cmd_args)
+    output = convert_args_to_dict(input_str.split(' '),
+                                  options=cmd_args)
     assert output == expected
-    # assert output == expected_output
 
 
 def test_command():
@@ -108,38 +108,134 @@ def test_command():
 
 def test_command_raises_error_on_duplicate_args():
     from piou.command import Command
-    from piou.utils import CommandArg
+    from piou.utils import CommandOption
 
     with pytest.raises(ValueError,
                        match='Duplicate keyword args found "--foo"'):
         Command(name='', help=None, fn=lambda x: x,
-                command_args=[
-                    CommandArg(None, keyword_args=('-f', '--foo')),
-                    CommandArg(None, keyword_args=('--foo',))
+                options=[
+                    CommandOption(None, keyword_args=('-f', '--foo')),
+                    CommandOption(None, keyword_args=('--foo',))
                 ])
     with pytest.raises(ValueError,
                        match='Duplicate keyword args found "--foo"'):
         Command(name='', help=None, fn=lambda x: x,
-                command_args=[
-                    CommandArg(None, keyword_args=('-f', '--foo', '--foo'))
+                options=[
+                    CommandOption(None, keyword_args=('-f', '--foo', '--foo'))
                 ])
 
 
-# def test_cli_no_command(capfd):
-#     from piou import Cli
-#
-#     cli = Cli(description='A CLI tool')
-#     cli.run()
-#     out, _ = capfd.readouterr()
-#     print(out)
-#     assert out.startswith('Unknown command "')
+def test_cli_help(capsys):
+    from piou import Cli, Option
+    from piou.formatter import RichFormatter
 
-
-def test_cli():
-    from piou import Cli
     cli = Cli(description='A CLI tool')
-    cli.add_argument('-h', '--help', help='Display this help message')
-    cli.add_argument('-q', '--quiet', help='Do not output any message')
-    cli.add_argument('--verbose', help='Increase verbosity')
 
-    cli.run()
+    cli.add_option(None, '-q', '--quiet', help='Do not output any message')
+    cli.add_option(None, '--verbose', help='Increase verbosity')
+
+    @cli.command(cmd='foo',
+                 help='Run foo command')
+    def foo_main(
+            quiet: bool,
+            verbose: bool,
+            foo1: int = Option(..., help='Foo arguments'),
+            foo2: str = Option(..., '-f', '--foo2', help='Foo2 arguments'),
+            foo3: str = Option(None, '-g', '--foo3', help='Foo3 arguments'),
+    ):
+        pass
+
+    @cli.command(cmd='bar', help='Run bar command')
+    def bar_main():
+        pass
+
+    baz_cmd = cli.add_sub_parser(cmd='baz', description='A sub command')
+    baz_cmd.add_option(None, '--test', help='Test mode')
+
+    @baz_cmd.command(cmd='bar', help='Run baz command')
+    def baz_bar_main(
+            **kwargs
+    ):
+        pass
+
+    @baz_cmd.command(cmd='toto', help='Run toto command')
+    def toto_main(
+            test: bool,
+            quiet: bool,
+            verbose: bool,
+            foo1: int = Option(..., help='Foo arguments'),
+            foo2: str = Option(..., '-f', '--foo2', help='Foo2 arguments'),
+    ):
+        pass
+
+    cli.run_with_args('-h')
+    assert capsys.readouterr().out.strip() == """
+USAGE
+ pytest [-q] [--verbose] <command>  
+
+GLOBAL OPTIONS
+                                               
+  -q (--quiet)      Do not output any message  
+  --verbose         Increase verbosity         
+                                               
+AVAILABLE COMMANDS
+                                     
+  bar               Run bar command  
+  baz               A sub command    
+  foo               Run foo command  
+                                     
+DESCRIPTION
+ A CLI tool
+""".strip()
+
+
+def test_run_command(capsys):
+    from piou import Cli, Option
+
+    called = False
+
+    cli = Cli(description='A CLI tool')
+
+    cli.add_option(None, '-q', '--quiet', help='Do not output any message')
+    cli.add_option(None, '--verbose', help='Increase verbosity')
+
+    @cli.command(cmd='foo',
+                 help='Run foo command')
+    def foo_main(
+            quiet: bool,
+            verbose: bool,
+            foo1: int = Option(..., help='Foo arguments'),
+            foo2: str = Option(..., '-f', '--foo2', help='Foo2 arguments'),
+            foo3: str = Option(None, '-g', '--foo3', help='Foo3 arguments'),
+    ):
+        nonlocal called
+        called = True
+        assert foo1 == 1
+        assert foo2 == 'toto'
+        assert foo3 is None
+        assert quiet is True
+        assert verbose is None
+
+    cli.run_with_args('foo')
+    assert not called
+    assert capsys.readouterr().out.strip() == 'Expected 1 positional arguments but got 0'
+
+    cli.run_with_args('-q', 'foo', '1', '-f', 'toto')
+
+    cli.run_with_args('-h')
+    assert capsys.readouterr().out.strip() == """
+USAGE
+ pytest [-q] [--verbose] <command>  
+
+GLOBAL OPTIONS
+                                               
+  -q (--quiet)      Do not output any message  
+  --verbose         Increase verbosity         
+                                               
+AVAILABLE COMMANDS
+                                     
+  foo               Run foo command  
+                                     
+DESCRIPTION
+ A CLI tool
+""".strip()

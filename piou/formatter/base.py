@@ -12,12 +12,13 @@ class Formatter(abc.ABC):
                    commands: dict[str, Command],
                    options: list[CommandOption],
                    help: str = None,
-                   command: Optional[Command] = None
+                   command: Optional[Command] = None,
+                   global_options: list[CommandOption] = None
                    ) -> None:
         if command is None:
             self.print_cli_help(commands, options, help)
         elif command and commands:
-            self.print_cmd_group_help(command, commands, options)
+            self.print_cmd_group_help(command.name, commands, global_options, options)
         else:
             self.print_cmd_help(command, options)
 
@@ -28,8 +29,9 @@ class Formatter(abc.ABC):
         ...
 
     @abc.abstractmethod
-    def print_cmd_group_help(self, command: Command,
+    def print_cmd_group_help(self, command_name: str,
                              commands: dict[str, Command],
+                             global_options: list[CommandOption],
                              options: list[CommandOption]) -> None:
         ...
 
