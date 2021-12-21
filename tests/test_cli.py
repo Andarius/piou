@@ -127,7 +127,6 @@ def test_command_raises_error_on_duplicate_args():
 
 def test_cli_help(capsys):
     from piou import Cli, Option
-    from piou.formatter import RichFormatter
 
     cli = Cli(description='A CLI tool')
 
@@ -223,6 +222,53 @@ def test_run_command(capsys):
     cli.run_with_args('-q', 'foo', '1', '-f', 'toto')
 
     cli.run_with_args('-h')
+    assert capsys.readouterr().out.strip() == """
+USAGE
+ pytest [-q] [--verbose] <command>  
+
+GLOBAL OPTIONS
+                                               
+  -q (--quiet)      Do not output any message  
+  --verbose         Increase verbosity         
+                                               
+AVAILABLE COMMANDS
+                                     
+  foo               Run foo command  
+                                     
+DESCRIPTION
+ A CLI tool
+""".strip()
+
+
+def command_run_command_group(capsys):
+    from piou import Cli, Option
+
+    cli = Cli(description='A CLI tool')
+
+    cli.add_option(None, '-q', '--quiet', help='Do not output any message')
+    cli.add_option(None, '--verbose', help='Increase verbosity')
+
+    baz_cmd = cli.add_sub_parser(cmd='baz', description='A sub command')
+    baz_cmd.add_option(None, '--test', help='Test mode')
+
+    @baz_cmd.command(cmd='bar', help='Run baz command')
+    def baz_bar_main(
+            **kwargs
+    ):
+        pass
+
+    @baz_cmd.command(cmd='toto', help='Run toto command')
+    def toto_main(
+            test: bool,
+            quiet: bool,
+            verbose: bool,
+            foo1: int = Option(..., help='Foo arguments'),
+            foo2: str = Option(..., '-f', '--foo2', help='Foo2 arguments'),
+    ):
+        pass
+
+    cli.run_with_args('-h')
+    print(capsys.readouterr().out.strip())
     assert capsys.readouterr().out.strip() == """
 USAGE
  pytest [-q] [--verbose] <command>  
