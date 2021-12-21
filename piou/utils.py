@@ -1,10 +1,13 @@
 import datetime as dt
+import inspect
 import json
 import re
 import shlex
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional, get_args, get_origin
+
+from .exceptions import ShowHelpError, ParamNotFoundError, PosParamsCountError
 
 
 def validate_type(data_type: Any, value: str):
@@ -98,23 +101,6 @@ def get_cmd_args(cmd: str) -> tuple[list[str], dict[str, str]]:
     return positional_args, keyword_params
 
 
-class PosParamsCountError(Exception):
-    def __init__(self, msg: str, expected_count: int, count: int):
-        super().__init__(msg)
-        self.expected_count = expected_count
-        self.count = count
-
-
-class ParamNotFoundError(Exception):
-    def __init__(self, msg: str, key: str):
-        super().__init__(msg)
-        self.key = key
-
-
-class ShowHelpError(Exception):
-    pass
-
-
 def keyword_arg_to_name(keyword_arg: str) -> str:
     """ Formats a string from '--quiet-v2' to 'quiet_v2' """
     return re.sub('^-+', '', keyword_arg).replace('-', '_')
@@ -161,3 +147,32 @@ def convert_args_to_dict(input_args: list[str],
             fn_args[_arg_name] = None
 
     return fn_args
+
+
+def get_default_args(func):
+    signature = inspect.signature(func)
+    return [v.default if v is not inspect.Parameter.empty else None
+            for v in signature.parameters.values()]
+
+
+def parse_input_args(args: tuple[Any, ...], commands: set[str]) -> tuple[
+    Optional[str], list[str], list[str]
+]:
+    """
+    Extracts the:
+     - global options
+     - command
+     - command options
+     from the passed list or arguments
+    """
+    global_options, cmd_options, cmd = [], [], None
+    for arg in args:
+        if cmd is None and arg in commands:
+            cmd = arg
+            continue
+
+        if cmd is None:
+            global_options.append(arg)
+        else:
+            cmd_options.append(arg)
+    return cmd, global_options, cmd_options
