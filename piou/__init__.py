@@ -1,2 +1,2 @@
 from .cli import Cli
-from .utils import CmdArg
+from .utils import Option

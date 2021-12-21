@@ -3,6 +3,15 @@ import datetime as dt
 
 import pytest
 
+@pytest.mark.parametrize('arg, expected', [
+    ('-q', 'q'),
+    ('--quiet', 'quiet'),
+    ('--quiet-v2', 'quiet_v2')
+])
+def test_keyword_arg_to_name(arg, expected):
+    from piou.utils import keyword_arg_to_name
+    assert keyword_arg_to_name(arg) == expected
+
 
 @pytest.mark.parametrize('cmd, is_required, is_positional', [
     ([...], True, True),

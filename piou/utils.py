@@ -1,5 +1,6 @@
 import datetime as dt
 import json
+import re
 import shlex
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -37,12 +38,12 @@ def validate_type(data_type: Any, value: str):
 
 
 @dataclass
-class CommandArg:
+class CommandOption:
     default: Any
     help: Optional[str] = None
     keyword_args: tuple[str, ...] = field(default_factory=tuple)
 
-    name: str = field(init=False)
+    name: str = field(init=False, default=None)
     data_type: Any = field(init=False, default=Any)
 
     @property
@@ -57,12 +58,12 @@ class CommandArg:
         return validate_type(self.data_type, value)
 
 
-def CmdArg(
+def Option(
         default: Any,
         *keyword_args: str,
         help: str = None
 ):
-    return CommandArg(
+    return CommandOption(
         default=default,
         help=help,
         keyword_args=keyword_args,
@@ -114,22 +115,26 @@ class ShowHelpError(Exception):
     pass
 
 
-def parse_args(input_args: list[str],
-               command_args: list[CommandArg]) -> dict:
+def keyword_arg_to_name(keyword_arg: str) -> str:
+    """ Formats a string from '--quiet-v2' to 'quiet_v2' """
+    return re.sub('^-+', '', keyword_arg).replace('-', '_')
+
+
+def convert_args_to_dict(input_args: list[str],
+                         options: list[CommandOption]) -> dict:
     _input_pos_args, _input_keyword_args = get_cmd_args(' '.join(input_args))
 
     if {'-h', '--help'} & _input_keyword_args.keys():
         raise ShowHelpError()
 
     positional_args, keyword_args = [], {}
-    for _arg in command_args:
+    for _arg in options:
         if _arg.is_positional_arg:
             positional_args.append(_arg)
         for _keyword_arg in _arg.keyword_args:
-            keyword_args[_keyword_arg] = _arg.name
+            keyword_args[_keyword_arg] = _arg.name or keyword_arg_to_name(sorted(_arg.keyword_args)[0])
 
     # Positional arguments
-
     if len(_input_pos_args) != len(positional_args):
         raise PosParamsCountError(
             f'Expected {len(positional_args)} positional values but got {len(_input_pos_args)}',
@@ -142,7 +147,6 @@ def parse_args(input_args: list[str],
     }
 
     # Keyword Arguments
-
     for _keyword_arg_key, _keyword_arg_value in _input_keyword_args.items():
         _keyword_param = keyword_args.get(_keyword_arg_key)
         if not _keyword_param:
@@ -151,8 +155,9 @@ def parse_args(input_args: list[str],
         fn_args[_keyword_param] = _keyword_arg_value
 
     # We fill optional fields with None
-    for _arg in command_args:
-        if _arg.name not in fn_args:
-            fn_args[_arg.name] = None
+    for _arg in options:
+        _arg_name = _arg.name or keyword_arg_to_name(sorted(_arg.keyword_args)[0])
+        if _arg_name not in fn_args:
+            fn_args[_arg_name] = None
 
     return fn_args
