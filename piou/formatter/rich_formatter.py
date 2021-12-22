@@ -89,10 +89,8 @@ _OPTIONS_STR = '[bold bright_white]OPTIONS[/bold bright_white]'
 
 @dataclass
 class RichFormatter(Formatter):
-    _console: Console = field(init=False, default=None)
-
-    def __post_init__(self):
-        self._console = Console(markup=True, highlight=False)
+    _console: Console = field(init=False,
+                              default_factory=lambda: Console(markup=True, highlight=False))
 
     def print_cli_help(self,
                        commands: dict[str, Command],
