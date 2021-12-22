@@ -1,46 +1,28 @@
 import sys
 from dataclasses import dataclass, field
+from typing import Optional
 
-from rich import box
 from rich.console import Console
-from rich.table import Table, PaddingDimensions
+from rich.table import Table, Padding
 
-from .base import Formatter
-from ..command import Command, CommandOption, ParentArgs
-
-
-def _get_table(width: int = 15, padding: PaddingDimensions = (0, 1)) -> Table:
-    table = Table(show_header=False, box=box.SIMPLE, padding=padding)
-    table.add_column('option', style="cyan", width=width)
-    table.add_column('option_name')
-    return table
+from .base import Formatter, Titles, get_options_str
+from ..command import Command, CommandOption, ParentArgs, CommandGroup
 
 
-def get_options_table(options: list[CommandOption]) -> Table:
-    table = _get_table()
-    for _command in options:
-        if len(_command.keyword_args) == 0:
-            name = None
-        else:
-            first_arg, *other_args = _command.keyword_args
-            if other_args:
-                other_args = ', '.join(other_args)
-                name = f'{first_arg} [bright_white]({other_args})[/bright_white]'
-            else:
-                name = first_arg
-        table.add_row(name, _command.help)
-    return table
+def pad(s: str, padding_left: int = 1):
+    return Padding(s, (0, padding_left))
 
 
 def fmt_option(option: CommandOption,
-               show_full: bool = False) -> str:
+               show_full: bool = False,
+               color: str = 'white') -> str:
     if option.is_positional_arg:
-        return f'<{option.name}>'
+        return f'[{color}]<{option.name}>[/{color}]'
     elif show_full:
         first_arg, *other_args = option.keyword_args
         if other_args:
             other_args = ', '.join(other_args)
-            return f'{first_arg} [bright_white]({other_args})[/bright_white]'
+            return f'[{color}]{first_arg}[/{color}] ({other_args})'
         else:
             return first_arg
     else:
@@ -58,118 +40,158 @@ def get_usage(global_options: list[CommandOption],
               command_options: list[CommandOption] = None,
               parent_args: ParentArgs = None):
     parent_args = parent_args or []
-
     _global_options = ' '.join(['[' + sorted(x.keyword_args)[-1] + ']' for x in global_options])
     command = f'[underline]{command}[/underline]' if command else '<command>'
     cmds = [sys.argv[0].split('/')[-1]] + [x[0] for x in parent_args]
     cmds = ' '.join(f'[underline]{x}[/underline]' for x in cmds)
-    usage = f'[bright_white]{cmds} ' \
-            f'{_global_options} ' \
-            f'{command} ' \
-            f'{fmt_cmd_options(command_options)} [/bright_white]\n'
-    return f'{_USAGE_STR}\n {usage}'
+
+    usage = cmds
+    if _global_options:
+        usage = f'{usage} {_global_options}'
+    usage = f'{usage} {command}'
+    if command_options:
+        usage = f'{usage} {fmt_cmd_options(command_options)}'
+
+    return usage
 
 
-def get_arguments(options: list[CommandOption]) -> Table:
-    table = _get_table()
-    for option in options:
-        if option.is_positional_arg:
-            table.add_row(fmt_option(option), option.help)
-    return table
-
-
-_GLOBAL_OPTIONS_STR = '[bold bright_white]GLOBAL OPTIONS[/bold bright_white]'
-_AVAILABLE_CMDS_STR = '[bold bright_white]AVAILABLE COMMANDS[/bold bright_white]'
-_CMD_STR = '[bold bright_white]COMMANDS[/bold bright_white]'
-_USAGE_STR = '[bold bright_white]USAGE[/bold bright_white]'
-_DESCRIPTION_STR = f'[bold bright_white]DESCRIPTION[/bold bright_white]'
-_ARGUMENTS_STR = f'[bold bright_white]ARGUMENTS[/bold bright_white]'
-_OPTIONS_STR = '[bold bright_white]OPTIONS[/bold bright_white]'
+@dataclass(frozen=True)
+class RichTitles(Titles):
+    GLOBAL_OPTIONS = f'[bold bright_white]{Titles.GLOBAL_OPTIONS}[/bold bright_white]'
+    AVAILABLE_CMDS = f'[bold bright_white]{Titles.AVAILABLE_CMDS}[/bold bright_white]'
+    COMMANDS = f'[bold bright_white]{Titles.COMMANDS}[/bold bright_white]'
+    USAGE = f'[bold bright_white]{Titles.USAGE}[/bold bright_white]'
+    DESCRIPTION = f'[bold bright_white]{Titles.DESCRIPTION}[/bold bright_white]'
+    ARGUMENTS = f'[bold bright_white]{Titles.ARGUMENTS}[/bold bright_white]'
+    OPTIONS = f'[bold bright_white]{Titles.OPTIONS}[/bold bright_white]'
 
 
 @dataclass
 class RichFormatter(Formatter):
     _console: Console = field(init=False,
                               default_factory=lambda: Console(markup=True, highlight=False))
+    cmd_color: str = 'cyan'
+    option_color: str = 'cyan'
 
+    def _color_opt(self, opt: str):
+        return f'[{self.option_color}]{opt}[/{self.option_color}]'
+
+    def _color_cmd(self, cmd: str):
+        return f'[{self.cmd_color}]{cmd}[/{self.cmd_color}]'
+
+    def __post_init__(self):
+        self.print_fn = self._console.print
+
+    def _print_options(self, options: list[CommandOption]):
+        self.print_rows([(self._color_opt(_name or '') + _other_args, _help)
+                         for _name, _other_args, _help in get_options_str(options)])
+
+    def print_rows(self, rows: list[tuple[str, Optional[str]]]):
+        table = Table(show_header=False, box=None, padding=(0, self.col_space))
+        table.add_column(width=self.col_size)
+        table.add_column()
+        for row in rows:
+            table.add_row(*row)
+        self.print_fn(table)
 
     def print_cli_help(self,
-                       commands: dict[str, Command],
-                       options: list[CommandOption],
-                       help: str = None):
-        self._console.print(get_usage(options))
-        self._console.print(_GLOBAL_OPTIONS_STR,
-                            get_options_table(options))
+                       group: CommandGroup):
+        self.print_fn(RichTitles.USAGE, '\n', get_usage(group.options), '\n')
+        if group.options:
+            self.print_fn(RichTitles.GLOBAL_OPTIONS)
+            self._print_options(group.options)
+            print()
 
-        table = Table(show_header=False, box=box.SIMPLE)
-        table.add_column('Command name', style="cyan", width=15)
-        table.add_column('Command help')
-        for _command in commands.values():
-            table.add_row(_command.name, _command.help)
-        self._console.print(_AVAILABLE_CMDS_STR, table)
-        if help:
-            self._console.print(f'{_DESCRIPTION_STR}\n {help}\n')
+        self.print_fn(RichTitles.AVAILABLE_CMDS)
+        self.print_rows([(f' {self._color_cmd(_command.name or "")}', _command.help) for _command in
+                         group.commands.values()])
+
+        if group.help:
+            self.print_fn(f"\n{RichTitles.DESCRIPTION}\n {group.help}\n")
+
+    def print_cmd_help(self,
+                       command: Command,
+                       options: list[CommandOption],
+                       parent_args: ParentArgs = None):
+        usage = get_usage(
+            global_options=options,
+            command=command.name,
+            command_options=command.options,
+            parent_args=parent_args
+        )
+        self.print_fn(RichTitles.USAGE, '\n', usage, '\n')
+
+        if command.positional_args:
+            self.print_fn(RichTitles.ARGUMENTS)
+            self.print_rows(
+                [(fmt_option(option, color=self.option_color), option.help)
+                 for option in command.positional_args])
+        if command.keyword_args:
+            self.print_fn('\n' + RichTitles.OPTIONS)
+            self._print_options(command.keyword_args)
+
+        global_options = options + [parent_option for parent_arg in (parent_args or [])
+                                    for parent_option in parent_arg[1]]
+        if global_options:
+            self.print_fn('\n' + RichTitles.GLOBAL_OPTIONS)
+            self._print_options(global_options)
+        if command.help:
+            self.print_fn(f'\n{RichTitles.DESCRIPTION}\n {command.help}\n')
 
     def print_cmd_group_help(self,
-                             commands: dict[str, Command],
-                             global_options: list[CommandOption],
-                             options: list[CommandOption],
+                             group: CommandGroup,
                              parent_args: ParentArgs):
 
         parent_commands = [sys.argv[0].split('/')[-1]] + [x[0] for x in parent_args]
         commands_str = []
-        for i, (cmd_name, cmd) in enumerate(commands.items()):
+        for i, (cmd_name, cmd) in enumerate(group.commands.items()):
             _cmds = ''.join(
                 f'[underline]{x}[/underline] ' + (
-                    f'{fmt_cmd_options(options)} ' if cmd_lvl == len(parent_commands) - 1 else '')
+                    f'{fmt_cmd_options(group.options)} ' if cmd_lvl == len(parent_commands) - 1 else '')
                 for cmd_lvl, x in enumerate(parent_commands + [cmd_name]))
 
             _line = f'{"" if i == 0 else "or: ":>5}{_cmds}{fmt_cmd_options(cmd.options)}'
             commands_str.append(_line)
         commands_str = '\n'.join(commands_str)
 
-        self._console.print(f'{_USAGE_STR}\n[bright_white]{commands_str}[/bright_white]\n')
-        self._console.print(f'[bright_white]{_CMD_STR}[/bright_white]')
-        for cmd_name, cmd in commands.items():
-            self._console.print(f'  [underline]{cmd_name}[/underline]')
-            self._console.print(f'    {cmd.help}')
+        self.print_fn(RichTitles.USAGE)
+        self.print_fn(commands_str)
+
+        print()
+
+        self.print_fn(RichTitles.COMMANDS)
+        for cmd_name, cmd in group.commands.items():
+            self.print_fn(pad(f'[underline]{cmd_name}[/underline]', padding_left=2))
+            if cmd.help:
+                self.print_fn(pad(cmd.help, padding_left=4))
+                print()
             if cmd.options:
-                table = _get_table(padding=(0, 3))
-                for opt in cmd.options:
-                    table.add_row(fmt_option(opt, show_full=True), opt.help)
-                self._console.print(table)
-        if options:
-            self._console.print(_OPTIONS_STR, get_options_table(options))
+                self.print_rows([(fmt_option(opt, show_full=True, color=self.option_color), opt.help)
+                                 for opt in cmd.options])
+                print()
 
+        if group.options:
+            self.print_fn(RichTitles.OPTIONS)
+            self._print_options(group.options)
+            print()
+
+        global_options = [parent_option
+                          for parent_arg in (parent_args or [])
+                          for parent_option in parent_arg[1]]
         if global_options:
-            self._console.print(_GLOBAL_OPTIONS_STR, get_options_table(global_options))
+            self.print_fn(RichTitles.GLOBAL_OPTIONS)
+            self._print_options(global_options)
+            print()
 
-    def print_cmd_help(self,
-                       command: Command,
-                       options: list[CommandOption],
-                       parent_args: ParentArgs = None):
-        self._console.print(get_usage(
-            global_options=options,
-            command=command.name,
-            command_options=command.options,
-            parent_args=parent_args
-        ))
-        if command.positional_args:
-            self._console.print(_ARGUMENTS_STR, get_arguments(command.positional_args))
-        if command.keyword_args:
-            self._console.print(_OPTIONS_STR, get_options_table(command.keyword_args))
-
-        parent_options = [parent_option for parent_arg in (parent_args or []) for parent_option in parent_arg[1]]
-        if options or parent_options:
-            self._console.print(_GLOBAL_OPTIONS_STR, get_options_table(options + parent_options))
-        if command.help:
-            self._console.print(f'{_DESCRIPTION_STR}\n {command.help}\n')
+        if group.help:
+            self.print_fn(RichTitles.DESCRIPTION)
+            self.print_fn(pad(group.help))
 
     def print_cmd_error(self, cmd: str):
-        self._console.print(f'[red]Unknown command "[bold]{cmd}[/bold]"[/red]')
+        self.print_fn(f'[red]Unknown command "[bold]{cmd}[/bold]"[/red]')
 
     def print_param_error(self, key: str) -> None:
-        self._console.print(f"[red]Could not find value for [bold]{key!r}[/bold][/red]")
+        self.print_fn(f"[red]Could not find value for [bold]{key!r}[/bold][/red]")
 
     def print_count_error(self, expected_count: int, count: int):
-        self._console.print(f'[red]Expected {expected_count} positional arguments but got {count}[/red]')
+        self.print_fn(f'[red]Expected {expected_count} positional arguments but got {count}[/red]')

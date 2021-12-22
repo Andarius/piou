@@ -2,10 +2,10 @@ import sys
 from dataclasses import dataclass, field
 from typing import Optional, Any
 
-from .command import CommandGroup
+from .command import CommandGroup, ShowHelpError
 from .exceptions import (
     CommandNotFoundError,
-    ShowHelpError, ParamNotFoundError, PosParamsCountError
+    ParamNotFoundError, PosParamsCountError
 )
 from .formatter import Formatter, RichFormatter
 
@@ -16,6 +16,9 @@ class Cli:
     formatter: Formatter = field(default_factory=RichFormatter)
 
     _group: CommandGroup = field(init=False, default_factory=CommandGroup)
+
+    def __post_init__(self):
+        self._group.help = self.description
 
     @property
     def commands(self):
@@ -34,11 +37,8 @@ class Cli:
         except CommandNotFoundError as e:
             raise e
         except ShowHelpError as e:
-            self.formatter.print_help(commands=e.commands,
-                                      options=e.options,
+            self.formatter.print_help(group=e.group,
                                       command=e.command,
-                                      global_options=self._group.options,
-                                      help=e.help,
                                       parent_args=e.parent_args)
         except ParamNotFoundError as e:
             self.formatter.print_param_error(e.key)
@@ -57,6 +57,3 @@ class Cli:
         cmd_group = CommandGroup(name=cmd, help=description)
         self._group.add_group(cmd_group)
         return cmd_group
-
-    def __post_init__(self):
-        self._group.help = self.description

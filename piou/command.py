@@ -5,11 +5,10 @@ from typing import get_type_hints, Optional, Any
 
 from .exceptions import DuplicatedCommandError
 from .utils import (
-    convert_args_to_dict,
     CommandOption,
-    ShowHelpError,
     get_default_args,
-    parse_input_args
+    parse_input_args,
+    convert_args_to_dict
 )
 
 ParentArgs = list[tuple[str, list[CommandOption]]]
@@ -124,35 +123,40 @@ class CommandGroup:
 
         cmd, global_options, cmd_options = parse_input_args(args, self.command_names)
 
-        if set(global_options) & {'-h', '--help'} or not cmd:
-            raise ShowHelpError(
-                commands=self.commands,
-                options=self._options,
-                help=self.help,
-                parent_args=parent_args
-            )
+        command_group = self._command_groups.get(cmd) if cmd else None
+        command = (command_group or self)._commands.get(cmd) if cmd else None
 
-        command_group = self._command_groups.get(cmd)
+        # print(command)
         if command_group:
+            if cmd is None:
+                raise NotImplementedError('"cmd" cannot be empty')
             parent_args = [*(parent_args or [])] + [(cmd, self.options)]
             return command_group.run_with_args(*cmd_options, parent_args=parent_args)
 
-        command = self._commands[cmd]
-        try:
-            _cmd_args_dict = convert_args_to_dict(
-                cmd_options,
-                command.options
-            )
-            _global_args_dict = convert_args_to_dict(
-                global_options, self._options)
-        except ShowHelpError:
+        if set(global_options + cmd_options) & {'-h', '--help'} or \
+                not command:
             raise ShowHelpError(
-                command=command,
-                commands=self.commands,
-                options=self._options,
-                help=self.help,
-                parent_args=parent_args
+                group=command_group or self,
+                parent_args=parent_args,
+                command=command
             )
+
+        _cmd_args_dict = convert_args_to_dict(
+            cmd_options,
+            command.options
+        )
+        _global_args_dict = convert_args_to_dict(
+            global_options, self._options)
 
         _args_dict = {**_global_args_dict, **_cmd_args_dict}
         return command.run(**_args_dict)
+
+
+class ShowHelpError(Exception):
+    def __init__(self,
+                 group: CommandGroup,
+                 command: Command = None,
+                 parent_args: ParentArgs = None):
+        self.command = command
+        self.group = group
+        self.parent_args = parent_args

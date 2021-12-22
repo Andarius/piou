@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional, get_args, get_origin
 
-from .exceptions import ShowHelpError, ParamNotFoundError, PosParamsCountError
+from .exceptions import ParamNotFoundError, PosParamsCountError
 
 
 def validate_type(data_type: Any, value: str):
@@ -106,12 +106,38 @@ def keyword_arg_to_name(keyword_arg: str) -> str:
     return re.sub('^-+', '', keyword_arg).replace('-', '_')
 
 
+def get_default_args(func):
+    signature = inspect.signature(func)
+    return [v.default if v is not inspect.Parameter.empty else None
+            for v in signature.parameters.values()]
+
+
+def parse_input_args(args: tuple[Any, ...], commands: set[str]) -> tuple[
+    Optional[str], list[str], list[str]
+]:
+    """
+    Extracts the:
+     - global options
+     - command
+     - command options
+     from the passed list or arguments
+    """
+    global_options, cmd_options, cmd = [], [], None
+    for arg in args:
+        if cmd is None and arg in commands:
+            cmd = arg
+            continue
+
+        if cmd is None:
+            global_options.append(arg)
+        else:
+            cmd_options.append(arg)
+    return cmd, global_options, cmd_options
+
+
 def convert_args_to_dict(input_args: list[str],
                          options: list[CommandOption]) -> dict:
     _input_pos_args, _input_keyword_args = get_cmd_args(' '.join(input_args))
-
-    if {'-h', '--help'} & _input_keyword_args.keys():
-        raise ShowHelpError()
 
     positional_args, keyword_args = [], {}
     for _arg in options:
@@ -147,32 +173,3 @@ def convert_args_to_dict(input_args: list[str],
             fn_args[_arg_name] = None
 
     return fn_args
-
-
-def get_default_args(func):
-    signature = inspect.signature(func)
-    return [v.default if v is not inspect.Parameter.empty else None
-            for v in signature.parameters.values()]
-
-
-def parse_input_args(args: tuple[Any, ...], commands: set[str]) -> tuple[
-    Optional[str], list[str], list[str]
-]:
-    """
-    Extracts the:
-     - global options
-     - command
-     - command options
-     from the passed list or arguments
-    """
-    global_options, cmd_options, cmd = [], [], None
-    for arg in args:
-        if cmd is None and arg in commands:
-            cmd = arg
-            continue
-
-        if cmd is None:
-            global_options.append(arg)
-        else:
-            cmd_options.append(arg)
-    return cmd, global_options, cmd_options
