@@ -232,17 +232,20 @@ DESCRIPTION
  Run foo command
 """
 
+_RICH_PARAMS = [
+    ('Simple CLI', get_simple_cli, [], _SIMPLE_CLI_OUTPUT_RICH),
+    ('Simple CLI cmd', get_simple_cli, ['foo', '-h'], _SIMPLE_CLI_COMMAND_RICH),
+    ('Simple CLI with opts', get_simple_cli_with_global_opt, [], _SIMPLE_CLI_WITH_OPTS_OUTPUT_RICH),
+    ('Simple CLI with opts cmd', get_simple_cli_with_global_opt, ['foo', '-h'], _SIMPLE_CLI_WITH_OPTS_CMD_OUTPUT_RICH),
+    ('Simple CLI sub cmd', get_cmd_group_cli_with_global_opt, [], _SIMPLE_CLI_SUB_CMD_RICH),
+    ('Simple CLI sub cmd help', get_cmd_group_cli_with_global_opt, ['sub-cmd', '-h'], _SIMPLE_CLI_SUB_CMD_HELP_RICH),
+    ('Simple CLI sub cmd cmd cmd', get_cmd_group_cli_with_global_opt, ['sub-cmd', 'foo', '-h'],
+     _SIMPLE_CLI_SUB_CMD_CMD_RICH)
+]
 
-@pytest.mark.parametrize('cli_fn, args, expected', [
-    (get_simple_cli, [], _SIMPLE_CLI_OUTPUT_RICH),
-    (get_simple_cli, ['foo', '-h'], _SIMPLE_CLI_COMMAND_RICH),
-    (get_simple_cli_with_global_opt, [], _SIMPLE_CLI_WITH_OPTS_OUTPUT_RICH),
-    (get_simple_cli_with_global_opt, ['foo', '-h'], _SIMPLE_CLI_WITH_OPTS_CMD_OUTPUT_RICH),
-    (get_cmd_group_cli_with_global_opt, [], _SIMPLE_CLI_SUB_CMD_RICH),
-    (get_cmd_group_cli_with_global_opt, ['sub-cmd', '-h'], _SIMPLE_CLI_SUB_CMD_HELP_RICH),
-    (get_cmd_group_cli_with_global_opt, ['sub-cmd', 'foo', '-h'], _SIMPLE_CLI_SUB_CMD_CMD_RICH)
-])
-def test_rich_formatting(cli_fn, args, expected, capsys):
+
+@pytest.mark.parametrize('name, cli_fn, args, expected', _RICH_PARAMS, ids=[x[0] for x in _RICH_PARAMS])
+def test_rich_formatting(name, cli_fn, args, expected, capsys):
     cli = cli_fn()
     cli.run_with_args(*args)
     output = capsys.readouterr().out.strip()
