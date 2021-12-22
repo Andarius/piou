@@ -30,7 +30,7 @@ jobs:
       - run:
           name: Run tests
           command: |
-            poetry run pytest -vv
+            poetry run pytest -vv --junitxml=tests/junit.xml
             poetry run coverage xml -o tests/coverage.xml
             poetry run coverage html
       - store_test_results:

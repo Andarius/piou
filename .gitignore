@@ -108,3 +108,4 @@ venv.bak/
 .pytest_cache/
 tmp/
 *-ignore.py
+tests/junit.xml
