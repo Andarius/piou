@@ -245,8 +245,9 @@ _RICH_PARAMS = [
 
 
 def _compare_str(output, expected):
-    assert len(output) == len(expected)
-    for output_line, expected_line in zip(output.split('\n'), expected.split('\n')):
+    output_lines, expected_lines = output.split('\n'), expected.split('\n')
+    assert len(output_lines) == len(expected_lines)
+    for output_line, expected_line in zip(output_lines, expected_lines):
         assert output_line.strip() == expected_line.strip()
 
 
@@ -254,5 +255,5 @@ def _compare_str(output, expected):
 def test_rich_formatting(name, cli_fn, args, expected, capsys):
     cli = cli_fn()
     cli.run_with_args(*args)
-    output = capsys.readouterr().out.strip()
+    output = capsys.readouterr().out
     _compare_str(output.strip(), expected.strip())
