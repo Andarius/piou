@@ -29,7 +29,7 @@ if __name__ == '__main__':
 ```
 The output will look like this: 
 
-![example](./docs/simple-output.png)
+![example](https://github.com/Andarius/piou/raw/master/docs/simple-output.png)
 
 
 You can also add sub-commands:
@@ -62,7 +62,7 @@ if __name__ == '__main__':
 
 ```
 
-![example](./docs/sub-cmd-output.png)
+![example](https://github.com/Andarius/piou/raw/master/docs/sub-cmd-output.png)
 
 Here is a more complete example: 
 
