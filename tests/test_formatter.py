@@ -244,9 +244,15 @@ _RICH_PARAMS = [
 ]
 
 
+def _compare_str(output, expected):
+    assert len(output) == len(expected)
+    for output_line, expected_line in zip(output.split('\n'), expected.split('\n')):
+        assert output_line.strip() == expected_line.strip()
+
+
 @pytest.mark.parametrize('name, cli_fn, args, expected', _RICH_PARAMS, ids=[x[0] for x in _RICH_PARAMS])
 def test_rich_formatting(name, cli_fn, args, expected, capsys):
     cli = cli_fn()
     cli.run_with_args(*args)
     output = capsys.readouterr().out.strip()
-    assert output == expected.strip(), print(output)
+    _compare_str(output.strip(), expected.strip())
