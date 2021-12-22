@@ -92,6 +92,7 @@ class RichFormatter(Formatter):
     _console: Console = field(init=False,
                               default_factory=lambda: Console(markup=True, highlight=False))
 
+
     def print_cli_help(self,
                        commands: dict[str, Command],
                        options: list[CommandOption],

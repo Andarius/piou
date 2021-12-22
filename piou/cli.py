@@ -12,7 +12,7 @@ from .formatter import Formatter, RichFormatter
 
 @dataclass
 class Cli:
-    description: str = None
+    description: Optional[str] = None
     formatter: Formatter = field(default_factory=RichFormatter)
 
     _group: CommandGroup = field(init=False, default_factory=CommandGroup)

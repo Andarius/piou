@@ -46,7 +46,7 @@ class CommandOption:
     help: Optional[str] = None
     keyword_args: tuple[str, ...] = field(default_factory=tuple)
 
-    name: str = field(init=False, default=None)
+    name: Optional[str] = field(init=False, default=None)
     data_type: Any = field(init=False, default=Any)
 
     @property

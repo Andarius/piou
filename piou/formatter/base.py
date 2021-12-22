@@ -2,7 +2,7 @@ import abc
 from dataclasses import dataclass
 from typing import Optional
 
-from ..command import Command, CommandOption, ParentArgs
+from ..command import Command, CommandOption, ParentArgs, CommandGroup
 
 
 @dataclass
@@ -34,7 +34,9 @@ class Formatter(abc.ABC):
         ...
 
     @abc.abstractmethod
-    def print_cmd_group_help(self, command_name: str,
+    def print_cmd_group_help(self,
+                             group: CommandGroup,
+                             command_name: str,
                              commands: dict[str, Command],
                              global_options: list[CommandOption],
                              options: list[CommandOption],
