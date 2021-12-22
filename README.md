@@ -117,3 +117,5 @@ def toto_main(
 if __name__ == '__main__':
     cli.run()
 ```
+
+Try it by running `python -m piou.test`

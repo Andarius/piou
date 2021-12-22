@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "piou"
-version = "0.1.4"
+version = "0.1.5"
 description = "A CLI tool"
 authors = ["Julien Brayere <julien.brayere@gmail.com>"]
 license = "MIT"
@@ -16,15 +16,9 @@ include = [
     "LICENSE",
 ]
 
-
 [tool.poetry.dependencies]
-python = "^3.9"
+python = ">=3.9,<4.0"
 rich = "^10.11.0"
-pydantic = { version = "^1.8.2", optional = true }
-future-typing = "^0.4.1"
-
-[tool.poetry.extras]
-pydantic = ["pydantic"]
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.5"
@@ -45,7 +39,7 @@ python_files = "*.py"
 
 [tool.pyright]
 include = ["piou"]
-exclude = []
+exclude = ["piou/test.py"]
 
 pythonVersion = "3.9"
 pythonPlatform = "Linux"
