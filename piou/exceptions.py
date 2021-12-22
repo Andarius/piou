@@ -1,14 +1,16 @@
 class ShowHelpError(Exception):
     def __init__(self,
+                 command: 'Command' = None,
                  commands: dict[str, 'Command'] = None,
-                 command_group: 'CommandGroup' = None,
                  options: list['CommandOption'] = None,
-                 help: str = None
+                 help: str = None,
+                 parent_args: list[tuple[str, list['CommandOption']]] = None
                  ):
-        self.command_group = command_group
+        self.command = command
         self.commands = commands
         self.options = options
         self.help = help
+        self.parent_args = parent_args
 
 
 class DuplicatedCommandError(Exception):

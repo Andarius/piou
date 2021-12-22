@@ -6,7 +6,7 @@ from rich.console import Console
 from rich.table import Table, PaddingDimensions
 
 from .base import Formatter
-from ..command import Command, CommandOption
+from ..command import Command, CommandOption, ParentArgs
 
 
 def _get_table(width: int = 15, padding: PaddingDimensions = (0, 1)) -> Table:
@@ -55,11 +55,15 @@ def fmt_cmd_options(options: list[CommandOption]) -> str:
 
 def get_usage(global_options: list[CommandOption],
               command: str = None,
-              command_options: list[CommandOption] = None):
+              command_options: list[CommandOption] = None,
+              parent_args: ParentArgs = None):
+    parent_args = parent_args or []
+
     _global_options = ' '.join(['[' + sorted(x.keyword_args)[-1] + ']' for x in global_options])
     command = f'[underline]{command}[/underline]' if command else '<command>'
-    cmd = sys.argv[0].split('/')[-1]
-    usage = f'[bright_white][underline]{cmd}[/underline] ' \
+    cmds = [sys.argv[0].split('/')[-1]] + [x[0] for x in parent_args]
+    cmds = ' '.join(f'[underline]{x}[/underline]' for x in cmds)
+    usage = f'[bright_white]{cmds} ' \
             f'{_global_options} ' \
             f'{command} ' \
             f'{fmt_cmd_options(command_options)} [/bright_white]\n'
@@ -108,15 +112,23 @@ class RichFormatter(Formatter):
             self._console.print(f'{_DESCRIPTION_STR}\n {help}\n')
 
     def print_cmd_group_help(self,
-                             command_name: str,
                              commands: dict[str, Command],
                              global_options: list[CommandOption],
-                             options: list[CommandOption]):
-        commands_str = '\n'.join(f'{"" if i == 0 else "or: ":>5}'
-                                 f'[underline]{command_name}[/underline] '
-                                 f'[underline]{cmd_name}[/underline] '
-                                 f'{fmt_cmd_options(cmd.options)}'
-                                 for i, (cmd_name, cmd) in enumerate(commands.items()))
+                             options: list[CommandOption],
+                             parent_args: ParentArgs):
+
+        parent_commands = [sys.argv[0].split('/')[-1]] + [x[0] for x in parent_args]
+        commands_str = []
+        for i, (cmd_name, cmd) in enumerate(commands.items()):
+            _cmds = ''.join(
+                f'[underline]{x}[/underline] ' + (
+                    f'{fmt_cmd_options(options)} ' if cmd_lvl == len(parent_commands) - 1 else '')
+                for cmd_lvl, x in enumerate(parent_commands + [cmd_name]))
+
+            _line = f'{"" if i == 0 else "or: ":>5}{_cmds}{fmt_cmd_options(cmd.options)}'
+            commands_str.append(_line)
+        commands_str = '\n'.join(commands_str)
+
         self._console.print(f'{_USAGE_STR}\n[bright_white]{commands_str}[/bright_white]\n')
         self._console.print(f'[bright_white]{_CMD_STR}[/bright_white]')
         for cmd_name, cmd in commands.items():
@@ -129,21 +141,28 @@ class RichFormatter(Formatter):
                 self._console.print(table)
         if options:
             self._console.print(_OPTIONS_STR, get_options_table(options))
+
         if global_options:
             self._console.print(_GLOBAL_OPTIONS_STR, get_options_table(global_options))
 
-    def print_cmd_help(self, command: Command, options: list[CommandOption]):
+    def print_cmd_help(self,
+                       command: Command,
+                       options: list[CommandOption],
+                       parent_args: ParentArgs = None):
         self._console.print(get_usage(
             global_options=options,
             command=command.name,
-            command_options=command.options
+            command_options=command.options,
+            parent_args=parent_args
         ))
         if command.positional_args:
             self._console.print(_ARGUMENTS_STR, get_arguments(command.positional_args))
         if command.keyword_args:
             self._console.print(_OPTIONS_STR, get_options_table(command.keyword_args))
-        if options:
-            self._console.print(_GLOBAL_OPTIONS_STR, get_options_table(options))
+
+        parent_options = [parent_option for parent_arg in (parent_args or []) for parent_option in parent_arg[1]]
+        if options or parent_options:
+            self._console.print(_GLOBAL_OPTIONS_STR, get_options_table(options + parent_options))
         if command.help:
             self._console.print(f'{_DESCRIPTION_STR}\n {command.help}\n')
 

@@ -2,7 +2,7 @@ import abc
 from dataclasses import dataclass
 from typing import Optional
 
-from ..command import Command, CommandOption
+from ..command import Command, CommandOption, ParentArgs
 
 
 @dataclass
@@ -13,14 +13,19 @@ class Formatter(abc.ABC):
                    options: list[CommandOption],
                    help: str = None,
                    command: Optional[Command] = None,
-                   global_options: list[CommandOption] = None
+                   global_options: list[CommandOption] = None,
+                   parent_args: ParentArgs = None
                    ) -> None:
-        if command is None:
-            self.print_cli_help(commands, options, help)
-        elif command and commands:
-            self.print_cmd_group_help(command.name, commands, global_options, options)
+        # We are printing a command help
+        if command:
+            self.print_cmd_help(command, options, parent_args)
+        # In case we are printing help for a command group
+        elif parent_args:
+            self.print_cmd_group_help(commands, global_options, options,
+                                      parent_args)
+        # We are printing the CLI help
         else:
-            self.print_cmd_help(command, options)
+            self.print_cli_help(commands, options, help)
 
     @abc.abstractmethod
     def print_cli_help(self, commands: dict[str, Command],
@@ -32,13 +37,15 @@ class Formatter(abc.ABC):
     def print_cmd_group_help(self, command_name: str,
                              commands: dict[str, Command],
                              global_options: list[CommandOption],
-                             options: list[CommandOption]) -> None:
+                             options: list[CommandOption],
+                             parent_args: ParentArgs) -> None:
         ...
 
     @abc.abstractmethod
     def print_cmd_help(self,
                        command: Command,
-                       options: list[CommandOption]) -> None:
+                       options: list[CommandOption],
+                       parent_args: ParentArgs = None) -> None:
         ...
 
     def print_cmd_error(self, cmd: str) -> None:

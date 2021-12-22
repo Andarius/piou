@@ -10,32 +10,21 @@ A CLI tool to build beautiful command-line interfaces with type validation.
 It is as simple as
 
 ```python
-from piou import Cli, CmdArg
+from piou import Cli, Option
 
 cli = Cli(description='A CLI tool')
-
-cli.add_argument('-h', '--help', help='Display this help message')
-cli.add_argument('-q', '--quiet', help='Do not output any message')
-cli.add_argument('--verbose', help='Increase verbosity')
 
 
 @cli.command(cmd='foo',
              help='Run foo command')
 def foo_main(
-    foo1: int = CmdArg(..., help='Foo arguments'),
-    foo2: str = CmdArg('-f', '--foo2', help='Foo2 arguments')
+        foo1: int = Option(..., help='Foo arguments'),
+        foo2: str = Option(..., '-f', '--foo2', help='Foo2 arguments'),
+        foo3: str = Option(None, '-g', '--foo3', help='Foo3 arguments'),
 ):
-    print('Ran foo main with ', foo1)
-    print('foo2: ', foo2)
-
-
-@cli.command(cmd='bar', help='Run bar command')
-def bar_main():
     pass
 
-
 if __name__ == '__main__':
-    cli.print_help()
     cli.run()
 ```
 The output will look like this: 

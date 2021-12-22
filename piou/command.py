@@ -1,19 +1,18 @@
-import itertools
 from dataclasses import dataclass, field
 from functools import wraps
 from typing import Callable
 from typing import get_type_hints, Optional, Any
 
-from .exceptions import DuplicatedCommandError, CommandNotFoundError
+from .exceptions import DuplicatedCommandError
 from .utils import (
     convert_args_to_dict,
     CommandOption,
-    ParamNotFoundError,
-    PosParamsCountError,
     ShowHelpError,
     get_default_args,
     parse_input_args
 )
+
+ParentArgs = list[tuple[str, list[CommandOption]]]
 
 
 @dataclass
@@ -121,22 +120,22 @@ class CommandGroup:
 
         return _command
 
-    def run_with_args(self, *args):
+    def run_with_args(self, *args, parent_args: ParentArgs = None):
+
         cmd, global_options, cmd_options = parse_input_args(args, self.command_names)
 
-        if set(global_options) & {'-h', '--help'}:
+        if set(global_options) & {'-h', '--help'} or not cmd:
             raise ShowHelpError(
                 commands=self.commands,
                 options=self._options,
-                help=self.help
+                help=self.help,
+                parent_args=parent_args
             )
-
-        if not cmd:
-            raise CommandNotFoundError()
 
         command_group = self._command_groups.get(cmd)
         if command_group:
-            return command_group.run_with_args(*itertools.chain(global_options, cmd_options))
+            parent_args = [*(parent_args or [])] + [(cmd, self.options)]
+            return command_group.run_with_args(*cmd_options, parent_args=parent_args)
 
         command = self._commands[cmd]
         try:
@@ -147,22 +146,13 @@ class CommandGroup:
             _global_args_dict = convert_args_to_dict(
                 global_options, self._options)
         except ShowHelpError:
-            if command:
-                raise ShowHelpError(
-                    commands=self.commands,
-                    options=self._options,
-                    help=self.help
-                )
-
-            else:
-                raise ShowHelpError(
-                    command_group=command_group,
-                    options=self.options
-                    # command_name=command_group.name,
-                    # commands=command_group.commands,
-                    # options=command_group.options,
-                    # global_options=self.options
-                )
+            raise ShowHelpError(
+                command=command,
+                commands=self.commands,
+                options=self._options,
+                help=self.help,
+                parent_args=parent_args
+            )
 
         _args_dict = {**_global_args_dict, **_cmd_args_dict}
         return command.run(**_args_dict)

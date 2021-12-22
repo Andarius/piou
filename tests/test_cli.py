@@ -125,7 +125,7 @@ def test_command_raises_error_on_duplicate_args():
                 ])
 
 
-def test_cli_help(capsys):
+def get_cli():
     from piou import Cli, Option
 
     cli = Cli(description='A CLI tool')
@@ -167,6 +167,11 @@ def test_cli_help(capsys):
     ):
         pass
 
+    return cli
+
+
+def test_cli_help(capsys):
+    cli = get_cli()
     cli.run_with_args('-h')
     assert capsys.readouterr().out.strip() == """
 USAGE
@@ -221,26 +226,32 @@ def test_run_command(capsys):
 
     cli.run_with_args('-q', 'foo', '1', '-f', 'toto')
 
-    cli.run_with_args('-h')
+    cli.run_with_args('-q', 'foo', '-h')
     assert capsys.readouterr().out.strip() == """
 USAGE
- pytest [-q] [--verbose] <command>  
+ pytest [-q] [--verbose] foo <foo1> [-f] [-g] 
 
+ARGUMENTS
+                                   
+  <foo1>            Foo arguments  
+                                   
+OPTIONS
+                                    
+  -f (--foo2)       Foo2 arguments  
+  -g (--foo3)       Foo3 arguments  
+                                    
 GLOBAL OPTIONS
                                                
   -q (--quiet)      Do not output any message  
   --verbose         Increase verbosity         
                                                
-AVAILABLE COMMANDS
-                                     
-  foo               Run foo command  
-                                     
 DESCRIPTION
- A CLI tool
+ Run foo command
+
 """.strip()
 
 
-def command_run_command_group(capsys):
+def test_run_command_group_help(capsys):
     from piou import Cli, Option
 
     cli = Cli(description='A CLI tool')
@@ -248,40 +259,115 @@ def command_run_command_group(capsys):
     cli.add_option(None, '-q', '--quiet', help='Do not output any message')
     cli.add_option(None, '--verbose', help='Increase verbosity')
 
-    baz_cmd = cli.add_sub_parser(cmd='baz', description='A sub command')
-    baz_cmd.add_option(None, '--test', help='Test mode')
+    foo_sub_cmd = cli.add_sub_parser(cmd='foo', description='A sub command')
+    foo_sub_cmd.add_option(None, '--test', help='Test mode')
 
-    @baz_cmd.command(cmd='bar', help='Run baz command')
-    def baz_bar_main(
-            **kwargs
-    ):
+    @foo_sub_cmd.command(cmd='bar', help='Run baz command')
+    def bar_main(**kwargs):
         pass
 
-    @baz_cmd.command(cmd='toto', help='Run toto command')
-    def toto_main(
-            test: bool,
-            quiet: bool,
-            verbose: bool,
+    @foo_sub_cmd.command(cmd='baz', help='Run toto command')
+    def baz_main(
+            test: bool = False,
+            quiet: bool = False,
+            verbose: bool = False,
             foo1: int = Option(..., help='Foo arguments'),
             foo2: str = Option(..., '-f', '--foo2', help='Foo2 arguments'),
     ):
-        pass
+        print('test: ', test)
+        print('quiet: ', quiet)
+        print('verbose: ', verbose)
+        print('foo1: ', foo1)
+        print('foo2: ', foo2)
 
-    cli.run_with_args('-h')
-    print(capsys.readouterr().out.strip())
+    cli.run_with_args('foo', '-h')
+
     assert capsys.readouterr().out.strip() == """
 USAGE
- pytest [-q] [--verbose] <command>  
+     pytest foo [--test] bar 
+ or: pytest foo [--test] baz <foo1> [-f]
 
+COMMANDS
+  bar
+    Run baz command
+  baz
+    Run toto command
+                                            
+    <foo1>                Foo arguments     
+    -f (--foo2)           Foo2 arguments    
+                                            
+OPTIONS
+                               
+  --test            Test mode  
+                               
 GLOBAL OPTIONS
                                                
   -q (--quiet)      Do not output any message  
+  --verbose         Increase verbosity
+
+""".strip()
+
+    cli.run_with_args('foo', 'baz', '-h')
+
+    assert capsys.readouterr().out.strip() == """
+USAGE
+ pytest foo [--test] baz <foo1> [-f] 
+
+ARGUMENTS
+                                   
+  <foo1>            Foo arguments  
+                                   
+OPTIONS
+                                    
+  -f (--foo2)       Foo2 arguments  
+                                    
+GLOBAL OPTIONS
+                                               
+  --test            Test mode                  
+  -q (--quiet)      Do not output any message  
   --verbose         Increase verbosity         
                                                
-AVAILABLE COMMANDS
-                                     
-  foo               Run foo command  
-                                     
 DESCRIPTION
- A CLI tool
-""".strip()
+ Run toto command
+
+    """.strip()
+
+    cli.run_with_args('foo', 'baz')
+    assert capsys.readouterr().out.strip() == 'Expected 1 positional arguments but got 0'
+
+
+def test_run_group_command():
+    called = False
+
+    from piou import Cli, Option
+
+    cli = Cli(description='A CLI tool')
+
+    cli.add_option(None, '-q', '--quiet', help='Do not output any message')
+    cli.add_option(None, '--verbose', help='Increase verbosity')
+
+    foo_sub_cmd = cli.add_sub_parser(cmd='foo', description='A sub command')
+    foo_sub_cmd.add_option(None, '--test', help='Test mode')
+
+    @foo_sub_cmd.command(cmd='bar', help='Run baz command')
+    def bar_main(**kwargs):
+        pass
+
+    @foo_sub_cmd.command(cmd='baz', help='Run toto command')
+    def baz_main(
+            test: bool = False,
+            quiet: bool = False,
+            verbose: bool = False,
+            foo1: int = Option(..., help='Foo arguments'),
+            foo2: str = Option(..., '-f', '--foo2', help='Foo2 arguments'),
+    ):
+        nonlocal called
+        called = True
+        assert test is True
+        assert quiet is False
+        assert verbose is False
+        assert foo1 == 1
+        assert foo2 is None
+
+    cli.run_with_args('-q', 'foo', '--test', 'baz', '1')
+    assert called
