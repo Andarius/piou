@@ -1,5 +1,5 @@
 # Changelog 
 
-## [0.1.7] Typing update
+## [0.1.8] Help from docstring
 
-- Fixing `default` type for `add_option`.
+- The `help` of a command can now also be extracted from the docstring.

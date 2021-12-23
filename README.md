@@ -76,12 +76,28 @@ In this case, `foo1` is a positional argument while `foo2` and `foo3` are keywor
 You can optionally specify global options that will be passed to all commands: 
 
 ```python
-from piou import Cli
-
 cli = Cli(description='A CLI tool')
 
 cli.add_option(None, '-q', '--quiet', help='Do not output any message')
 ```
+
+The **help** can also be extracted from the function docstring, both functions here have
+the same one.
+
+```python
+@cli.command(cmd='bar', help='Run foo command')
+def bar_main():
+    pass
+
+@cli.command(cmd='bar2')
+def bar_2_main():
+    """
+    Run foo command
+    """
+    pass
+```
+
+
 
 
 ## Sub-commands

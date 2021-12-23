@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from functools import wraps
 from typing import Callable
 from typing import get_type_hints, Optional, Any
+from inspect import getdoc
 
 from .exceptions import DuplicatedCommandError
 from .utils import (
@@ -114,7 +115,7 @@ class CommandGroup:
             self._commands[cmd] = Command(name=cmd,
                                           fn=wrapper,
                                           options=options,
-                                          help=help)
+                                          help=help or getdoc(f))
             return wrapper
 
         return _command

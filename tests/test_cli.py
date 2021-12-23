@@ -125,6 +125,34 @@ def test_command_raises_error_on_duplicate_args():
                 ])
 
 
+def test_command_wrapper():
+    from piou import Cli, Option
+
+    cli = Cli(description='A CLI tool')
+
+    @cli.command(cmd='foo')
+    def foo_main():
+        """
+        A doc about the function
+        """
+        pass
+
+    @cli.command(cmd='foo2', help='A first doc')
+    def foo_2_main():
+        """
+        A doc about the function
+        """
+        pass
+
+    @cli.command(cmd='foo3')
+    def foo_3_main():
+        pass
+
+    assert cli.commands['foo'].help == 'A doc about the function'
+    assert cli.commands['foo2'].help == 'A first doc'
+    assert cli.commands['foo3'].help is None
+
+
 def test_run_command(capsys):
     from piou import Cli, Option
 
