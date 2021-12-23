@@ -1,5 +1,5 @@
 # Changelog 
 
-## [0.1.6] README update
+## [0.1.7] Typing update
 
-Updating README
+- Fixing `default` type for `add_option`.

@@ -50,7 +50,7 @@ class Cli:
     def command(self, cmd: str, help: str = None):
         return self._group.command(cmd=cmd, help=help)
 
-    def add_option(self, default: None, *args, help: str = None, data_type: Any = bool):
+    def add_option(self, default: Any, *args, help: str = None, data_type: Any = bool):
         self._group.add_option(default, *args, help=help, data_type=data_type)
 
     def add_sub_parser(self, cmd: str, description: Optional[str] = None) -> CommandGroup:
