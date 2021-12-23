@@ -1,8 +1,7 @@
 from dataclasses import dataclass, field
 from functools import wraps
-from typing import Callable
-from typing import get_type_hints, Optional, Any
 from inspect import getdoc
+from typing import get_type_hints, Optional, Any, NamedTuple, Callable
 
 from .exceptions import DuplicatedCommandError
 from .utils import (
@@ -12,7 +11,15 @@ from .utils import (
     convert_args_to_dict
 )
 
-ParentArgs = list[tuple[str, list[CommandOption]]]
+
+class ParentArg(NamedTuple):
+    cmd: str
+    options: list[CommandOption]
+    input_options: list[str]
+    options_processor: Optional[Callable] = None
+
+
+ParentArgs = list[ParentArg]
 
 
 @dataclass
@@ -48,8 +55,10 @@ class Command:
 
 @dataclass
 class CommandGroup:
-    help: Optional[str] = None
     name: Optional[str] = None
+    help: Optional[str] = None
+
+    options_processor: Optional[Callable] = None
 
     # _formatter: Formatter = field(init=False, default=None)
     _options: list[CommandOption] = field(init=False, default_factory=list)
@@ -68,7 +77,8 @@ class CommandGroup:
         cls = type(self)
         return cls(help=description)  # noqa
 
-    def add_option(self, default: Any, *args: str, help: str = None, data_type: Any = None):
+    def add_option(self, *args: str, help: str = None, data_type: Any = bool,
+                   default: Any = False):
         opt = CommandOption(
             default=default,
             help=help,
@@ -90,6 +100,24 @@ class CommandGroup:
                                          group.name)
         self._command_groups[group.name] = group
 
+    def add_command(self, cmd: str, f, help: str = None):
+        options: list[CommandOption] = []
+        defaults: list[Optional[Any]] = get_default_args(f)
+
+        for (param_name, param_type), option in zip(get_type_hints(f).items(),
+                                                    defaults):
+            if not isinstance(option, CommandOption):
+                continue
+
+            option.name = param_name
+            option.data_type = param_type
+            options.append(option)
+
+        self._commands[cmd] = Command(name=cmd,
+                                      fn=f,
+                                      options=options,
+                                      help=help or getdoc(f))
+
     def command(self, cmd: str, help: str = None):
         if cmd in self.commands:
             raise DuplicatedCommandError(f'Duplicated command found for {cmd!r}',
@@ -100,22 +128,7 @@ class CommandGroup:
             def wrapper(*args, **kwargs):
                 return f(*args, **kwargs)
 
-            options: list[CommandOption] = []
-            defaults: list[Optional[Any]] = get_default_args(f)
-
-            for (param_name, param_type), option in zip(get_type_hints(f).items(),
-                                                        defaults):
-                if not isinstance(option, CommandOption):
-                    continue
-
-                option.name = param_name
-                option.data_type = param_type
-                options.append(option)
-
-            self._commands[cmd] = Command(name=cmd,
-                                          fn=wrapper,
-                                          options=options,
-                                          help=help or getdoc(f))
+            self.add_command(cmd, f, help=help)
             return wrapper
 
         return _command
@@ -127,11 +140,12 @@ class CommandGroup:
         command_group = self._command_groups.get(cmd) if cmd else None
         command = (command_group or self)._commands.get(cmd) if cmd else None
 
-        # print(command)
+        parent_args = parent_args or []
         if command_group:
             if cmd is None:
                 raise NotImplementedError('"cmd" cannot be empty')
-            parent_args = [*(parent_args or [])] + [(cmd, self.options)]
+            parent_args.append(ParentArg(cmd, self.options, global_options,
+                                         options_processor=self.options_processor))
             return command_group.run_with_args(*cmd_options, parent_args=parent_args)
 
         if set(global_options + cmd_options) & {'-h', '--help'} or \
@@ -142,15 +156,25 @@ class CommandGroup:
                 command=command
             )
 
-        _cmd_args_dict = convert_args_to_dict(
-            cmd_options,
-            command.options
-        )
-        _global_args_dict = convert_args_to_dict(
-            global_options, self._options)
+        args_dict = {}
+        options, input_options, processors = ([command.options, self._options],
+                                              [cmd_options, global_options],
+                                              [None, self.options_processor])
+        for parent_arg in parent_args:
+            options.append(parent_arg.options)
+            input_options.append(parent_arg.input_options)
+            processors.append(parent_arg.options_processor)
 
-        _args_dict = {**_global_args_dict, **_cmd_args_dict}
-        return command.run(**_args_dict)
+        for _opts, _input_opts, _processor in zip(options, input_options, processors):
+            _arg_dict = convert_args_to_dict(_input_opts, _opts)
+            if _processor:
+                _processor(**_arg_dict)
+            args_dict.update(_arg_dict)
+
+        return command.run(**args_dict)
+
+    def set_options_processor(self, fn: Callable):
+        self.options_processor = fn
 
 
 class ShowHelpError(Exception):

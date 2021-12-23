@@ -42,7 +42,7 @@ def get_usage(global_options: list[CommandOption],
     parent_args = parent_args or []
     _global_options = ' '.join(['[' + sorted(x.keyword_args)[-1] + ']' for x in global_options])
     command = f'[underline]{command}[/underline]' if command else '<command>'
-    cmds = [sys.argv[0].split('/')[-1]] + [x[0] for x in parent_args]
+    cmds = [sys.argv[0].split('/')[-1]] + [x.cmd for x in parent_args]
     cmds = ' '.join(f'[underline]{x}[/underline]' for x in cmds)
 
     usage = cmds
@@ -131,7 +131,7 @@ class RichFormatter(Formatter):
             self._print_options(command.keyword_args)
 
         global_options = options + [parent_option for parent_arg in (parent_args or [])
-                                    for parent_option in parent_arg[1]]
+                                    for parent_option in parent_arg.options]
         if global_options:
             self.print_fn('\n' + RichTitles.GLOBAL_OPTIONS)
             self._print_options(global_options)
@@ -142,7 +142,7 @@ class RichFormatter(Formatter):
                              group: CommandGroup,
                              parent_args: ParentArgs):
 
-        parent_commands = [sys.argv[0].split('/')[-1]] + [x[0] for x in parent_args]
+        parent_commands = [sys.argv[0].split('/')[-1]] + [x.cmd for x in parent_args]
         commands_str = []
         for i, (cmd_name, cmd) in enumerate(group.commands.items()):
             _cmds = ''.join(
@@ -177,7 +177,7 @@ class RichFormatter(Formatter):
 
         global_options = [parent_option
                           for parent_arg in (parent_args or [])
-                          for parent_option in parent_arg[1]]
+                          for parent_option in parent_arg.options]
         if global_options:
             self.print_fn(RichTitles.GLOBAL_OPTIONS)
             self._print_options(global_options)

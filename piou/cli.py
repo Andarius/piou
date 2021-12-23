@@ -1,6 +1,6 @@
 import sys
 from dataclasses import dataclass, field
-from typing import Optional, Any
+from typing import Optional, Any, Callable
 
 from .command import CommandGroup, ShowHelpError
 from .exceptions import (
@@ -50,10 +50,20 @@ class Cli:
     def command(self, cmd: str, help: str = None):
         return self._group.command(cmd=cmd, help=help)
 
-    def add_option(self, default: Any, *args, help: str = None, data_type: Any = bool):
-        self._group.add_option(default, *args, help=help, data_type=data_type)
+    def add_option(self, *args, help: str = None, data_type: Any = bool, default: Any = False):
+        self._group.add_option(*args, help=help, data_type=data_type, default=default)
+
+    def set_options_processor(self, fn: Callable):
+        """ Function to call with all the options before running `run` or `run_with_args`"""
+        self._group.set_options_processor(fn)
+
+    def add_command(self, cmd: str, f, help: str = None):
+        self._group.add_command(cmd=cmd, f=f, help=help)
+
+    def add_command_group(self, group: CommandGroup):
+        self._group.add_group(group)
 
     def add_sub_parser(self, cmd: str, description: Optional[str] = None) -> CommandGroup:
-        cmd_group = CommandGroup(name=cmd, help=description)
-        self._group.add_group(cmd_group)
-        return cmd_group
+        group = CommandGroup(name=cmd, help=description)
+        self.add_command_group(group)
+        return group

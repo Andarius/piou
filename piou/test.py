@@ -2,8 +2,8 @@ from piou import Cli, Option
 
 cli = Cli(description='A CLI tool')
 
-cli.add_option(None, '-q', '--quiet', help='Do not output any message')
-cli.add_option(None, '--verbose', help='Increase verbosity')
+cli.add_option('-q', '--quiet', help='Do not output any message')
+cli.add_option('--verbose', help='Increase verbosity')
 
 
 @cli.command(cmd='foo',
@@ -24,7 +24,7 @@ def bar_main(**kwargs):
 
 
 sub_cmd = cli.add_sub_parser(cmd='sub', description='A sub command')
-sub_cmd.add_option(None, '--test', help='Test mode')
+sub_cmd.add_option('--test', help='Test mode')
 
 
 @sub_cmd.command(cmd='bar', help='Run baz command')

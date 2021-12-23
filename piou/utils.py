@@ -40,14 +40,39 @@ def validate_type(data_type: Any, value: str):
         raise NotImplementedError(f'No parser implemented for data type "{data_type}"')
 
 
+_KEYWORD_TO_NAME_REG = re.compile(r'^-+')
+
+
+def keyword_arg_to_name(keyword_arg: str) -> str:
+    """ Formats a string from '--quiet-v2' to 'quiet_v2' """
+    return _KEYWORD_TO_NAME_REG.sub('', keyword_arg).replace('-', '_')
+
+
 @dataclass
 class CommandOption:
     default: Any
     help: Optional[str] = None
     keyword_args: tuple[str, ...] = field(default_factory=tuple)
 
-    name: Optional[str] = field(init=False, default=None)
+    _name: Optional[str] = field(init=False, default=None)
     data_type: Any = field(init=False, default=Any)
+
+    @property
+    def name(self):
+        return self._name or keyword_arg_to_name(sorted(self.keyword_args)[0])
+
+    @name.setter
+    def name(self, name: Optional[str]):
+        self._name = name
+
+    @property
+    def names(self) -> list[str]:
+        names = []
+        if self._name:
+            names.append(self._name)
+        for keyword_arg in self.keyword_args:
+            names.append(keyword_arg_to_name(keyword_arg))
+        return names
 
     @property
     def is_required(self):
@@ -73,7 +98,7 @@ def Option(
     )
 
 
-def get_cmd_args(cmd: str) -> tuple[list[str], dict[str, str]]:
+def get_cmd_args(cmd: str, types: dict[str, Any]) -> tuple[list[str], dict[str, str]]:
     positional_args = []
     keyword_params = {}
 
@@ -81,6 +106,7 @@ def get_cmd_args(cmd: str) -> tuple[list[str], dict[str, str]]:
     skip_position = None
 
     cmd_split = shlex.split(cmd)
+
     for i, _arg in enumerate(cmd_split):
         if skip_position is not None and i <= skip_position:
             continue
@@ -90,6 +116,8 @@ def get_cmd_args(cmd: str) -> tuple[list[str], dict[str, str]]:
 
         if is_positional_arg:
             positional_args.append(_arg)
+        elif types[keyword_arg_to_name(_arg)] is bool:
+            keyword_params[_arg] = True
         else:
             keyword_params[_arg] = (
                 cmd_split[i + 1] if i + 1 < len(cmd_split)
@@ -99,11 +127,6 @@ def get_cmd_args(cmd: str) -> tuple[list[str], dict[str, str]]:
             skip_position = i + 1
 
     return positional_args, keyword_params
-
-
-def keyword_arg_to_name(keyword_arg: str) -> str:
-    """ Formats a string from '--quiet-v2' to 'quiet_v2' """
-    return re.sub('^-+', '', keyword_arg).replace('-', '_')
 
 
 def get_default_args(func):
@@ -137,14 +160,17 @@ def parse_input_args(args: tuple[Any, ...], commands: set[str]) -> tuple[
 
 def convert_args_to_dict(input_args: list[str],
                          options: list[CommandOption]) -> dict:
-    _input_pos_args, _input_keyword_args = get_cmd_args(' '.join(input_args))
+    _input_pos_args, _input_keyword_args = get_cmd_args(' '.join(input_args),
+                                                        {name: opt.data_type
+                                                         for opt in options
+                                                         for name in opt.names})
 
     positional_args, keyword_args = [], {}
     for _arg in options:
         if _arg.is_positional_arg:
             positional_args.append(_arg)
         for _keyword_arg in _arg.keyword_args:
-            keyword_args[_keyword_arg] = _arg.name or keyword_arg_to_name(sorted(_arg.keyword_args)[0])
+            keyword_args[_keyword_arg] = _arg.name
 
     # Positional arguments
     if len(_input_pos_args) != len(positional_args):
@@ -168,8 +194,7 @@ def convert_args_to_dict(input_args: list[str],
 
     # We fill optional fields with None
     for _arg in options:
-        _arg_name = _arg.name or keyword_arg_to_name(sorted(_arg.keyword_args)[0])
-        if _arg_name not in fn_args:
-            fn_args[_arg_name] = None if _arg.default is ... else _arg.default
+        if _arg.name not in fn_args:
+            fn_args[_arg.name] = None if _arg.default is ... else _arg.default
 
     return fn_args

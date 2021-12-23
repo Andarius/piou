@@ -22,8 +22,8 @@ def get_simple_cli_with_global_opt():
     from piou import Cli, Option
 
     cli = Cli(description='A CLI tool')
-    cli.add_option(None, '-q', '--quiet', help='Do not output any message')
-    cli.add_option(None, '--verbose', help='Increase verbosity')
+    cli.add_option('-q', '--quiet', help='Do not output any message')
+    cli.add_option('--verbose', help='Increase verbosity')
 
     @cli.command(cmd='foo',
                  help='Run foo command')
@@ -41,12 +41,12 @@ def get_cmd_group_cli_with_global_opt():
     from piou import Cli, Option
 
     cli = Cli(description='A CLI tool')
-    cli.add_option(None, '-q', '--quiet', help='Do not output any message')
-    cli.add_option(None, '--verbose', help='Increase verbosity')
+    cli.add_option('-q', '--quiet', help='Do not output any message')
+    cli.add_option('--verbose', help='Increase verbosity')
 
     sub_cmd = cli.add_sub_parser('sub-cmd', description='A sub command')
 
-    sub_cmd.add_option(None, '-t', '--test', help='Test mode')
+    sub_cmd.add_option('-t', '--test', help='Test mode')
 
     @sub_cmd.command(cmd='foo',
                      help='Run foo command')
@@ -70,8 +70,8 @@ def get_cli_full():
 
     cli = Cli(description='A CLI tool')
 
-    cli.add_option(None, '-q', '--quiet', help='Do not output any message')
-    cli.add_option(None, '--verbose', help='Increase verbosity')
+    cli.add_option('-q', '--quiet', help='Do not output any message')
+    cli.add_option('--verbose', help='Increase verbosity')
 
     @cli.command(cmd='foo',
                  help='Run foo command')
@@ -89,7 +89,7 @@ def get_cli_full():
         pass
 
     baz_cmd = cli.add_sub_parser(cmd='baz', description='A sub command')
-    baz_cmd.add_option(None, '--test', help='Test mode')
+    baz_cmd.add_option('--test', help='Test mode')
 
     @baz_cmd.command(cmd='bar', help='Run baz command')
     def baz_bar_main(
@@ -236,7 +236,8 @@ _RICH_PARAMS = [
     ('Simple CLI', get_simple_cli, [], _SIMPLE_CLI_OUTPUT_RICH),
     ('Simple CLI cmd', get_simple_cli, ['foo', '-h'], _SIMPLE_CLI_COMMAND_RICH),
     ('Simple CLI with opts', get_simple_cli_with_global_opt, [], _SIMPLE_CLI_WITH_OPTS_OUTPUT_RICH),
-    ('Simple CLI with opts cmd', get_simple_cli_with_global_opt, ['foo', '-h'], _SIMPLE_CLI_WITH_OPTS_CMD_OUTPUT_RICH),
+    ('Simple CLI with opts cmd', get_simple_cli_with_global_opt, ['foo', '-h'],
+     _SIMPLE_CLI_WITH_OPTS_CMD_OUTPUT_RICH),
     ('Simple CLI sub cmd', get_cmd_group_cli_with_global_opt, [], _SIMPLE_CLI_SUB_CMD_RICH),
     ('Simple CLI sub cmd help', get_cmd_group_cli_with_global_opt, ['sub-cmd', '-h'], _SIMPLE_CLI_SUB_CMD_HELP_RICH),
     ('Simple CLI sub cmd cmd cmd', get_cmd_group_cli_with_global_opt, ['sub-cmd', 'foo', '-h'],

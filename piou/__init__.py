@@ -1,2 +1,2 @@
-from .cli import Cli
+from .cli import Cli, CommandGroup
 from .utils import Option
