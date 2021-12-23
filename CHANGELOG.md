@@ -1,5 +1,5 @@
 # Changelog 
 
-## [0.1.8] Help from docstring
+## [0.1.9] Issue with default argument
 
-- The `help` of a command can now also be extracted from the docstring.
+- Fix: issue where the default argument was not passed to the function

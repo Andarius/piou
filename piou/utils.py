@@ -170,6 +170,6 @@ def convert_args_to_dict(input_args: list[str],
     for _arg in options:
         _arg_name = _arg.name or keyword_arg_to_name(sorted(_arg.keyword_args)[0])
         if _arg_name not in fn_args:
-            fn_args[_arg_name] = None
+            fn_args[_arg_name] = None if _arg.default is ... else _arg.default
 
     return fn_args

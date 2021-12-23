@@ -125,7 +125,7 @@ def test_command_raises_error_on_duplicate_args():
                 ])
 
 
-def test_command_wrapper():
+def test_command_wrapper_help():
     from piou import Cli, Option
 
     cli = Cli(description='A CLI tool')
@@ -212,6 +212,7 @@ def test_run_group_command():
             verbose: bool = False,
             foo1: int = Option(..., help='Foo arguments'),
             foo2: str = Option(..., '-f', '--foo2', help='Foo2 arguments'),
+            foo3: str = Option('a value', '--foo3', help='Foo3 arguments'),
     ):
         nonlocal called
         called = True
@@ -220,6 +221,7 @@ def test_run_group_command():
         assert verbose is False
         assert foo1 == 1
         assert foo2 is None
+        assert foo3 == 'a value'
 
     cli.run_with_args('-q', 'foo', '--test', 'baz', '1')
     assert called
