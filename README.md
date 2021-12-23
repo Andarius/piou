@@ -32,7 +32,61 @@ The output will look like this:
 ![example](https://github.com/Andarius/piou/raw/master/docs/simple-output.png)
 
 
-You can also add sub-commands:
+# Install
+
+You can install `piou` with either:
+ - `pip install piou`
+ - `conda install piou -c conda-forge`
+
+# Features  
+
+## Commands  
+
+```python
+from piou import Cli, Option
+
+cli = Cli(description='A CLI tool')
+
+
+@cli.command(cmd='foo',
+             help='Run foo command')
+def foo_main(
+    foo1: int = Option(..., help='Foo arguments'),
+    foo2: str = Option(..., '-f', '--foo2', help='Foo2 arguments'),
+    foo3: str = Option(None, '-g', '--foo3', help='Foo3 arguments'),
+):
+    pass
+
+@cli.command(cmd='bar',
+             help='Run foo command')
+def bar_main(
+    foo1: int = Option(..., help='Foo arguments'),
+    foo2: str = Option(..., '-f', '--foo2', help='Foo2 arguments'),
+    foo3: str = Option(None, '-g', '--foo3', help='Foo3 arguments'),
+):
+    pass
+
+if __name__ == '__main__':
+    cli.run()
+```  
+
+
+In this case, `foo1` is a positional argument while `foo2` and `foo3` are keyword arguments.
+
+You can optionally specify global options that will be passed to all commands: 
+
+```python
+from piou import Cli
+
+cli = Cli(description='A CLI tool')
+
+cli.add_option(None, '-q', '--quiet', help='Do not output any message')
+```
+
+
+## Sub-commands
+
+You can group commands into sub-commands:
 
 ```python
 from piou import Cli, Option
@@ -64,7 +118,10 @@ if __name__ == '__main__':
 
 ![example](https://github.com/Andarius/piou/raw/master/docs/sub-cmd-output.png)
 
-Here is a more complete example: 
+
+## Complete example
+
+Here is a more complete example that you can try  by running `python -m piou.test` 
 
 ```python
 from piou import Cli, Option
@@ -117,5 +174,3 @@ def toto_main(
 if __name__ == '__main__':
     cli.run()
 ```
-
-Try it by running `python -m piou.test`
