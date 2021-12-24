@@ -203,7 +203,7 @@ def test_run_command():
 def test_run_group_command():
     called = False
 
-    from piou import Cli, Option
+    from piou import Cli, Option, CommandGroup
 
     cli = Cli(description='A CLI tool')
 
@@ -259,3 +259,21 @@ def test_run_group_command():
     assert called
     assert processor_called
     assert sub_processor_called
+
+    group2 = CommandGroup(name='foo2')
+    cli.add_command_group(group2)
+
+    group2_called = False
+
+    @group2.command('baz')
+    def baz_2_main(
+            quiet: bool = False,
+            verbose: bool = False,
+    ):
+        nonlocal group2_called
+        group2_called = True
+        assert quiet is True
+        assert verbose is False
+
+    cli._group.run_with_args('-q', 'foo2', 'baz')
+    assert group2_called
