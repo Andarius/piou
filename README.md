@@ -134,6 +134,28 @@ if __name__ == '__main__':
 
 ![example](https://github.com/Andarius/piou/raw/master/docs/sub-cmd-output.png)
 
+## Options processor
+
+Sometimes, you want to run a function using the global arguments before running the actual command (for instance
+initialize a logger based on the `verbose` level).
+
+To do so, you use `set_options_processor` that will receive all the current global options of the CLI.
+
+```python
+from piou import Cli
+
+cli = Cli(description='A CLI tool')
+
+cli.add_option('--verbose', help='Increase verbosity')
+
+
+def processor(verbose: bool):
+    print(f'Processing {verbose=}')
+
+
+cli.set_options_processor(processor)
+```
+
 ## Complete example
 
 Here is a more complete example that you can try by running `python -m piou.test`
