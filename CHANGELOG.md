@@ -1,5 +1,6 @@
 # Changelog 
 
-## [0.1.9] Issue with default argument
+## [0.1.10] Adding option processor
 
-- Fix: issue where the default argument was not passed to the function
+- **New**: you can now use the `set_option_processor` to run 
+specific function against global options before the script runs.
