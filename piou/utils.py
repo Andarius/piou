@@ -6,9 +6,11 @@ import shlex
 from collections import namedtuple
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Optional, get_args, get_origin, Literal
+from typing import Any, Optional, get_args, get_origin, Literal, TypeVar, Generic
 
 from .exceptions import ParamNotFoundError, PosParamsCountError
+
+T = TypeVar('T', str, int, float, dt.date, dt.datetime, Path, dict, Literal[None], list)
 
 
 def validate_type(data_type: Any, value: str):
@@ -54,13 +56,13 @@ def keyword_arg_to_name(keyword_arg: str) -> str:
 
 
 @dataclass
-class CommandOption:
-    default: Any
+class CommandOption(Generic[T]):
+    default: T
     help: Optional[str] = None
     keyword_args: tuple[str, ...] = field(default_factory=tuple)
 
     _name: Optional[str] = field(init=False, default=None)
-    data_type: Any = field(init=False, default=Any)
+    data_type: type[T] = field(init=False, default=Any)  # noqa
 
     @property
     def name(self):
@@ -87,8 +89,8 @@ class CommandOption:
     def is_positional_arg(self):
         return len(self.keyword_args) == 0
 
-    def validate(self, value: Any) -> Any:
-        return validate_type(self.data_type, value)
+    def validate(self, value: str) -> T:
+        return validate_type(self.data_type, value)  # type: ignore
 
 
 def Option(
