@@ -1,12 +1,12 @@
 [tool.poetry]
 name = "piou"
 version = "0.1.11"
-description = "A CLI tool"
+description = "A CLI toolkit"
 authors = ["Julien Brayere <julien.brayere@gmail.com>"]
 license = "MIT"
 readme = "README.md"
-homepage = "https://github.com/andarius/pioupiou"
-repository = "https://github.com/andarius/pioupiou"
+homepage = "https://github.com/andarius/piou"
+repository = "https://github.com/andarius/piou"
 keywords = ["cli"]
 classifiers = [
     "Environment :: Console",

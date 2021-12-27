@@ -156,6 +156,15 @@ def processor(verbose: bool):
 cli.set_options_processor(processor)
 ```
 
+## Custom Formatter  
+
+
+If you want to customize the data displayed when displaying the CLI help
+or different errors, you can create a custom one inheriting from `Formatter`.  
+See the [Rich formatter ](https://github.com/Andarius/piou/blob/master/piou/formatter/rich_formatter.py) for example.
+
+
+
 ## Complete example
 
 Here is a more complete example that you can try by running `python -m piou.test`

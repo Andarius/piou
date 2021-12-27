@@ -49,7 +49,14 @@ def test_validate_type(data_type, value, expected):
     ('--foo buz -b baz', {'foo': str, 'b': str}, [], {'--foo': 'buz', '-b': 'baz'}),
     ('--foo -b', {'foo': bool, 'b': True}, [], {'--foo': True, '-b': True}),
     ('foo buz -b baz', {'b': str}, ['foo', 'buz'], {'-b': 'baz'}),
-    ('foo', {}, ['foo'], {})
+    ('foo', {}, ['foo'], {}),
+    ('--foo 1 2 3 --bar', {'foo': list[int], 'bar': str}, [], {'--foo': '1 2 3', '--bar': True}),
+    (
+            'foo bar --foo1 1 2 3 --foo2 --foo3 test',
+            {'foo1': list[int], 'foo2': bool, 'foo3': str},
+            ['foo', 'bar'],
+            {'--foo1': '1 2 3', '--foo2': True, '--foo3': 'test'}
+    )
 ])
 def test_get_cmd_args(input_str, types, expected_pos_args, expected_key_args):
     from piou.utils import get_cmd_args
@@ -180,6 +187,7 @@ def test_run_command():
             foo1: int = Option(..., help='Foo arguments'),
             foo2: str = Option(..., '-f', '--foo2', help='Foo2 arguments'),
             foo3: str = Option(None, '-g', '--foo3', help='Foo3 arguments'),
+            foo4: list[int] = Option(None, '--foo4', help='Foo4 arguments'),
     ):
         nonlocal called
         called = True
@@ -188,6 +196,7 @@ def test_run_command():
         assert foo3 is None
         assert quiet is True
         assert verbose is False
+        assert foo4 == [1, 2, 3]
 
     with pytest.raises(PosParamsCountError,
                        match='Expected 1 positional values but got 0'):
@@ -195,7 +204,7 @@ def test_run_command():
     assert not called
     assert not processor_called
 
-    cli._group.run_with_args('-q', 'foo', '1', '-f', 'toto')
+    cli._group.run_with_args('-q', 'foo', '1', '-f', 'toto', '--foo4', '1 2 3')
     assert called
     assert processor_called
 

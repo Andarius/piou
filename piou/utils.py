@@ -3,6 +3,7 @@ import inspect
 import json
 import re
 import shlex
+from collections import namedtuple
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional, get_args, get_origin
@@ -11,7 +12,7 @@ from .exceptions import ParamNotFoundError, PosParamsCountError
 
 
 def validate_type(data_type: Any, value: str):
-    if data_type is Any:
+    if data_type is Any or data_type is bool:
         return value
     elif data_type is str:
         return str(value)
@@ -19,8 +20,6 @@ def validate_type(data_type: Any, value: str):
         return int(value)
     elif data_type is float:
         return float(value)
-    # elif data_type is bytes:
-    #     return bytes(value)
     elif data_type is dt.date:
         return dt.date.fromisoformat(value)
     elif data_type is dt.datetime:
@@ -98,6 +97,41 @@ def Option(
     )
 
 
+def _split_cmd(cmd: str) -> list[str]:
+    """
+    Utility to split a string containing arrays like --foo 1 2 3
+    from ['--foo', '1', '2', '3'] to ['--foo', '1 2 3']
+    """
+
+    def reset_buff():
+        nonlocal buff, cmd_split
+        cmd_split.append(' '.join(buff))
+        buff = []
+
+    is_pos_arg = True
+    buff = []
+    cmd_split = []
+
+    for arg in shlex.split(cmd):
+
+        if arg.startswith('-'):
+            if buff:
+                reset_buff()
+            is_pos_arg = False
+        else:
+            if is_pos_arg:
+                cmd_split.append(arg)
+                continue
+            else:
+                buff.append(arg)
+
+        if not buff:
+            cmd_split.append(arg)
+    if buff:
+        reset_buff()
+    return cmd_split
+
+
 def get_cmd_args(cmd: str, types: dict[str, Any]) -> tuple[list[str], dict[str, str]]:
     positional_args = []
     keyword_params = {}
@@ -105,7 +139,7 @@ def get_cmd_args(cmd: str, types: dict[str, Any]) -> tuple[list[str], dict[str, 
     is_positional_arg = True
     skip_position = None
 
-    cmd_split = shlex.split(cmd)
+    cmd_split = _split_cmd(cmd)
 
     for i, _arg in enumerate(cmd_split):
         if skip_position is not None and i <= skip_position:
@@ -116,7 +150,11 @@ def get_cmd_args(cmd: str, types: dict[str, Any]) -> tuple[list[str], dict[str, 
 
         if is_positional_arg:
             positional_args.append(_arg)
-        elif types[keyword_arg_to_name(_arg)] is bool:
+            continue
+
+        curr_type = types[keyword_arg_to_name(_arg)]
+
+        if curr_type is bool:
             keyword_params[_arg] = True
         else:
             keyword_params[_arg] = (
@@ -158,6 +196,9 @@ def parse_input_args(args: tuple[Any, ...], commands: set[str]) -> tuple[
     return cmd, global_options, cmd_options
 
 
+KeywordParam = namedtuple('KeywordParam', ['name', 'validate'])
+
+
 def convert_args_to_dict(input_args: list[str],
                          options: list[CommandOption]) -> dict:
     _input_pos_args, _input_keyword_args = get_cmd_args(' '.join(input_args),
@@ -170,7 +211,7 @@ def convert_args_to_dict(input_args: list[str],
         if _arg.is_positional_arg:
             positional_args.append(_arg)
         for _keyword_arg in _arg.keyword_args:
-            keyword_args[_keyword_arg] = _arg.name
+            keyword_args[_keyword_arg] = KeywordParam(_arg.name, _arg.validate)
 
     # Positional arguments
     if len(_input_pos_args) != len(positional_args):
@@ -179,6 +220,7 @@ def convert_args_to_dict(input_args: list[str],
             expected_count=len(positional_args),
             count=len(_input_pos_args)
         )
+
     fn_args = {
         _param.name: _param.validate(_param_value)
         for _param, _param_value in zip(positional_args, _input_pos_args)
@@ -190,7 +232,7 @@ def convert_args_to_dict(input_args: list[str],
         if not _keyword_param:
             raise ParamNotFoundError(f'Could not find param {_keyword_arg_key}',
                                      _keyword_arg_key)
-        fn_args[_keyword_param] = _keyword_arg_value
+        fn_args[_keyword_param.name] = _keyword_param.validate(_keyword_arg_value)
 
     # We fill optional fields with None
     for _arg in options:
