@@ -1,4 +1,5 @@
 import datetime as dt
+import re
 from pathlib import Path
 from typing import Literal
 
@@ -48,12 +49,13 @@ def test_validate_type(data_type, value, expected):
 
 
 @pytest.mark.parametrize('data_type, value, expected, expected_str', [
+    (Path, 'a-file.py', FileNotFoundError, f'File not found: "a-file.py"'),
     (Literal['foo', 'bar'], 'baz', ValueError, '"baz" is not a valid value for Literal[foo, bar]')
 ])
 def test_validate_type_invalid_data(data_type, value, expected,
                                     expected_str):
     from piou.utils import validate_type
-    with pytest.raises(expected, match=expected_str):
+    with pytest.raises(expected, match=re.escape(expected_str)):
         validate_type(data_type, value)
 
 
