@@ -1,5 +1,7 @@
 import datetime as dt
 from pathlib import Path
+from typing import Literal
+
 
 import pytest
 
@@ -37,7 +39,8 @@ def test_command_option(cmd, is_required, is_positional):
     (list[int], '1 2 3', [1, 2, 3]),
     (dict, '{"a": 1, "b": "foo", "c": {"foo": "bar"}}', {"a": 1, "b": "foo", "c": {"foo": "bar"}}),
     (dt.date, '2019-01-01', dt.date(2019, 1, 1)),
-    (dt.datetime, '2019-01-01T01:01:01', dt.datetime(2019, 1, 1, 1, 1, 1))
+    (dt.datetime, '2019-01-01T01:01:01', dt.datetime(2019, 1, 1, 1, 1, 1)),
+    (Literal['foo', 'bar'], 'bar', 'bar')
 ])
 def test_validate_type(data_type, value, expected):
     from piou.utils import validate_type

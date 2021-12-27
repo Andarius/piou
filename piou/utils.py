@@ -6,7 +6,7 @@ import shlex
 from collections import namedtuple
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Optional, get_args, get_origin
+from typing import Any, Optional, get_args, get_origin, Literal
 
 from .exceptions import ParamNotFoundError, PosParamsCountError
 
@@ -31,6 +31,12 @@ def validate_type(data_type: Any, value: str):
         return p
     elif data_type is dict:
         return json.loads(value)
+    elif get_origin(data_type) is Literal:
+        possible_fields = get_args(data_type)
+        if value not in possible_fields:
+            possible_fields = ', '.join(possible_fields)
+            raise ValueError(f'"{value}" is not a valid value for Literal[{possible_fields}]')
+        return value
     elif data_type is list or get_origin(data_type) is list:
         list_type = get_args(data_type)
         return [validate_type(list_type[0] if list_type else str,
