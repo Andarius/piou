@@ -47,6 +47,16 @@ def test_validate_type(data_type, value, expected):
     assert validate_type(data_type, value) == expected
 
 
+@pytest.mark.parametrize('data_type, value, expected, expected_str', [
+    (Literal['foo', 'bar'], 'baz', ValueError, '"baz" is not a valid value for Literal[foo, bar]')
+])
+def test_validate_type_invalid_data(data_type, value, expected,
+                                    expected_str):
+    from piou.utils import validate_type
+    with pytest.raises(expected, match=expected_str):
+        validate_type(data_type, value)
+
+
 @pytest.mark.parametrize('input_str, types, expected_pos_args, expected_key_args', [
     ('--foo buz', {'foo': str}, [], {'--foo': 'buz'}),
     ('--foo buz -b baz', {'foo': str, 'b': str}, [], {'--foo': 'buz', '-b': 'baz'}),
