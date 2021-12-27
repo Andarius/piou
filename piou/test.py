@@ -1,3 +1,5 @@
+from typing import Literal
+
 from piou import Cli, Option
 
 cli = Cli(description='A CLI tool')
@@ -18,15 +20,20 @@ cli.set_options_processor(processor)
 def foo_main(
         quiet: bool,
         verbose: bool,
-        foo1: int = Option(..., help='Foo arguments'),
-        foo2: str = Option(..., '-f', '--foo2', help='Foo2 arguments'),
-        foo3: str = Option(None, '-g', '--foo3', help='Foo3 arguments'),
+        foo1: int = Option(..., help='Foo argument'),
+        foo2: str = Option(..., '-f', '--foo2', help='Foo2 argument'),
+        foo3: str = Option(None, '-g', '--foo3', help='Foo3 argument'),
+        foo4: Literal['foo', 'bar'] = Option(None, '--foo4', help='Foo4 argument'),
+        foo5: list[int] = Option(None, '--foo5', help='Foo5 arguments'),
 ):
     for name, value in [('quiet', quiet),
                         ('verbose', verbose),
                         ('foo1', foo1),
                         ('foo2', foo2),
-                        ('foo3', foo3)]:
+                        ('foo3', foo3),
+                        ('foo4', foo4),
+                        ('foo5', foo5)
+                        ]:
         print(f'{name} = {value} ({type(value)})')
 
 
@@ -51,8 +58,8 @@ def toto_main(
         test: bool,
         quiet: bool,
         verbose: bool,
-        foo1: int = Option(..., help='Foo arguments'),
-        foo2: str = Option(..., '-f', '--foo2', help='Foo2 arguments'),
+        foo1: int = Option(..., help='Foo argument'),
+        foo2: str = Option(..., '-f', '--foo2', help='Foo2 argument'),
 ):
     for name, value in [('test', test),
                         ('quiet', quiet),

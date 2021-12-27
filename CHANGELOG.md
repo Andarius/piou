@@ -1,6 +1,23 @@
-# Changelog 
+# Changelog
 
-## [0.1.11] Adding option processor
+## [0.1.12] 27-12-2021
 
-- **New**: you can now use the `set_option_processor` to run 
-specific function against global options before the script runs.
+### NEW:
+
+ - you can now use `Literal` for string validation.
+
+```python
+from typing import Literal
+
+
+@cli.command(cmd='foo',
+             help='Run foo command')
+def foo_main(
+        bar: Literal['foo', 'bar'] = Option(None, '--foo', help='Literal argument'),
+):
+    ...
+```
+
+### FIXED:
+
+ - `list` type was not correctly parsed
