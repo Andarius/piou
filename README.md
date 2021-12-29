@@ -120,7 +120,7 @@ async def bar_main():
     pass
 ```
 
-## Sub-commands
+## Command Groups / Sub-commands
 
 You can group commands into sub-commands:
 
