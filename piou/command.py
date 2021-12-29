@@ -1,6 +1,7 @@
+import asyncio
 from dataclasses import dataclass, field
 from functools import wraps
-from inspect import getdoc
+from inspect import getdoc, iscoroutinefunction
 from typing import get_type_hints, Optional, Any, NamedTuple, Callable
 
 from .exceptions import DuplicatedCommandError
@@ -37,8 +38,14 @@ class Command:
     def keyword_args(self) -> list[CommandOption]:
         return [opt for opt in self.options if not opt.is_positional_arg]
 
-    def run(self, *args, **kwargs):
-        return self.fn(*args, **kwargs)
+    def run(self, *args, loop: asyncio.AbstractEventLoop = None, **kwargs):
+        if iscoroutinefunction(self.fn):
+            if loop is not None:
+                return loop.run_until_complete(self.fn(*args, **kwargs))
+            else:
+                return asyncio.run(self.fn(*args, **kwargs))
+        else:
+            return self.fn(*args, **kwargs)
 
     def __post_init__(self):
         keyword_params = [x for x in self.options if not x.is_positional_arg]

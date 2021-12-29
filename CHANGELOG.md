@@ -1,23 +1,13 @@
 # Changelog
 
-## [0.1.12] 27-12-2021
+## [0.1.13] 29-12-2021
 
 ### NEW:
 
- - you can now use `Literal` for string validation.
+ - you can now write async function commands.
 
 ```python
-from typing import Literal
-
-
-@cli.command(cmd='foo',
-             help='Run foo command')
-def foo_main(
-        bar: Literal['foo', 'bar'] = Option(None, '--foo', help='Literal argument'),
-):
+@cli.command(cmd='bar', help='Run bar command')
+async def bar_main():
     ...
 ```
-
-### FIXED:
-
- - `list` type was not correctly parsed

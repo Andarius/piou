@@ -3,7 +3,6 @@ import re
 from pathlib import Path
 from typing import Literal
 
-
 import pytest
 
 
@@ -124,6 +123,23 @@ def test_command():
         called = True
 
     cmd = Command(name='', help=None, fn=test_fn)
+    cmd.run(1, bar='baz')
+    assert called
+
+
+def test_command_async():
+    from piou.command import Command
+    called = False
+
+    async def test_fn(foo, *, bar=None):
+        nonlocal called
+
+        assert foo == 1
+        assert bar == 'baz'
+
+        called = True
+
+    cmd = Command(name='', fn=test_fn, help=None)
     cmd.run(1, bar='baz')
     assert called
 

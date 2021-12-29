@@ -61,7 +61,7 @@ def foo_main(
 
 
 @cli.command(cmd='bar',
-             help='Run foo command')
+             help='Run bar command')
 def bar_main(
         foo1: int = Option(..., help='Foo arguments'),
         foo2: str = Option(..., '-f', '--foo2', help='Foo2 arguments'),
@@ -100,6 +100,14 @@ def bar_2_main():
     pass
 ```
 
+A command can also be asynchronous, it will be run automatically using `asyncio.run`.
+
+```python
+@cli.command(cmd='bar', help='Run foo command')
+async def bar_main():
+    pass
+```
+
 ## Sub-commands
 
 You can group commands into sub-commands:
@@ -114,12 +122,12 @@ sub_cmd = cli.add_sub_parser(cmd='sub', description='A sub command')
 sub_cmd.add_option('--dry-run', help='Run in dry run mode')
 
 
-@sub_cmd.command(cmd='foo', help='Run baz command')
+@sub_cmd.command(cmd='baz', help='Run baz command')
 def baz_bar_main(**kwargs):
     pass
 
 
-@sub_cmd.command(cmd='bar', help='Run toto command')
+@sub_cmd.command(cmd='foo', help='Run foo command')
 def toto_main(
         foo1: int = Option(..., help='Foo arguments'),
         foo2: str = Option(..., '-f', '--foo2', help='Foo2 arguments'),
@@ -156,67 +164,12 @@ def processor(verbose: bool):
 cli.set_options_processor(processor)
 ```
 
-## Custom Formatter  
+## Custom Formatter
 
-
-If you want to customize the data displayed when displaying the CLI help
-or different errors, you can create a custom one inheriting from `Formatter`.  
-See the [Rich formatter ](https://github.com/Andarius/piou/blob/master/piou/formatter/rich_formatter.py) for example.
-
-
+If you want to customize the data displayed when displaying the CLI help or different errors, you can create a custom
+one inheriting from `Formatter`.  
+See the [Rich formatter](https://github.com/Andarius/piou/blob/master/piou/formatter/rich_formatter.py) for example.
 
 ## Complete example
 
-Here is a more complete example that you can try by running `python -m piou.test`
-
-```python
-from piou import Cli, Option
-
-cli = Cli(description='A CLI tool')
-
-cli.add_option('-q', '--quiet', help='Do not output any message')
-cli.add_option('--verbose', help='Increase verbosity')
-
-
-@cli.command(cmd='foo',
-             help='Run foo command')
-def foo_main(
-        quiet: bool,
-        verbose: bool,
-        foo1: int = Option(..., help='Foo arguments'),
-        foo2: str = Option(..., '-f', '--foo2', help='Foo2 arguments'),
-        foo3: str = Option(None, '-g', '--foo3', help='Foo3 arguments'),
-):
-    pass
-
-
-@cli.command(cmd='bar', help='Run bar command')
-def bar_main(**kwargs):
-    pass
-
-
-sub_cmd = cli.add_sub_parser(cmd='sub', description='A sub command')
-sub_cmd.add_option('--test', help='Test mode')
-
-
-@sub_cmd.command(cmd='bar', help='Run baz command')
-def baz_bar_main(
-        **kwargs
-):
-    pass
-
-
-@sub_cmd.command(cmd='toto', help='Run toto command')
-def toto_main(
-        test: bool,
-        quiet: bool,
-        verbose: bool,
-        foo1: int = Option(..., help='Foo arguments'),
-        foo2: str = Option(..., '-f', '--foo2', help='Foo2 arguments'),
-):
-    pass
-
-
-if __name__ == '__main__':
-    cli.run()
-```
+You can try a more complete example by running `python -m piou.test`
