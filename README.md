@@ -15,12 +15,11 @@ from piou import Cli, Option
 cli = Cli(description='A CLI tool')
 
 
-@cli.command(cmd='foo',
-             help='Run foo command')
+@cli.command(cmd='foo', help='Run foo command')
 def foo_main(
-        foo1: int = Option(..., help='Foo arguments'),
-        foo2: str = Option(..., '-f', '--foo2', help='Foo2 arguments'),
-        foo3: str = Option(None, '-g', '--foo3', help='Foo3 arguments'),
+        bar: int = Option(..., help='Bar positional argument (required)'),
+        baz: str = Option(..., '-b', '--baz', help='Baz keyword argument (required)'),
+        foo: str = Option(None, '--foo', help='Foo keyword argument'),
 ):
     pass
 
@@ -32,6 +31,19 @@ if __name__ == '__main__':
 The output will look like this:
 
 ![example](https://github.com/Andarius/piou/raw/master/docs/simple-output.png)
+
+# Why ?
+
+I could not find a library that provided:
+ - the same developer experience than [FastAPI](https://fastapi.tiangolo.com/) 
+ - customization of the interface (to build a CLI similar to the one of [Poetry](https://python-poetry.org/))
+ - type validation / casting
+
+[Typer](https://github.com/tiangolo/typer) is the closest alternative in terms of experience but lacks the possibility
+to format the output is a custom way using external libraries (like [Rich](https://github.com/willmcgugan/rich)).
+
+**Piou** provides all these possibilities and lets you define your own [Formatter](#custom-formatter).
+
 
 # Install
 
