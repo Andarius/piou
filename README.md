@@ -35,15 +35,15 @@ The output will look like this:
 # Why ?
 
 I could not find a library that provided:
- - the same developer experience than [FastAPI](https://fastapi.tiangolo.com/) 
- - customization of the interface (to build a CLI similar to the one of [Poetry](https://python-poetry.org/))
- - type validation / casting
+
+- the same developer experience than [FastAPI](https://fastapi.tiangolo.com/)
+- customization of the interface (to build a CLI similar to the one of [Poetry](https://python-poetry.org/))
+- type validation / casting
 
 [Typer](https://github.com/tiangolo/typer) is the closest alternative in terms of experience but lacks the possibility
 to format the output is a custom way using external libraries (like [Rich](https://github.com/willmcgugan/rich)).
 
 **Piou** provides all these possibilities and lets you define your own [Formatter](#custom-formatter).
-
 
 # Install
 
@@ -129,27 +129,32 @@ from piou import Cli, Option
 
 cli = Cli(description='A CLI tool')
 
+
+@cli.command(cmd='foo', help='Run foo command')
+def foo_main():
+    pass
+
+
 sub_cmd = cli.add_sub_parser(cmd='sub', description='A sub command')
+sub_cmd.add_option('--test', help='Test mode')
 
-sub_cmd.add_option('--dry-run', help='Run in dry run mode')
 
-
-@sub_cmd.command(cmd='baz', help='Run baz command')
-def baz_bar_main(**kwargs):
+@sub_cmd.command(cmd='bar', help='Run bar command')
+def sub_bar_main(**kwargs):
     pass
 
 
 @sub_cmd.command(cmd='foo', help='Run foo command')
-def toto_main(
-        foo1: int = Option(..., help='Foo arguments'),
-        foo2: str = Option(..., '-f', '--foo2', help='Foo2 arguments'),
+def sub_foo_main(
+        test: bool,
+        foo1: int = Option(..., help='Foo argument'),
+        foo2: str = Option(..., '-f', '--foo2', help='Foo2 argument'),
 ):
     pass
 
 
 if __name__ == '__main__':
     cli.run()
-
 ```
 
 ![example](https://github.com/Andarius/piou/raw/master/docs/sub-cmd-output.png)

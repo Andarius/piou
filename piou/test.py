@@ -46,15 +46,13 @@ sub_cmd = cli.add_sub_parser(cmd='sub', description='A sub command')
 sub_cmd.add_option('--test', help='Test mode')
 
 
-@sub_cmd.command(cmd='bar', help='Run baz command')
-def baz_bar_main(
-        **kwargs
-):
-    pass
+@sub_cmd.command(cmd='bar', help='Run bar command')
+def sub_bar_main(**kwargs):
+    print('Running sub-bar command')
 
 
-@sub_cmd.command(cmd='toto', help='Run toto command')
-def toto_main(
+@sub_cmd.command(cmd='foo', help='Run foo command')
+def sub_foo_main(
         test: bool,
         quiet: bool,
         verbose: bool,
