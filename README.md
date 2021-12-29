@@ -134,7 +134,6 @@ cli = Cli(description='A CLI tool')
 def foo_main():
     pass
 
-
 sub_cmd = cli.add_sub_parser(cmd='sub', description='A sub command')
 sub_cmd.add_option('--test', help='Test mode')
 
@@ -156,6 +155,7 @@ def sub_foo_main(
 if __name__ == '__main__':
     cli.run()
 ```
+So when running `python run.py sub -h` it will output the following:  
 
 ![example](https://github.com/Andarius/piou/raw/master/docs/sub-cmd-output.png)
 
