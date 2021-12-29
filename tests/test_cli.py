@@ -193,7 +193,7 @@ def test_command_wrapper_help():
 
 def test_run_command():
     from piou import Cli, Option
-    from piou.exceptions import PosParamsCountError
+    from piou.exceptions import PosParamsCountError, KeywordParamNotFoundError
 
     called, processor_called = False, False
 
@@ -232,6 +232,13 @@ def test_run_command():
     with pytest.raises(PosParamsCountError,
                        match='Expected 1 positional values but got 0'):
         cli._group.run_with_args('foo')
+    assert not called
+    assert not processor_called
+
+    with pytest.raises(KeywordParamNotFoundError,
+                       match="Could not find parameter '-vvv'") as e:
+        cli._group.run_with_args('foo', '1', '-vvv')
+
     assert not called
     assert not processor_called
 

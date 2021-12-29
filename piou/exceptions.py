@@ -5,16 +5,26 @@ class DuplicatedCommandError(Exception):
 
 
 class PosParamsCountError(Exception):
-    def __init__(self, msg: str, expected_count: int, count: int):
+    def __init__(self, msg: str, expected_count: int, count: int,
+                 cmd: str = None):
         super().__init__(msg)
         self.expected_count = expected_count
         self.count = count
+        self.cmd = cmd
 
 
 class ParamNotFoundError(Exception):
-    def __init__(self, msg: str, key: str):
+    def __init__(self, msg: str, key: str, cmd: str = None):
         super().__init__(msg)
         self.key = key
+        self.cmd = cmd
+
+
+class KeywordParamNotFoundError(Exception):
+    def __init__(self, msg: str, param: str, cmd: str = None):
+        super().__init__(msg)
+        self.param = param
+        self.cmd = cmd
 
 
 class CommandNotFoundError(Exception):

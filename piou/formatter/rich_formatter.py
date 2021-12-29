@@ -190,8 +190,13 @@ class RichFormatter(Formatter):
     def print_cmd_error(self, cmd: str):
         self.print_fn(f'[red]Unknown command "[bold]{cmd}[/bold]"[/red]')
 
-    def print_param_error(self, key: str) -> None:
-        self.print_fn(f"[red]Could not find value for [bold]{key!r}[/bold][/red]")
+    def print_keyword_param_error(self, cmd: str, param: str) -> None:
+        self.print_fn(
+            f'[red]Could not find keyword parameter [bold]{param!r}[/bold] for command [bold]{cmd!r}[/bold][/red]')
 
-    def print_count_error(self, expected_count: int, count: int):
-        self.print_fn(f'[red]Expected {expected_count} positional arguments but got {count}[/red]')
+    def print_param_error(self, key: str, cmd: str) -> None:
+        self.print_fn(f"[red]Could not find value for [bold]{key!r}[/bold] in [bold]{cmd}[/bold][/red]")
+
+    def print_count_error(self, expected_count: int, count: int, cmd: str):
+        self.print_fn(
+            f'[red]Expected {expected_count} positional arguments but got {count} for command [bold]{cmd}[/bold][/red]')

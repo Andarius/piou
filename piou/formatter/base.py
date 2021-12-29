@@ -100,10 +100,13 @@ class Formatter(abc.ABC):
         ...
 
     def print_cmd_error(self, cmd: str) -> None:
-        print(f'Unknown command {cmd!r}')
+        self.print_fn(f'Unknown command {cmd!r}')
 
-    def print_param_error(self, key: str) -> None:
-        print(f'Could not find value for {key!r}')
+    def print_param_error(self, key: str, cmd: str) -> None:
+        self.print_fn(f'Could not find value for {key!r} in command {cmd!r}')
 
-    def print_count_error(self, expected_count: int, count: int) -> None:
-        print(f'Expected {expected_count} positional arguments but got {count}')
+    def print_keyword_param_error(self, cmd: str, param: str) -> None:
+        self.print_fn(f'Could not find keyword parameter {param!r} for command {cmd!r}')
+
+    def print_count_error(self, expected_count: int, count: int, cmd: str) -> None:
+        self.print_fn(f'Expected {expected_count} positional arguments but got {count} for command {cmd!r}')

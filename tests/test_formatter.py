@@ -241,7 +241,12 @@ _RICH_PARAMS = [
     ('Simple CLI sub cmd', get_cmd_group_cli_with_global_opt, [], _SIMPLE_CLI_SUB_CMD_RICH),
     ('Simple CLI sub cmd help', get_cmd_group_cli_with_global_opt, ['sub-cmd', '-h'], _SIMPLE_CLI_SUB_CMD_HELP_RICH),
     ('Simple CLI sub cmd cmd cmd', get_cmd_group_cli_with_global_opt, ['sub-cmd', 'foo', '-h'],
-     _SIMPLE_CLI_SUB_CMD_CMD_RICH)
+     _SIMPLE_CLI_SUB_CMD_CMD_RICH),
+    # Errors
+     ('Simple CLI keyword error', get_simple_cli, ['foo', '-vvv'],
+      "Could not find keyword parameter '-vvv' for command 'foo'"),
+     ('Simple CLI keyword error', get_simple_cli, ['foo'],
+      "Expected 1 positional arguments but got 0 for command foo"),
 ]
 
 

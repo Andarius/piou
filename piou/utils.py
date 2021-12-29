@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional, get_args, get_origin, Literal, TypeVar, Generic
 
-from .exceptions import ParamNotFoundError, PosParamsCountError
+from .exceptions import ParamNotFoundError, PosParamsCountError, KeywordParamNotFoundError
 
 T = TypeVar('T', str, int, float, dt.date, dt.datetime, Path, dict, Literal[None], list)
 
@@ -160,7 +160,11 @@ def get_cmd_args(cmd: str, types: dict[str, Any]) -> tuple[list[str], dict[str, 
             positional_args.append(_arg)
             continue
 
-        curr_type = types[keyword_arg_to_name(_arg)]
+        try:
+            curr_type = types[keyword_arg_to_name(_arg)]
+        except KeyError:
+            raise KeywordParamNotFoundError(f'Could not find parameter {_arg!r}',
+                                            _arg)
 
         if curr_type is bool:
             keyword_params[_arg] = True

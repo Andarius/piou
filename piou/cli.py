@@ -5,7 +5,8 @@ from typing import Optional, Any, Callable
 from .command import CommandGroup, ShowHelpError
 from .exceptions import (
     CommandNotFoundError,
-    ParamNotFoundError, PosParamsCountError
+    ParamNotFoundError, PosParamsCountError,
+    KeywordParamNotFoundError
 )
 from .formatter import Formatter, RichFormatter
 
@@ -40,11 +41,20 @@ class Cli:
             self.formatter.print_help(group=e.group,
                                       command=e.command,
                                       parent_args=e.parent_args)
+        except KeywordParamNotFoundError as e:
+            if not e.cmd:
+                raise NotImplementedError('Got empty command')
+            self.formatter.print_keyword_param_error(e.cmd, e.param)
+            return
         except ParamNotFoundError as e:
-            self.formatter.print_param_error(e.key)
+            if not e.cmd:
+                raise NotImplementedError('Got empty command')
+            self.formatter.print_param_error(e.key, e.cmd)
             return
         except PosParamsCountError as e:
-            self.formatter.print_count_error(e.expected_count, e.count)
+            if not e.cmd:
+                raise NotImplementedError('Got empty command')
+            self.formatter.print_count_error(e.expected_count, e.count, e.cmd)
             return
 
     def command(self, cmd: str, help: str = None):

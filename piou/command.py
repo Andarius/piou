@@ -4,7 +4,12 @@ from functools import wraps
 from inspect import getdoc, iscoroutinefunction
 from typing import get_type_hints, Optional, Any, NamedTuple, Callable
 
-from .exceptions import DuplicatedCommandError
+from .exceptions import (
+    DuplicatedCommandError,
+    KeywordParamNotFoundError,
+    ParamNotFoundError,
+    PosParamsCountError)
+
 from .utils import (
     CommandOption,
     get_default_args,
@@ -173,7 +178,11 @@ class CommandGroup:
             processors.append(parent_arg.options_processor)
 
         for _opts, _input_opts, _processor in zip(options, input_options, processors):
-            _arg_dict = convert_args_to_dict(_input_opts, _opts)
+            try:
+                _arg_dict = convert_args_to_dict(_input_opts, _opts)
+            except (KeywordParamNotFoundError, ParamNotFoundError, PosParamsCountError) as e:
+                e.cmd = cmd
+                raise e
             if _processor:
                 _processor(**_arg_dict)
             args_dict.update(_arg_dict)
