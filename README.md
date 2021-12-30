@@ -190,3 +190,11 @@ See the [Rich formatter](https://github.com/Andarius/piou/blob/master/piou/forma
 ## Complete example
 
 You can try a more complete example by running `python -m piou.test`
+
+
+## Moving from `argparse`  
+
+If you are migrating code from `argparse` to `piou` here are some differences:
+ - `add_argument('--pick', choices=['foo', 'bar'])` is replaced with 
+`pick: Literal['foo', 'bar'] = Option(None, '--pick')`
+ - `add_argument('--verbose', action='store_true')` is replaced with `verbose: bool = Option(False, '--verbose')`
