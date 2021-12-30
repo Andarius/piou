@@ -13,7 +13,10 @@ from .exceptions import ParamNotFoundError, PosParamsCountError, KeywordParamNot
 T = TypeVar('T', str, int, float, dt.date, dt.datetime, Path, dict, Literal[None], list)
 
 
-def validate_type(data_type: Any, value: str):
+def convert_to_type(data_type: Any, value: str):
+    """
+    Converts `value` to `data_type`, if not possible raises the appropriate error
+    """
     if data_type is Any or data_type is bool:
         return value
     elif data_type is str:
@@ -41,8 +44,8 @@ def validate_type(data_type: Any, value: str):
         return value
     elif data_type is list or get_origin(data_type) is list:
         list_type = get_args(data_type)
-        return [validate_type(list_type[0] if list_type else str,
-                              x) for x in value.split(' ')]
+        return [convert_to_type(list_type[0] if list_type else str,
+                                x) for x in value.split(' ')]
     else:
         raise NotImplementedError(f'No parser implemented for data type "{data_type}"')
 
@@ -90,7 +93,7 @@ class CommandOption(Generic[T]):
         return len(self.keyword_args) == 0
 
     def validate(self, value: str) -> T:
-        return validate_type(self.data_type, value)  # type: ignore
+        return convert_to_type(self.data_type, value)  # type: ignore
 
 
 def Option(

@@ -42,20 +42,20 @@ def test_command_option(cmd, is_required, is_positional):
     (dt.datetime, '2019-01-01T01:01:01', dt.datetime(2019, 1, 1, 1, 1, 1)),
     (Literal['foo', 'bar'], 'bar', 'bar')
 ])
-def test_validate_type(data_type, value, expected):
-    from piou.utils import validate_type
-    assert validate_type(data_type, value) == expected
+def test_convert_to_type(data_type, value, expected):
+    from piou.utils import convert_to_type
+    assert convert_to_type(data_type, value) == expected
 
 
 @pytest.mark.parametrize('data_type, value, expected, expected_str', [
     (Path, 'a-file.py', FileNotFoundError, f'File not found: "a-file.py"'),
     (Literal['foo', 'bar'], 'baz', ValueError, '"baz" is not a valid value for Literal[foo, bar]')
 ])
-def test_validate_type_invalid_data(data_type, value, expected,
+def test_convert_to_type_invalid_data(data_type, value, expected,
                                     expected_str):
-    from piou.utils import validate_type
+    from piou.utils import convert_to_type
     with pytest.raises(expected, match=re.escape(expected_str)):
-        validate_type(data_type, value)
+        convert_to_type(data_type, value)
 
 
 @pytest.mark.parametrize('input_str, types, expected_pos_args, expected_key_args', [
