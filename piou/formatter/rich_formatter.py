@@ -24,7 +24,7 @@ def fmt_option(option: CommandOption,
             other_args = ', '.join(other_args)
             return f'[{color}]{first_arg}[/{color}] ({other_args})'
         else:
-            return first_arg
+            return f'[{color}]{first_arg}[/{color}]'
     else:
         return '[' + sorted(option.keyword_args)[-1] + ']'
 

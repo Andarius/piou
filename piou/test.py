@@ -58,12 +58,14 @@ def sub_foo_main(
         verbose: bool,
         foo1: int = Option(..., help='Foo argument'),
         foo2: str = Option(..., '-f', '--foo2', help='Foo2 argument'),
+        foo3: str = Option(None, '--foo3', help='Foo3 argument'),
 ):
     for name, value in [('test', test),
                         ('quiet', quiet),
                         ('verbose', verbose),
                         ('foo1', foo1),
-                        ('foo2', foo2)]:
+                        ('foo2', foo2),
+                        ('foo3', foo3)]:
         print(f'{name} = {value} ({type(value)})')
 
 
