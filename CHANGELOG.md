@@ -1,9 +1,7 @@
 # Changelog
 
-## [0.3.0] 02-01-2022
+## [0.3.1] 02-01-2022
 
-### NEW:
+### FIX:
 
- - Adding a star to indicate the required keyword arguments of the RichFormatter
- - You can choose to display the default values of keyword arguments
-in the help of the RichFormatter
+ - Display of the default value for sub-command was not working properly

@@ -295,7 +295,7 @@ COMMANDS
 
     <foo1>                      Foo arguments     
     -f (--foo2)*                Foo2 arguments    
-    -g (--foo3)                 Foo3 arguments    
+    -g (--foo3)                 Foo3 arguments (default: a sub value)
 
 OPTIONS
     -t (--test)                 Test mode (default: False)

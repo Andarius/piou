@@ -1,10 +1,10 @@
 import sys
 from dataclasses import dataclass, field
-from typing import Optional, Any, Union
+from typing import Optional
 
 from rich.console import Console
-from rich.table import Table
 from rich.padding import Padding
+from rich.table import Table
 
 from .base import Formatter, Titles, get_options_str
 from ..command import Command, CommandOption, ParentArgs, CommandGroup
@@ -37,12 +37,12 @@ def fmt_cmd_options(options: list[CommandOption]) -> str:
             )
 
 
-def fmt_help(help: Union[str, None], default: Any, show_default: bool):
-    if show_default and default is not None:
-        default_str = f'[bold](default: {default})[/bold]'
-        return help + f' {default_str}' if help else default_str
+def fmt_help(option: CommandOption, show_default: bool):
+    if show_default and option.default is not None and not option.is_required:
+        default_str = f'[bold](default: {option.default})[/bold]'
+        return option.help + f' {default_str}' if option.help else default_str
     else:
-        return help
+        return option.help
 
 
 def get_usage(global_options: list[CommandOption],
@@ -94,10 +94,7 @@ class RichFormatter(Formatter):
         self.print_fn = self._console.print
 
     def _print_options(self, options: list[CommandOption]):
-        self.print_rows([(self._color_opt(_name or '') + _other_args,
-                          fmt_help(_opt.help,
-                                   _opt.default if not _opt.is_required else None,
-                                   show_default=self.show_default))
+        self.print_rows([(self._color_opt(_name or '') + _other_args, fmt_help(_opt, show_default=self.show_default))
                          for _name, _other_args, _opt in get_options_str(options)])
 
     def print_rows(self, rows: list[tuple[str, Optional[str]]]):
@@ -138,7 +135,7 @@ class RichFormatter(Formatter):
         if command.positional_args:
             self.print_fn(RichTitles.ARGUMENTS)
             self.print_rows(
-                [(fmt_option(option, color=self.option_color), option.help)
+                [(fmt_option(option, color=self.option_color), fmt_help(option, show_default=self.show_default))
                  for option in command.positional_args])
         if command.keyword_args:
             self.print_fn('\n' + RichTitles.OPTIONS)
@@ -180,7 +177,8 @@ class RichFormatter(Formatter):
                 self.print_fn(pad(cmd.help, padding_left=4))
                 print()
             if cmd.options:
-                self.print_rows([(fmt_option(opt, show_full=True, color=self.option_color), opt.help)
+                self.print_rows([(fmt_option(opt, show_full=True, color=self.option_color),
+                                  fmt_help(opt, show_default=self.show_default))
                                  for opt in cmd.options])
                 print()
 
