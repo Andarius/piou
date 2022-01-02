@@ -20,11 +20,12 @@ def fmt_option(option: CommandOption,
         return f'[{color}]<{option.name}>[/{color}]'
     elif show_full:
         first_arg, *other_args = option.keyword_args
+        required = f'[{color}]*[/{color}]' if option.is_required else ''
         if other_args:
             other_args = ', '.join(other_args)
-            return f'[{color}]{first_arg}[/{color}] ({other_args})'
+            return f'[{color}]{first_arg}[/{color}] ({other_args}){required}'
         else:
-            return f'[{color}]{first_arg}[/{color}]'
+            return f'[{color}]{first_arg}[/{color}]{required}'
     else:
         return '[' + sorted(option.keyword_args)[-1] + ']'
 

@@ -198,7 +198,7 @@ COMMANDS
     Run foo command                                                                                                                        
 
     <foo1>                      Foo arguments     
-    -f (--foo2)                 Foo2 arguments    
+    -f (--foo2)*                Foo2 arguments    
     -g (--foo3)                 Foo3 arguments    
 
 OPTIONS
