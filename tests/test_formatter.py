@@ -53,7 +53,7 @@ def get_cmd_group_cli_with_global_opt(formatter):
     def foo_main(
             foo1: int = Option(..., help='Foo arguments'),
             foo2: str = Option(..., '-f', '--foo2', help='Foo2 arguments'),
-            foo3: str = Option(None, '-g', '--foo3', help='Foo3 arguments'),
+            foo3: str = Option('a sub value', '-g', '--foo3', help='Foo3 arguments'),
     ):
         pass
 
@@ -232,7 +232,7 @@ DESCRIPTION
  Run foo command
 """
 
-_RICH_PARAMS = [
+_PARAMS = [
     ('Simple CLI', get_simple_cli, [], _SIMPLE_CLI_OUTPUT_RICH),
     ('Simple CLI cmd', get_simple_cli, ['foo', '-h'], _SIMPLE_CLI_COMMAND_RICH),
     ('Simple CLI with opts', get_simple_cli_with_global_opt, [], _SIMPLE_CLI_WITH_OPTS_OUTPUT_RICH),
@@ -243,10 +243,10 @@ _RICH_PARAMS = [
     ('Simple CLI sub cmd cmd cmd', get_cmd_group_cli_with_global_opt, ['sub-cmd', 'foo', '-h'],
      _SIMPLE_CLI_SUB_CMD_CMD_RICH),
     # Errors
-     ('Simple CLI keyword error', get_simple_cli, ['foo', '-vvv'],
-      "Could not find keyword parameter '-vvv' for command 'foo'"),
-     ('Simple CLI keyword error', get_simple_cli, ['foo'],
-      "Expected 1 positional arguments but got 0 for command foo"),
+    ('Simple CLI keyword error', get_simple_cli, ['foo', '-vvv'],
+     "Could not find keyword parameter '-vvv' for command 'foo'"),
+    ('Simple CLI keyword error', get_simple_cli, ['foo'],
+     "Expected 1 positional arguments but got 0 for command foo"),
 ]
 
 
@@ -257,7 +257,7 @@ def _compare_str(output, expected):
         assert output_line.strip() == expected_line.strip()
 
 
-@pytest.mark.parametrize('name, cli_fn, args, expected', _RICH_PARAMS, ids=[x[0] for x in _RICH_PARAMS])
+@pytest.mark.parametrize('name, cli_fn, args, expected', _PARAMS, ids=[x[0] for x in _PARAMS])
 def test_rich_formatting(name, cli_fn, args, expected, capsys):
     from piou.formatter import RichFormatter
     cli = cli_fn(RichFormatter(show_default=False))
@@ -266,23 +266,81 @@ def test_rich_formatting(name, cli_fn, args, expected, capsys):
     _compare_str(output.strip(), expected.strip())
 
 
-def test_rich_formatting_default(capsys):
+_SIMPLE_CLI_COMMAND_RICH_DEFAULT = """
+USAGE 
+ pytest foo <foo1> [-f] [-g] 
+
+ARGUMENTS
+    <foo1>                      Foo arguments    
+
+OPTIONS
+    -f (--foo2)                 Foo2 arguments    
+    -g (--foo3)                 Foo3 arguments (default: a-value)    
+
+DESCRIPTION
+ Run foo command
+"""
+
+_SIMPLE_CLI_SUB_CMD_HELP_DEFAULT = """
+USAGE
+     pytest sub-cmd [-t] bar 
+ or: pytest sub-cmd [-t] foo <foo1> [-f] [-g]
+
+COMMANDS
+  bar                                                                                                                                      
+    Run bar command                                                                                                                        
+
+  foo                                                                                                                                      
+    Run foo command                                                                                                                        
+
+    <foo1>                      Foo arguments     
+    -f (--foo2)*                Foo2 arguments    
+    -g (--foo3)                 Foo3 arguments    
+
+OPTIONS
+    -t (--test)                 Test mode (default: False)
+
+GLOBAL OPTIONS
+    -q (--quiet)                Do not output any message (default: False)
+    --verbose                   Increase verbosity (default: False)       
+
+DESCRIPTION
+ A sub command
+"""
+
+_SIMPLE_CLI_SUB_CMD_CMD_DEFAULT = """
+USAGE 
+ pytest sub-cmd [-t] foo <foo1> [-f] [-g] 
+
+ARGUMENTS
+    <foo1>                      Foo arguments    
+
+OPTIONS
+    -f (--foo2)                 Foo2 arguments    
+    -g (--foo3)                 Foo3 arguments (default: a sub value) 
+
+GLOBAL OPTIONS
+    -t (--test)                 Test mode (default: False)                    
+    -q (--quiet)                Do not output any message (default: False)
+    --verbose                   Increase verbosity (default: False)    
+
+DESCRIPTION
+ Run foo command
+"""
+
+_PARAMS_WITH_DEFAULTS = [
+    ('Simple CLI cmd', get_simple_cli, ['foo', '-h'], _SIMPLE_CLI_COMMAND_RICH_DEFAULT),
+    ('Simple CLI sub-cmd help', get_cmd_group_cli_with_global_opt, ['sub-cmd', '-h'], _SIMPLE_CLI_SUB_CMD_HELP_DEFAULT),
+    ('Simple CLI sub-cmd cmd', get_cmd_group_cli_with_global_opt, ['sub-cmd', 'foo', '-h'],
+     _SIMPLE_CLI_SUB_CMD_CMD_DEFAULT)
+]
+
+
+@pytest.mark.parametrize('name, cli_fn, args, expected', _PARAMS_WITH_DEFAULTS,
+                         ids=[x[0] for x in _PARAMS_WITH_DEFAULTS])
+def test_rich_formatting_default(name, cli_fn, args, expected, capsys):
     from piou.formatter import RichFormatter
-    cli = get_simple_cli(RichFormatter(show_default=True))
-    cli.run_with_args('foo', '-h')
+    cli = cli_fn(RichFormatter(show_default=True))
+    cli.run_with_args(*args)
     output = capsys.readouterr().out
-    expected = """
-    USAGE 
-     pytest foo <foo1> [-f] [-g] 
-    
-    ARGUMENTS
-        <foo1>                      Foo arguments    
-    
-    OPTIONS
-        -f (--foo2)                 Foo2 arguments                       
-        -g (--foo3)                 Foo3 arguments (default: a-value)    
-    
-    DESCRIPTION
-     Run foo command
-    """
     _compare_str(output.strip(), expected.strip())
