@@ -1,27 +1,27 @@
 import pytest
 
 
-def get_simple_cli():
+def get_simple_cli(formatter):
     from piou import Cli, Option
 
-    cli = Cli(description='A CLI tool')
+    cli = Cli(description='A CLI tool', formatter=formatter)
 
     @cli.command(cmd='foo',
                  help='Run foo command')
     def foo_main(
             foo1: int = Option(..., help='Foo arguments'),
             foo2: str = Option(..., '-f', '--foo2', help='Foo2 arguments'),
-            foo3: str = Option(None, '-g', '--foo3', help='Foo3 arguments'),
+            foo3: str = Option('a-value', '-g', '--foo3', help='Foo3 arguments'),
     ):
         pass
 
     return cli
 
 
-def get_simple_cli_with_global_opt():
+def get_simple_cli_with_global_opt(formatter):
     from piou import Cli, Option
 
-    cli = Cli(description='A CLI tool')
+    cli = Cli(description='A CLI tool', formatter=formatter)
     cli.add_option('-q', '--quiet', help='Do not output any message')
     cli.add_option('--verbose', help='Increase verbosity')
 
@@ -37,10 +37,10 @@ def get_simple_cli_with_global_opt():
     return cli
 
 
-def get_cmd_group_cli_with_global_opt():
+def get_cmd_group_cli_with_global_opt(formatter):
     from piou import Cli, Option
 
-    cli = Cli(description='A CLI tool')
+    cli = Cli(description='A CLI tool', formatter=formatter)
     cli.add_option('-q', '--quiet', help='Do not output any message')
     cli.add_option('--verbose', help='Increase verbosity')
 
@@ -65,10 +65,10 @@ def get_cmd_group_cli_with_global_opt():
     return cli
 
 
-def get_cli_full():
+def get_cli_full(formatter):
     from piou import Cli, Option
 
-    cli = Cli(description='A CLI tool')
+    cli = Cli(description='A CLI tool', formatter=formatter)
 
     cli.add_option('-q', '--quiet', help='Do not output any message')
     cli.add_option('--verbose', help='Increase verbosity')
@@ -259,7 +259,30 @@ def _compare_str(output, expected):
 
 @pytest.mark.parametrize('name, cli_fn, args, expected', _RICH_PARAMS, ids=[x[0] for x in _RICH_PARAMS])
 def test_rich_formatting(name, cli_fn, args, expected, capsys):
-    cli = cli_fn()
+    from piou.formatter import RichFormatter
+    cli = cli_fn(RichFormatter(show_default=False))
     cli.run_with_args(*args)
     output = capsys.readouterr().out
+    _compare_str(output.strip(), expected.strip())
+
+
+def test_rich_formatting_default(capsys):
+    from piou.formatter import RichFormatter
+    cli = get_simple_cli(RichFormatter(show_default=True))
+    cli.run_with_args('foo', '-h')
+    output = capsys.readouterr().out
+    expected = """
+    USAGE 
+     pytest foo <foo1> [-f] [-g] 
+    
+    ARGUMENTS
+        <foo1>                      Foo arguments    
+    
+    OPTIONS
+        -f (--foo2)                 Foo2 arguments                       
+        -g (--foo3)                 Foo3 arguments (default: a-value)    
+    
+    DESCRIPTION
+     Run foo command
+    """
     _compare_str(output.strip(), expected.strip())

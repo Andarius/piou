@@ -181,11 +181,16 @@ def processor(verbose: bool):
 cli.set_options_processor(processor)
 ```
 
-## Custom Formatter
+## Help / Errors Formatter
 
-If you want to customize the data displayed when displaying the CLI help or different errors, you can create a custom
-one inheriting from `Formatter`.  
-See the [Rich formatter](https://github.com/Andarius/piou/blob/master/piou/formatter/rich_formatter.py) for example.
+You can customize the help and the different errors displayed by the CLI by passing a Formatter.  
+The default one is the [Rich formatter](https://github.com/Andarius/piou/blob/master/piou/formatter/rich_formatter.py):
+ - `cmd_color`: set the color of the command in the help
+ - `option_color`: set the color of the positional / keyword arguments in the help
+ - `show_default`: show the default values if the keyword arguments (if available)
+
+You can create your own Formatter by subclassing the `Formatter` class (see the [Rich formatter](https://github.com/Andarius/piou/blob/master/piou/formatter/rich_formatter.py)
+for example).
 
 ## Complete example
 

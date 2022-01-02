@@ -1,9 +1,10 @@
 import sys
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Optional, Any, Union
 
 from rich.console import Console
-from rich.table import Table, Padding
+from rich.table import Table
+from rich.padding import Padding
 
 from .base import Formatter, Titles, get_options_str
 from ..command import Command, CommandOption, ParentArgs, CommandGroup
@@ -34,6 +35,14 @@ def fmt_cmd_options(options: list[CommandOption]) -> str:
     return (' '.join([fmt_option(x) for x in options])
             if options else ''  # '[<arg1>] ... [<argN>]'
             )
+
+
+def fmt_help(help: Union[str, None], default: Any, show_default: bool):
+    if show_default and default is not None:
+        default_str = f'[bold](default: {default})[/bold]'
+        return help + f' {default_str}' if help else default_str
+    else:
+        return help
 
 
 def get_usage(global_options: list[CommandOption],
@@ -73,6 +82,7 @@ class RichFormatter(Formatter):
                               default_factory=lambda: Console(markup=True, highlight=False))
     cmd_color: str = 'cyan'
     option_color: str = 'cyan'
+    show_default: bool = True
 
     def _color_opt(self, opt: str):
         return f'[{self.option_color}]{opt}[/{self.option_color}]'
@@ -84,8 +94,11 @@ class RichFormatter(Formatter):
         self.print_fn = self._console.print
 
     def _print_options(self, options: list[CommandOption]):
-        self.print_rows([(self._color_opt(_name or '') + _other_args, _help)
-                         for _name, _other_args, _help in get_options_str(options)])
+        self.print_rows([(self._color_opt(_name or '') + _other_args,
+                          fmt_help(_opt.help,
+                                   _opt.default if not _opt.is_required else None,
+                                   show_default=self.show_default))
+                         for _name, _other_args, _opt in get_options_str(options)])
 
     def print_rows(self, rows: list[tuple[str, Optional[str]]]):
         table = Table(show_header=False, box=None, padding=(0, self.col_space))

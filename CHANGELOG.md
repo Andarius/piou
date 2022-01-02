@@ -1,8 +1,9 @@
 # Changelog
 
-## [0.2.1] 31-12-2021
+## [0.2.2] 02-01-2022
 
-### FIX:
+### NEW:
 
- - Renaming `validate_type` to `convert_to_type`
- - Issue where the color was not applied on the argument for RichFormatter
+ - Adding a star to indicate the required keyword arguments of the RichFormatter
+ - You can choose to display the default values of keyword arguments
+in the help of the RichFormatter

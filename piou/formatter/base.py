@@ -31,17 +31,17 @@ def print_size_by_size(print_fn: Callable,
                     print_fn(line)
 
 
-def get_options_str(options: list[CommandOption]) -> list[tuple[Optional[str], str, str]]:
+def get_options_str(options: list[CommandOption]) -> list[tuple[Optional[str], str, CommandOption]]:
     lines = []
-    for _command in options:
-        if len(_command.keyword_args) == 0:
+    for _option in options:
+        if len(_option.keyword_args) == 0:
             name = None
             other_args = None
         else:
-            name, *other_args = _command.keyword_args
+            name, *other_args = _option.keyword_args
             other_args = ' (' + ', '.join(other_args) + ')' if other_args else ''
 
-        lines.append((name, other_args, _command.help))
+        lines.append((name, other_args, _option))
     return lines
 
 
