@@ -8,7 +8,10 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional, get_args, get_origin, Literal, TypeVar, Generic
 
-from .exceptions import ParamNotFoundError, PosParamsCountError, KeywordParamNotFoundError
+from .exceptions import (
+    PosParamsCountError,
+    KeywordParamNotFoundError,
+    KeywordParamMissingError)
 
 T = TypeVar('T', str, int, float, dt.date, dt.datetime, Path, dict, Literal[None], list)
 
@@ -245,16 +248,16 @@ def convert_args_to_dict(input_args: list[str],
     for _keyword_arg_key, _keyword_arg_value in _input_keyword_args.items():
         _keyword_param = keyword_args.get(_keyword_arg_key)
         if not _keyword_param:
-            raise ParamNotFoundError(f'Could not find param {_keyword_arg_key}',
-                                     _keyword_arg_key)
+            raise KeywordParamMissingError(f'Missing value for required keyword parameter {_keyword_arg_key!r}',
+                                           _keyword_arg_key)
         fn_args[_keyword_param.name] = _keyword_param.validate(_keyword_arg_value)
 
     # We fill optional fields with None and check for missing ones
     for _arg in options:
         if _arg.name not in fn_args:
             if _arg.is_required:
-                raise KeywordParamNotFoundError(f'Missing value for required keyword parameter {_arg.name!r}',
-                                                _arg.name)
+                raise KeywordParamMissingError(f'Missing value for required keyword parameter {_arg.name!r}',
+                                               _arg.name)
             fn_args[_arg.name] = None if _arg.default is ... else _arg.default
 
     return fn_args

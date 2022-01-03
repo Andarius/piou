@@ -4,9 +4,8 @@ from typing import Optional, Any, Callable
 
 from .command import CommandGroup, ShowHelpError
 from .exceptions import (
-    CommandNotFoundError,
-    ParamNotFoundError, PosParamsCountError,
-    KeywordParamNotFoundError
+    CommandNotFoundError, PosParamsCountError,
+    KeywordParamNotFoundError,KeywordParamMissingError
 )
 from .formatter import Formatter, RichFormatter
 
@@ -46,10 +45,10 @@ class Cli:
                 raise NotImplementedError('Got empty command')
             self.formatter.print_keyword_param_error(e.cmd, e.param)
             return
-        except ParamNotFoundError as e:
+        except KeywordParamMissingError as e:
             if not e.cmd:
                 raise NotImplementedError('Got empty command')
-            self.formatter.print_param_error(e.key, e.cmd)
+            self.formatter.print_param_error(e.param, e.cmd)
             return
         except PosParamsCountError as e:
             if not e.cmd:

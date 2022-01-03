@@ -1,7 +1,7 @@
 # Changelog
 
-## [0.3.2] 03-01-2022
+## [0.3.3] 03-01-2022
 
 ### FIX:
 
- - Required indication for the Rich Formatter was not displayed correctly
+- Improving error message for missing keyword argument

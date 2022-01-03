@@ -193,7 +193,10 @@ def test_command_wrapper_help():
 
 def test_run_command():
     from piou import Cli, Option
-    from piou.exceptions import PosParamsCountError, KeywordParamNotFoundError
+    from piou.exceptions import (
+        PosParamsCountError, KeywordParamNotFoundError,
+        KeywordParamMissingError
+    )
 
     called, processor_called = False, False
 
@@ -242,7 +245,7 @@ def test_run_command():
     assert not called
     assert not processor_called
 
-    with pytest.raises(KeywordParamNotFoundError,
+    with pytest.raises(KeywordParamMissingError,
                        match="Missing value for required keyword parameter 'foo2'"):
         cli._group.run_with_args('-q', 'foo', '1', '--foo4', '1 2 3')
     assert not called
