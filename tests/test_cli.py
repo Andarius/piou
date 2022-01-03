@@ -236,9 +236,15 @@ def test_run_command():
     assert not processor_called
 
     with pytest.raises(KeywordParamNotFoundError,
-                       match="Could not find parameter '-vvv'") as e:
+                       match="Could not find parameter '-vvv'"):
         cli._group.run_with_args('foo', '1', '-vvv')
 
+    assert not called
+    assert not processor_called
+
+    with pytest.raises(KeywordParamNotFoundError,
+                       match="Missing value for required keyword parameter 'foo2'"):
+        cli._group.run_with_args('-q', 'foo', '1', '--foo4', '1 2 3')
     assert not called
     assert not processor_called
 
@@ -299,10 +305,10 @@ def test_run_group_command():
         assert quiet is True
         assert verbose is False
         assert foo1 == 1
-        assert foo2 is None
+        assert foo2 == 'toto'
         assert foo3 == 'a value'
 
-    cli._group.run_with_args('-q', 'foo', '--test', 'baz', '1')
+    cli._group.run_with_args('-q', 'foo', '--test', 'baz', '1', '-f', 'toto')
     assert called
     assert processor_called
     assert sub_processor_called

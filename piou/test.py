@@ -1,8 +1,10 @@
 from typing import Literal
 
 from piou import Cli, Option
+from piou.formatter import RichFormatter
 
-cli = Cli(description='A CLI tool')
+cli = Cli(description='A CLI tool',
+          formatter=RichFormatter(show_default=True))
 
 cli.add_option('-q', '--quiet', help='Do not output any message')
 cli.add_option('--verbose', help='Increase verbosity')

@@ -1,7 +1,7 @@
 # Changelog
 
-## [0.3.1] 02-01-2022
+## [0.3.2] 03-01-2022
 
 ### FIX:
 
- - Display of the default value for sub-command was not working properly
+ - Required indication for the Rich Formatter was not displayed correctly

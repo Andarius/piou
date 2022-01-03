@@ -6,7 +6,7 @@ from rich.console import Console
 from rich.padding import Padding
 from rich.table import Table
 
-from .base import Formatter, Titles, get_options_str
+from .base import Formatter, Titles
 from ..command import Command, CommandOption, ParentArgs, CommandGroup
 
 
@@ -84,9 +84,6 @@ class RichFormatter(Formatter):
     option_color: str = 'cyan'
     show_default: bool = True
 
-    def _color_opt(self, opt: str):
-        return f'[{self.option_color}]{opt}[/{self.option_color}]'
-
     def _color_cmd(self, cmd: str):
         return f'[{self.cmd_color}]{cmd}[/{self.cmd_color}]'
 
@@ -94,8 +91,9 @@ class RichFormatter(Formatter):
         self.print_fn = self._console.print
 
     def _print_options(self, options: list[CommandOption]):
-        self.print_rows([(self._color_opt(_name or '') + _other_args, fmt_help(_opt, show_default=self.show_default))
-                         for _name, _other_args, _opt in get_options_str(options)])
+        self.print_rows([(fmt_option(opt, show_full=True, color=self.option_color),
+                          fmt_help(opt, show_default=self.show_default))
+                         for opt in options])
 
     def print_rows(self, rows: list[tuple[str, Optional[str]]]):
         table = Table(show_header=False, box=None, padding=(0, self.col_space))

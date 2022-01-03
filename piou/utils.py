@@ -249,9 +249,12 @@ def convert_args_to_dict(input_args: list[str],
                                      _keyword_arg_key)
         fn_args[_keyword_param.name] = _keyword_param.validate(_keyword_arg_value)
 
-    # We fill optional fields with None
+    # We fill optional fields with None and check for missing ones
     for _arg in options:
         if _arg.name not in fn_args:
+            if _arg.is_required:
+                raise KeywordParamNotFoundError(f'Missing value for required keyword parameter {_arg.name!r}',
+                                                _arg.name)
             fn_args[_arg.name] = None if _arg.default is ... else _arg.default
 
     return fn_args

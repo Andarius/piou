@@ -129,7 +129,7 @@ ARGUMENTS
     <foo1>                      Foo arguments    
 
 OPTIONS
-    -f (--foo2)                 Foo2 arguments    
+    -f (--foo2)*                Foo2 arguments    
     -g (--foo3)                 Foo3 arguments    
 
 DESCRIPTION
@@ -159,7 +159,7 @@ ARGUMENTS
     <foo1>                      Foo arguments    
 
 OPTIONS
-    -f (--foo2)                 Foo2 arguments    
+    -f (--foo2)*                Foo2 arguments    
     -g (--foo3)                 Foo3 arguments    
 
 GLOBAL OPTIONS
@@ -220,7 +220,7 @@ ARGUMENTS
     <foo1>                      Foo arguments    
 
 OPTIONS
-    -f (--foo2)                 Foo2 arguments    
+    -f (--foo2)*                Foo2 arguments    
     -g (--foo3)                 Foo3 arguments    
 
 GLOBAL OPTIONS
@@ -238,9 +238,9 @@ _PARAMS = [
     ('Simple CLI with opts', get_simple_cli_with_global_opt, [], _SIMPLE_CLI_WITH_OPTS_OUTPUT_RICH),
     ('Simple CLI with opts cmd', get_simple_cli_with_global_opt, ['foo', '-h'],
      _SIMPLE_CLI_WITH_OPTS_CMD_OUTPUT_RICH),
-    ('Simple CLI sub cmd', get_cmd_group_cli_with_global_opt, [], _SIMPLE_CLI_SUB_CMD_RICH),
-    ('Simple CLI sub cmd help', get_cmd_group_cli_with_global_opt, ['sub-cmd', '-h'], _SIMPLE_CLI_SUB_CMD_HELP_RICH),
-    ('Simple CLI sub cmd cmd cmd', get_cmd_group_cli_with_global_opt, ['sub-cmd', 'foo', '-h'],
+    ('Simple CLI sub-cmd', get_cmd_group_cli_with_global_opt, [], _SIMPLE_CLI_SUB_CMD_RICH),
+    ('Simple CLI sub-cmd help', get_cmd_group_cli_with_global_opt, ['sub-cmd', '-h'], _SIMPLE_CLI_SUB_CMD_HELP_RICH),
+    ('Simple CLI sub-cmd cmd', get_cmd_group_cli_with_global_opt, ['sub-cmd', 'foo', '-h'],
      _SIMPLE_CLI_SUB_CMD_CMD_RICH),
     # Errors
     ('Simple CLI keyword error', get_simple_cli, ['foo', '-vvv'],
@@ -274,7 +274,7 @@ ARGUMENTS
     <foo1>                      Foo arguments    
 
 OPTIONS
-    -f (--foo2)                 Foo2 arguments    
+    -f (--foo2)*                Foo2 arguments    
     -g (--foo3)                 Foo3 arguments (default: a-value)    
 
 DESCRIPTION
@@ -316,7 +316,7 @@ ARGUMENTS
     <foo1>                      Foo arguments    
 
 OPTIONS
-    -f (--foo2)                 Foo2 arguments    
+    -f (--foo2)*                Foo2 arguments    
     -g (--foo3)                 Foo3 arguments (default: a sub value) 
 
 GLOBAL OPTIONS
