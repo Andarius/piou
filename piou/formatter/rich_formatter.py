@@ -56,6 +56,7 @@ def get_usage(global_options: list[CommandOption],
     cmds = ' '.join(f'[underline]{x}[/underline]' for x in cmds)
 
     usage = cmds
+
     if _global_options:
         usage = f'{usage} {_global_options}'
     usage = f'{usage} {command}'
@@ -122,6 +123,7 @@ class RichFormatter(Formatter):
                        command: Command,
                        options: list[CommandOption],
                        parent_args: ParentArgs = None):
+
         usage = get_usage(
             global_options=options,
             command=command.name,
@@ -154,12 +156,13 @@ class RichFormatter(Formatter):
         parent_commands = [sys.argv[0].split('/')[-1]] + [x.cmd for x in parent_args]
         commands_str = []
         for i, (cmd_name, cmd) in enumerate(group.commands.items()):
-            _cmds = ''.join(
-                f'[underline]{x}[/underline] ' + (
-                    f'{fmt_cmd_options(group.options)} ' if cmd_lvl == len(parent_commands) - 1 else '')
-                for cmd_lvl, x in enumerate(parent_commands + [cmd_name]))
-
-            _line = f'{"" if i == 0 else "or: ":>5}{_cmds}{fmt_cmd_options(cmd.options)}'
+            _cmds = []
+            for cmd_lvl, x in enumerate(parent_commands + [cmd_name]):
+                _cmds.append(f'[underline]{x}[/underline]')
+                if group.options and cmd_lvl == len(parent_commands) - 1:
+                    _cmds.append(fmt_cmd_options(group.options))
+            _cmds_str = ' '.join(_cmds)
+            _line = f'{"" if i == 0 else "or: ":>5}{_cmds_str} {fmt_cmd_options(cmd.options)}'.rstrip()
             commands_str.append(_line)
         commands_str = '\n'.join(commands_str)
 

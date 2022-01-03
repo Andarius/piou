@@ -62,6 +62,13 @@ def get_cmd_group_cli_with_global_opt(formatter):
     def bar_main(**kwargs):
         pass
 
+    sub_cmd2 = cli.add_sub_parser('sub-cmd2', description='Another sub command')
+
+    @sub_cmd2.command(cmd='bar',
+                      help='Run bar command')
+    def another_bar_main(**kwargs):
+        pass
+
     return cli
 
 
@@ -180,6 +187,7 @@ GLOBAL OPTIONS
 
 AVAILABLE COMMANDS
      sub-cmd                    A sub command    
+     sub-cmd2                   Another sub command
 
 DESCRIPTION
  A CLI tool
@@ -212,6 +220,22 @@ DESCRIPTION
  A sub command
 """
 
+_SIMPLE_CLI_SUB_CMD2_HELP = """
+USAGE
+     pytest sub-cmd2 bar 
+
+COMMANDS
+  bar                                                                                                                                                                                                                                       
+    Run bar command                                                                                                                                                                                                                         
+
+GLOBAL OPTIONS
+    -q (--quiet)                Do not output any message    
+    --verbose                   Increase verbosity           
+
+DESCRIPTION
+ Another sub command
+"""
+
 _SIMPLE_CLI_SUB_CMD_CMD_RICH = """
 USAGE 
  pytest sub-cmd [-t] foo <foo1> [-f] [-g] 
@@ -240,6 +264,7 @@ _PARAMS = [
      _SIMPLE_CLI_WITH_OPTS_CMD_OUTPUT_RICH),
     ('Simple CLI sub-cmd', get_cmd_group_cli_with_global_opt, [], _SIMPLE_CLI_SUB_CMD_RICH),
     ('Simple CLI sub-cmd help', get_cmd_group_cli_with_global_opt, ['sub-cmd', '-h'], _SIMPLE_CLI_SUB_CMD_HELP_RICH),
+    ('Simple CLI sub-cmd help', get_cmd_group_cli_with_global_opt, ['sub-cmd2', '-h'], _SIMPLE_CLI_SUB_CMD2_HELP),
     ('Simple CLI sub-cmd cmd', get_cmd_group_cli_with_global_opt, ['sub-cmd', 'foo', '-h'],
      _SIMPLE_CLI_SUB_CMD_CMD_RICH),
     # Errors
