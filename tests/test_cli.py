@@ -2,8 +2,15 @@ import datetime as dt
 import re
 from pathlib import Path
 from typing import Literal
+from uuid import UUID
+from enum import Enum
 
 import pytest
+
+
+class MyEnum(Enum):
+    foo = 'bar'
+    baz = 'foo'
 
 
 @pytest.mark.parametrize('arg, expected', [
@@ -40,7 +47,9 @@ def test_command_option(cmd, is_required, is_positional):
     (dict, '{"a": 1, "b": "foo", "c": {"foo": "bar"}}', {"a": 1, "b": "foo", "c": {"foo": "bar"}}),
     (dt.date, '2019-01-01', dt.date(2019, 1, 1)),
     (dt.datetime, '2019-01-01T01:01:01', dt.datetime(2019, 1, 1, 1, 1, 1)),
-    (Literal['foo', 'bar'], 'bar', 'bar')
+    (Literal['foo', 'bar'], 'bar', 'bar'),
+    (UUID, '00000000-0000-0000-0000-000000000000', UUID('00000000-0000-0000-0000-000000000000')),
+    (MyEnum, 'foo', 'bar')
 ])
 def test_convert_to_type(data_type, value, expected):
     from piou.utils import convert_to_type

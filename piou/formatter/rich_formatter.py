@@ -68,13 +68,13 @@ def get_usage(global_options: list[CommandOption],
 
 @dataclass(frozen=True)
 class RichTitles(Titles):
-    GLOBAL_OPTIONS = f'[bold bright_white]{Titles.GLOBAL_OPTIONS}[/bold bright_white]'
-    AVAILABLE_CMDS = f'[bold bright_white]{Titles.AVAILABLE_CMDS}[/bold bright_white]'
-    COMMANDS = f'[bold bright_white]{Titles.COMMANDS}[/bold bright_white]'
-    USAGE = f'[bold bright_white]{Titles.USAGE}[/bold bright_white]'
-    DESCRIPTION = f'[bold bright_white]{Titles.DESCRIPTION}[/bold bright_white]'
-    ARGUMENTS = f'[bold bright_white]{Titles.ARGUMENTS}[/bold bright_white]'
-    OPTIONS = f'[bold bright_white]{Titles.OPTIONS}[/bold bright_white]'
+    GLOBAL_OPTIONS = f'[bold]{Titles.GLOBAL_OPTIONS}[/bold]'
+    AVAILABLE_CMDS = f'[bold]{Titles.AVAILABLE_CMDS}[/bold]'
+    COMMANDS = f'[bold]{Titles.COMMANDS}[/bold]'
+    USAGE = f'[bold]{Titles.USAGE}[/bold]'
+    DESCRIPTION = f'[bold]{Titles.DESCRIPTION}[/bold]'
+    ARGUMENTS = f'[bold]{Titles.ARGUMENTS}[/bold]'
+    OPTIONS = f'[bold]{Titles.OPTIONS}[/bold]'
 
 
 @dataclass

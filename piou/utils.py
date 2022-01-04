@@ -6,6 +6,8 @@ import shlex
 from collections import namedtuple
 from dataclasses import dataclass, field
 from pathlib import Path
+from uuid import UUID
+from enum import Enum
 from typing import Any, Optional, get_args, get_origin, Literal, TypeVar, Generic
 
 from .exceptions import (
@@ -20,6 +22,7 @@ def convert_to_type(data_type: Any, value: str):
     """
     Converts `value` to `data_type`, if not possible raises the appropriate error
     """
+
     if data_type is Any or data_type is bool:
         return value
     elif data_type is str:
@@ -28,6 +31,8 @@ def convert_to_type(data_type: Any, value: str):
         return int(value)
     elif data_type is float:
         return float(value)
+    elif data_type is UUID:
+        return UUID(value)
     elif data_type is dt.date:
         return dt.date.fromisoformat(value)
     elif data_type is dt.datetime:
@@ -49,6 +54,8 @@ def convert_to_type(data_type: Any, value: str):
         list_type = get_args(data_type)
         return [convert_to_type(list_type[0] if list_type else str,
                                 x) for x in value.split(' ')]
+    elif issubclass(data_type, Enum):
+        return data_type[value].value
     else:
         raise NotImplementedError(f'No parser implemented for data type "{data_type}"')
 

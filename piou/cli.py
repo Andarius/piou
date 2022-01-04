@@ -5,7 +5,7 @@ from typing import Optional, Any, Callable
 from .command import CommandGroup, ShowHelpError
 from .exceptions import (
     CommandNotFoundError, PosParamsCountError,
-    KeywordParamNotFoundError,KeywordParamMissingError
+    KeywordParamNotFoundError, KeywordParamMissingError
 )
 from .formatter import Formatter, RichFormatter
 
