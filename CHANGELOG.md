@@ -1,7 +1,7 @@
 # Changelog
 
-## [0.3.3] 03-01-2022
+## [0.3.4] 04-01-2022
 
 ### FIX:
 
-- Improving error message for missing keyword argument
+- Fixing sub-command display with the RichFormatter
