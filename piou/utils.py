@@ -5,17 +5,17 @@ import re
 import shlex
 from collections import namedtuple
 from dataclasses import dataclass, field
-from pathlib import Path
-from uuid import UUID
 from enum import Enum
+from pathlib import Path
 from typing import Any, Optional, get_args, get_origin, Literal, TypeVar, Generic
+from uuid import UUID
 
 from .exceptions import (
     PosParamsCountError,
     KeywordParamNotFoundError,
     KeywordParamMissingError)
 
-T = TypeVar('T', str, int, float, dt.date, dt.datetime, Path, dict, Literal[None], list)
+T = TypeVar('T', str, int, float, dt.date, dt.datetime, Path, dict, list)
 
 
 def convert_to_type(data_type: Any, value: str):
@@ -110,7 +110,7 @@ def Option(
         default: Any,
         *keyword_args: str,
         help: str = None
-):
+) -> Any:
     return CommandOption(
         default=default,
         help=help,

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "piou"
-version = "0.3.5"
+version = "0.3.6"
 description = "A CLI toolkit"
 authors = ["Julien Brayere <julien.brayere@gmail.com>"]
 license = "MIT"
@@ -39,7 +39,7 @@ python_files = "*.py"
 
 [tool.pyright]
 include = ["piou"]
-exclude = ["piou/test.py"]
+exclude = []
 
 pythonVersion = "3.9"
 pythonPlatform = "Linux"

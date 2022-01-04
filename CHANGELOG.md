@@ -1,11 +1,8 @@
 # Changelog
 
-## [0.3.5] 04-01-2022
-
-## NEW:
- - Adding support for the `UUID` and `Enum` types
+## [0.3.6] 04-01-2022
 
 
 ### FIX:
 
-- Removing bright_white default color for the RichFormatter
+- Fix return type of `Option` to avoid typing errors
