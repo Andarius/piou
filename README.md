@@ -41,7 +41,7 @@ I could not find a library that provided:
 - type validation / casting
 
 [Typer](https://github.com/tiangolo/typer) is the closest alternative in terms of experience but lacks the possibility
-to format the output is a custom way using external libraries (like [Rich](https://github.com/willmcgugan/rich)).
+to format the output is a custom way using external libraries (like [Rich](https://github.com/Textualize/rich)).
 
 **Piou** provides all these possibilities and lets you define your own [Formatter](#custom-formatter).
 
@@ -196,7 +196,7 @@ cli.add_sub_parser(cmd='sub', description='A sub command', propagate_options=Tru
 ## Help / Errors Formatter
 
 You can customize the help and the different errors displayed by the CLI by passing a Formatter.  
-The default one is the [Rich formatter](https://github.com/Andarius/piou/blob/master/piou/formatter/rich_formatter.py):
+The default one is the **Rich formatter** based on the [Rich](https://github.com/Textualize/rich) package:
  - `cmd_color`: set the color of the command in the help
  - `option_color`: set the color of the positional / keyword arguments in the help
  - `show_default`: show the default values if the keyword arguments (if available)
