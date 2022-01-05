@@ -37,6 +37,13 @@ jobs:
           path: tests
       - store_artifacts:
           path: htmlcov
+      - run:
+          name: Test Example
+          command: |
+            poetry run python -m piou.test -h
+            poetry run python -m piou.test bar
+            poetry run python -m piou.test sub -h
+            poetry run python -m piou.test sub foo 1 --foo2 foo
 
   build-publish:
     executor: test-build

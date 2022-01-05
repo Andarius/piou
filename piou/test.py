@@ -56,15 +56,11 @@ def sub_bar_main(**kwargs):
 @sub_cmd.command(cmd='foo', help='Run foo command')
 def sub_foo_main(
         test: bool,
-        quiet: bool,
-        verbose: bool,
         foo1: int = Option(..., help='Foo argument'),
         foo2: str = Option(..., '-f', '--foo2', help='Foo2 argument'),
         foo3: str = Option(None, '--foo3', help='Foo3 argument'),
 ):
     for name, value in [('test', test),
-                        ('quiet', quiet),
-                        ('verbose', verbose),
                         ('foo1', foo1),
                         ('foo2', foo2),
                         ('foo3', foo3)]:

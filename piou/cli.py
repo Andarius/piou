@@ -13,12 +13,21 @@ from .formatter import Formatter, RichFormatter
 @dataclass
 class Cli:
     description: Optional[str] = None
+    """Description of the CLI that will be displayed when displaying the help"""
     formatter: Formatter = field(default_factory=RichFormatter)
+    """Formatter to use to display help and errors"""
+    propagate_options: Optional[bool] = None
+    """
+    Propagate the options to sub-command functions or not. 
+    When set to None, it depends if a processor is passed or not otherwise it 
+    follows the boolean
+    """
 
     _group: CommandGroup = field(init=False, default_factory=CommandGroup)
 
     def __post_init__(self):
         self._group.help = self.description
+        self._group.propagate_options = self.propagate_options
 
     @property
     def commands(self):
@@ -72,7 +81,9 @@ class Cli:
     def add_command_group(self, group: CommandGroup):
         self._group.add_group(group)
 
-    def add_sub_parser(self, cmd: str, description: Optional[str] = None) -> CommandGroup:
-        group = CommandGroup(name=cmd, help=description)
+    def add_sub_parser(self, cmd: str,
+                       description: Optional[str] = None,
+                       propagate_options: Optional[bool] = None) -> CommandGroup:
+        group = CommandGroup(name=cmd, help=description, propagate_options=propagate_options)
         self.add_command_group(group)
         return group

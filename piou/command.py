@@ -19,6 +19,7 @@ class ParentArg(NamedTuple):
     options: list[CommandOption]
     input_options: list[str]
     options_processor: Optional[Callable] = None
+    propagate_args: Optional[bool] = False
 
 
 ParentArgs = list[ParentArg]
@@ -67,6 +68,8 @@ class CommandGroup:
     help: Optional[str] = None
 
     options_processor: Optional[Callable] = None
+
+    propagate_options: Optional[bool] = None
 
     # _formatter: Formatter = field(init=False, default=None)
     _options: list[CommandOption] = field(init=False, default_factory=list)
@@ -153,7 +156,8 @@ class CommandGroup:
             if cmd is None:
                 raise NotImplementedError('"cmd" cannot be empty')
             parent_args.append(ParentArg(cmd, self.options, global_options,
-                                         options_processor=self.options_processor))
+                                         options_processor=self.options_processor,
+                                         propagate_args=self.propagate_options))
             return command_group.run_with_args(*cmd_options, parent_args=parent_args)
 
         if set(global_options + cmd_options) & {'-h', '--help'} or \
@@ -165,15 +169,19 @@ class CommandGroup:
             )
 
         args_dict = {}
-        options, input_options, processors = ([command.options, self._options],
-                                              [cmd_options, global_options],
-                                              [None, self.options_processor])
+        options, input_options, processors, propagate_args = (
+            [command.options, self._options],
+            [cmd_options, global_options],
+            [None, self.options_processor],
+            [True, self.propagate_options])
+
         for parent_arg in parent_args:
             options.append(parent_arg.options)
             input_options.append(parent_arg.input_options)
             processors.append(parent_arg.options_processor)
+            propagate_args.append(parent_arg.propagate_args)
 
-        for _opts, _input_opts, _processor in zip(options, input_options, processors):
+        for _opts, _input_opts, _processor, _propagate in zip(options, input_options, processors, propagate_args):
             try:
                 _arg_dict = convert_args_to_dict(_input_opts, _opts)
             except CommandException as e:
@@ -181,12 +189,16 @@ class CommandGroup:
                 raise e
             if _processor:
                 _processor(**_arg_dict)
-            args_dict.update(_arg_dict)
+            if _propagate is not False:
+                args_dict.update(_arg_dict)
 
         return command.run(**args_dict)
 
     def set_options_processor(self, fn: Callable):
         self.options_processor = fn
+        # We don't propagate if not specified otherwise when processor is set
+        if self.propagate_options is None:
+            self.propagate_options = False
 
 
 class ShowHelpError(Exception):

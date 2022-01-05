@@ -1,9 +1,9 @@
 import datetime as dt
 import re
+from enum import Enum
 from pathlib import Path
 from typing import Literal
 from uuid import UUID
-from enum import Enum
 
 import pytest
 
@@ -61,7 +61,7 @@ def test_convert_to_type(data_type, value, expected):
     (Literal['foo', 'bar'], 'baz', ValueError, '"baz" is not a valid value for Literal[foo, bar]')
 ])
 def test_convert_to_type_invalid_data(data_type, value, expected,
-                                    expected_str):
+                                      expected_str):
     from piou.utils import convert_to_type
     with pytest.raises(expected, match=re.escape(expected_str)):
         convert_to_type(data_type, value)
@@ -161,14 +161,14 @@ def test_command_raises_error_on_duplicate_args():
                        match='Duplicate keyword args found "--foo"'):
         Command(name='', help=None, fn=lambda x: x,
                 options=[
-                    CommandOption(None, keyword_args=('-f', '--foo')),
-                    CommandOption(None, keyword_args=('--foo',))
+                    CommandOption(1, keyword_args=('-f', '--foo')),
+                    CommandOption(1, keyword_args=('--foo',))
                 ])
     with pytest.raises(ValueError,
                        match='Duplicate keyword args found "--foo"'):
         Command(name='', help=None, fn=lambda x: x,
                 options=[
-                    CommandOption(None, keyword_args=('-f', '--foo', '--foo'))
+                    CommandOption(1, keyword_args=('-f', '--foo', '--foo'))
                 ])
 
 
@@ -225,8 +225,8 @@ def test_run_command():
     @cli.command(cmd='foo',
                  help='Run foo command')
     def foo_main(
-            quiet: bool,
-            verbose: bool,
+            # quiet: bool,
+            # verbose: bool,
             foo1: int = Option(..., help='Foo arguments'),
             foo2: str = Option(..., '-f', '--foo2', help='Foo2 arguments'),
             foo3: str = Option(None, '-g', '--foo3', help='Foo3 arguments'),
@@ -237,8 +237,8 @@ def test_run_command():
         assert foo1 == 1
         assert foo2 == 'toto'
         assert foo3 is None
-        assert quiet is True
-        assert verbose is False
+        # assert quiet is True
+        # assert verbose is False
         assert foo4 == [1, 2, 3]
 
     with pytest.raises(PosParamsCountError,
@@ -261,6 +261,43 @@ def test_run_command():
     assert not processor_called
 
     cli._group.run_with_args('-q', 'foo', '1', '-f', 'toto', '--foo4', '1 2 3')
+    assert called
+    assert processor_called
+
+
+def test_run_command_pass_global_args():
+    from piou import Cli, Option
+
+    called, processor_called = False, False
+
+    cli = Cli(description='A CLI tool',
+              propagate_options=True)
+
+    cli.add_option('-q', '--quiet', help='Do not output any message')
+    cli.add_option('--verbose', help='Increase verbosity')
+
+    def processor(quiet: bool, verbose: bool):
+        nonlocal processor_called
+        processor_called = True
+        assert quiet is True
+        assert verbose is False
+
+    cli.set_options_processor(processor)
+
+    @cli.command(cmd='foo',
+                 help='Run foo command')
+    def foo_main(
+            quiet: bool,
+            verbose: bool,
+            foo1: int = Option(..., help='Foo arguments'),
+    ):
+        nonlocal called
+        called = True
+        assert foo1 == 1
+        assert quiet is True
+        assert verbose is False
+
+    cli._group.run_with_args('-q', 'foo', '1')
     assert called
     assert processor_called
 
@@ -304,18 +341,18 @@ def test_run_group_command():
 
     @foo_sub_cmd.command(cmd='baz', help='Run toto command')
     def baz_main(
-            test: bool = False,
-            quiet: bool = False,
-            verbose: bool = False,
+            # test: bool = False,
+            # quiet: bool = False,
+            # verbose: bool = False,
             foo1: int = Option(..., help='Foo arguments'),
             foo2: str = Option(..., '-f', '--foo2', help='Foo2 arguments'),
             foo3: str = Option('a value', '--foo3', help='Foo3 arguments'),
     ):
         nonlocal called
         called = True
-        assert test is True
-        assert quiet is True
-        assert verbose is False
+        # assert test is True
+        # assert quiet is True
+        # assert verbose is False
         assert foo1 == 1
         assert foo2 == 'toto'
         assert foo3 == 'a value'
@@ -332,13 +369,68 @@ def test_run_group_command():
 
     @group2.command('baz')
     def baz_2_main(
-            quiet: bool = False,
-            verbose: bool = False,
+            # quiet: bool = False,
+            # verbose: bool = False,
     ):
         nonlocal group2_called
         group2_called = True
-        assert quiet is True
-        assert verbose is False
+        # assert quiet is True
+        # assert verbose is False
 
     cli._group.run_with_args('-q', 'foo2', 'baz')
     assert group2_called
+
+
+def test_run_group_command_pass_global_args():
+    called = False
+
+    from piou import Cli, Option
+
+    cli = Cli(description='A CLI tool',
+              propagate_options=True)
+
+    cli.add_option('-q', '--quiet', help='Do not output any message')
+    cli.add_option('--verbose', help='Increase verbosity')
+
+    processor_called = False
+
+    def processor(quiet: bool, verbose: bool):
+        nonlocal processor_called
+        processor_called = True
+
+        assert quiet is True
+        assert verbose is False
+
+    cli.set_options_processor(processor)
+
+    foo_sub_cmd = cli.add_sub_parser(cmd='foo', description='A sub command',
+                                     propagate_options=True)
+    foo_sub_cmd.add_option('--test', help='Test mode')
+
+    sub_processor_called = False
+
+    def sub_processor(test: bool):
+        nonlocal sub_processor_called
+        sub_processor_called = True
+        assert test is True
+
+    foo_sub_cmd.set_options_processor(sub_processor)
+
+    @foo_sub_cmd.command(cmd='baz', help='Run toto command')
+    def baz_main(
+            test: bool = False,
+            quiet: bool = False,
+            verbose: bool = False,
+            foo1: int = Option(..., help='Foo arguments')
+    ):
+        nonlocal called
+        called = True
+        assert test is True
+        assert quiet is True
+        assert verbose is False
+        assert foo1 == 1
+
+    cli._group.run_with_args('-q', 'foo', '--test', 'baz', '1')
+    assert called
+    assert processor_called
+    assert sub_processor_called

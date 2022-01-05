@@ -173,13 +173,25 @@ cli = Cli(description='A CLI tool')
 
 cli.add_option('--verbose', help='Increase verbosity')
 
-
 def processor(verbose: bool):
     print(f'Processing {verbose=}')
 
-
 cli.set_options_processor(processor)
+``` 
+
+By default, when a processor is set, the global arguments will not be passed downstream.  
+If you still want them to be passed to the functions by setting  
+
+```python
+cli = Cli(description='A CLI tool', propagate_options=True)
 ```
+
+or in the case of a **sub-command**  
+
+```python
+cli.add_sub_parser(cmd='sub', description='A sub command', propagate_options=True)
+```
+
 
 ## Help / Errors Formatter
 
