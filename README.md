@@ -21,6 +21,10 @@ def foo_main(
         baz: str = Option(..., '-b', '--baz', help='Baz keyword argument (required)'),
         foo: str = Option(None, '--foo', help='Foo keyword argument'),
 ):
+    """ 
+    A longer description 
+    on what the function is doing
+    """
     pass
 
 
@@ -96,10 +100,12 @@ cli = Cli(description='A CLI tool')
 cli.add_option('-q', '--quiet', help='Do not output any message')
 ```
 
-The **help** can also be extracted from the function docstring, both functions here have the same one.
+The **description** can also be extracted from the function docstring.
+Both functions here return the same description.
+
 
 ```python
-@cli.command(cmd='bar', help='Run foo command')
+@cli.command(cmd='bar', description='Run foo command')
 def bar_main():
     pass
 

@@ -106,18 +106,24 @@ class RichFormatter(Formatter):
 
     def print_cli_help(self,
                        group: CommandGroup):
-        self.print_fn(RichTitles.USAGE, '\n', get_usage(group.options), '\n')
+        self.print_fn(RichTitles.USAGE)
+        self.print_fn(get_usage(group.options))
+        self.print_fn()
+
         if group.options:
             self.print_fn(RichTitles.GLOBAL_OPTIONS)
             self._print_options(group.options)
-            print()
+            self.print_fn()
 
         self.print_fn(RichTitles.AVAILABLE_CMDS)
         self.print_rows([(f' {self._color_cmd(_command.name or "")}', _command.help) for _command in
                          group.commands.values()])
 
-        if group.help:
-            self.print_fn(f"\n{RichTitles.DESCRIPTION}\n {group.help}\n")
+        description = group.description or group.help
+        if description:
+            self.print_fn()
+            self.print_fn(RichTitles.DESCRIPTION)
+            self.print_fn(pad(description))
 
     def print_cmd_help(self,
                        command: Command,
@@ -130,7 +136,9 @@ class RichFormatter(Formatter):
             command_options=command.options,
             parent_args=parent_args
         )
-        self.print_fn(RichTitles.USAGE, '\n', usage, '\n')
+        self.print_fn(RichTitles.USAGE)
+        self.print_fn(usage)
+        self.print_fn()
 
         if command.positional_args:
             self.print_fn(RichTitles.ARGUMENTS)
@@ -146,8 +154,12 @@ class RichFormatter(Formatter):
         if global_options:
             self.print_fn('\n' + RichTitles.GLOBAL_OPTIONS)
             self._print_options(global_options)
-        if command.help:
-            self.print_fn(f'\n{RichTitles.DESCRIPTION}\n {command.help}\n')
+
+        description = command.description or command.help
+        if description:
+            self.print_fn()
+            self.print_fn(RichTitles.DESCRIPTION)
+            self.print_fn(pad(description))
 
     def print_cmd_group_help(self,
                              group: CommandGroup,
@@ -169,24 +181,24 @@ class RichFormatter(Formatter):
         self.print_fn(RichTitles.USAGE)
         self.print_fn(commands_str)
 
-        print()
+        self.print_fn()
 
         self.print_fn(RichTitles.COMMANDS)
         for cmd_name, cmd in group.commands.items():
             self.print_fn(pad(f'[underline]{cmd_name}[/underline]', padding_left=2))
             if cmd.help:
                 self.print_fn(pad(cmd.help, padding_left=4))
-                print()
+                self.print_fn()
             if cmd.options:
                 self.print_rows([(fmt_option(opt, show_full=True, color=self.option_color),
                                   fmt_help(opt, show_default=self.show_default))
                                  for opt in cmd.options])
-                print()
+                self.print_fn()
 
         if group.options:
             self.print_fn(RichTitles.OPTIONS)
             self._print_options(group.options)
-            print()
+            self.print_fn()
 
         global_options = [parent_option
                           for parent_arg in (parent_args or [])
@@ -194,11 +206,12 @@ class RichFormatter(Formatter):
         if global_options:
             self.print_fn(RichTitles.GLOBAL_OPTIONS)
             self._print_options(global_options)
-            print()
+            self.print_fn()
 
-        if group.help:
+        description = group.description or group.help
+        if description:
             self.print_fn(RichTitles.DESCRIPTION)
-            self.print_fn(pad(group.help))
+            self.print_fn(pad(description))
 
     def print_cmd_error(self, cmd: str):
         self.print_fn(f'[red]Unknown command "[bold]{cmd}[/bold]"[/red]')

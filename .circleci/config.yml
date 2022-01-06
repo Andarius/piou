@@ -41,7 +41,7 @@ jobs:
           name: Test Example
           command: |
             poetry run python -m piou.test -h
-            poetry run python -m piou.test bar
+            poetry run python -m piou.test foo 1 --foo2 foo
             poetry run python -m piou.test sub -h
             poetry run python -m piou.test sub foo 1 --foo2 foo
 

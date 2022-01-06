@@ -195,9 +195,12 @@ def test_command_wrapper_help():
     def foo_3_main():
         pass
 
-    assert cli.commands['foo'].help == 'A doc about the function'
+    assert cli.commands['foo'].help is None
+    assert cli.commands['foo'].description == 'A doc about the function'
     assert cli.commands['foo2'].help == 'A first doc'
+    assert cli.commands['foo2'].description == 'A doc about the function'
     assert cli.commands['foo3'].help is None
+    assert cli.commands['foo3'].description is None
 
 
 def test_run_command():

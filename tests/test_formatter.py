@@ -277,9 +277,10 @@ _PARAMS = [
 
 def _compare_str(output, expected):
     output_lines, expected_lines = output.split('\n'), expected.split('\n')
-    assert len(output_lines) == len(expected_lines)
+    assert len(output_lines) == len(expected_lines), print(output)
+
     for output_line, expected_line in zip(output_lines, expected_lines):
-        assert output_line.strip() == expected_line.strip()
+        assert output_line.strip() == expected_line.strip(), print(output)
 
 
 @pytest.mark.parametrize('name, cli_fn, args, expected', _PARAMS, ids=[x[0] for x in _PARAMS])

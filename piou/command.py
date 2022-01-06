@@ -28,9 +28,10 @@ ParentArgs = list[ParentArg]
 @dataclass
 class Command:
     name: str
-    help: Optional[str]
     fn: Callable
+    help: Optional[str] = None
     options: list[CommandOption] = field(default_factory=list)
+    description: Optional[str] = None
 
     @property
     def positional_args(self) -> list[CommandOption]:
@@ -66,6 +67,9 @@ class Command:
 class CommandGroup:
     name: Optional[str] = None
     help: Optional[str] = None
+    """ Short line to explain the command group"""
+    description: Optional[str] = None
+    """ Description of the command group"""
 
     options_processor: Optional[Callable] = None
 
@@ -84,9 +88,9 @@ class CommandGroup:
     def options(self):
         return self._options
 
-    def add_sub_parser(self, description: Optional[str] = None):
+    def add_sub_parser(self, help: Optional[str] = None, description: Optional[str] = None):
         cls = type(self)
-        return cls(help=description)  # noqa
+        return cls(help=help, description=description)  # noqa
 
     def add_option(self, *args: str, help: str = None, data_type: Any = bool,
                    default: Any = False):
@@ -111,7 +115,7 @@ class CommandGroup:
                                          group.name)
         self._command_groups[group.name] = group
 
-    def add_command(self, cmd: str, f, help: str = None):
+    def add_command(self, cmd: str, f, help: str = None, description: str = None):
         options: list[CommandOption] = []
         defaults: list[Optional[Any]] = get_default_args(f)
 
@@ -127,9 +131,10 @@ class CommandGroup:
         self._commands[cmd] = Command(name=cmd,
                                       fn=f,
                                       options=options,
-                                      help=help or getdoc(f))
+                                      help=help,
+                                      description=description or getdoc(f))
 
-    def command(self, cmd: str, help: str = None):
+    def command(self, cmd: str, help: str = None, description: str = None):
         if cmd in self.commands:
             raise DuplicatedCommandError(f'Duplicated command found for {cmd!r}',
                                          cmd)
@@ -139,7 +144,7 @@ class CommandGroup:
             def wrapper(*args, **kwargs):
                 return f(*args, **kwargs)
 
-            self.add_command(cmd, f, help=help)
+            self.add_command(cmd, f, help=help, description=description)
             return wrapper
 
         return _command

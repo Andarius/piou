@@ -1,6 +1,7 @@
 import sys
 from dataclasses import dataclass, field
 from typing import Optional, Any, Callable
+import textwrap
 
 from .command import CommandGroup, ShowHelpError
 from .exceptions import (
@@ -26,7 +27,7 @@ class Cli:
     _group: CommandGroup = field(init=False, default_factory=CommandGroup)
 
     def __post_init__(self):
-        self._group.help = self.description
+        self._group.description = textwrap.dedent(self.description).strip() if self.description is not None else None
         self._group.propagate_options = self.propagate_options
 
     @property
