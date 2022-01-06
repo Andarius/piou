@@ -1,9 +1,8 @@
 import sys
 from dataclasses import dataclass, field
 from typing import Optional, Any, Callable
-import textwrap
 
-from .command import CommandGroup, ShowHelpError
+from .command import CommandGroup, ShowHelpError, clean_multiline
 from .exceptions import (
     CommandNotFoundError, PosParamsCountError,
     KeywordParamNotFoundError, KeywordParamMissingError
@@ -27,7 +26,7 @@ class Cli:
     _group: CommandGroup = field(init=False, default_factory=CommandGroup)
 
     def __post_init__(self):
-        self._group.description = textwrap.dedent(self.description).strip() if self.description is not None else None
+        self._group.description = clean_multiline(self.description) if self.description else None
         self._group.propagate_options = self.propagate_options
 
     @property
@@ -66,8 +65,8 @@ class Cli:
             self.formatter.print_count_error(e.expected_count, e.count, e.cmd)
             return
 
-    def command(self, cmd: str, help: str = None):
-        return self._group.command(cmd=cmd, help=help)
+    def command(self, cmd: str, help: str = None, description: str = None):
+        return self._group.command(cmd=cmd, help=help, description=description)
 
     def add_option(self, *args, help: str = None, data_type: Any = bool, default: Any = False):
         self._group.add_option(*args, help=help, data_type=data_type, default=default)
@@ -76,15 +75,16 @@ class Cli:
         """ Function to call with all the options before running `run` or `run_with_args`"""
         self._group.set_options_processor(fn)
 
-    def add_command(self, cmd: str, f, help: str = None):
-        self._group.add_command(cmd=cmd, f=f, help=help)
+    def add_command(self, cmd: str, f, help: str = None, description: str = None):
+        self._group.add_command(cmd=cmd, f=f, help=help, description=description)
 
     def add_command_group(self, group: CommandGroup):
         self._group.add_group(group)
 
     def add_sub_parser(self, cmd: str,
+                       help: Optional[str] = None,
                        description: Optional[str] = None,
                        propagate_options: Optional[bool] = None) -> CommandGroup:
-        group = CommandGroup(name=cmd, help=description, propagate_options=propagate_options)
+        group = CommandGroup(name=cmd, help=help, description=description, propagate_options=propagate_options)
         self.add_command_group(group)
         return group

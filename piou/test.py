@@ -44,7 +44,7 @@ def bar_main(**kwargs):
     pass
 
 
-sub_cmd = cli.add_sub_parser(cmd='sub', description='A sub command')
+sub_cmd = cli.add_sub_parser(cmd='sub', help='A sub command')
 sub_cmd.add_option('--test', help='Test mode')
 
 

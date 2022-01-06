@@ -107,7 +107,7 @@ class RichFormatter(Formatter):
     def print_cli_help(self,
                        group: CommandGroup):
         self.print_fn(RichTitles.USAGE)
-        self.print_fn(get_usage(group.options))
+        self.print_fn(pad(get_usage(group.options)))
         self.print_fn()
 
         if group.options:
@@ -137,7 +137,7 @@ class RichFormatter(Formatter):
             parent_args=parent_args
         )
         self.print_fn(RichTitles.USAGE)
-        self.print_fn(usage)
+        self.print_fn(pad(usage))
         self.print_fn()
 
         if command.positional_args:
@@ -156,6 +156,7 @@ class RichFormatter(Formatter):
             self._print_options(global_options)
 
         description = command.description or command.help
+
         if description:
             self.print_fn()
             self.print_fn(RichTitles.DESCRIPTION)

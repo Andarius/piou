@@ -1,4 +1,5 @@
 import asyncio
+import textwrap
 from dataclasses import dataclass, field
 from functools import wraps
 from inspect import getdoc, iscoroutinefunction
@@ -23,6 +24,10 @@ class ParentArg(NamedTuple):
 
 
 ParentArgs = list[ParentArg]
+
+
+def clean_multiline(s: str) -> str:
+    return textwrap.dedent(s).strip()
 
 
 @dataclass
@@ -51,6 +56,9 @@ class Command:
             return self.fn(*args, **kwargs)
 
     def __post_init__(self):
+
+        self.description = clean_multiline(self.description) if self.description else None
+
         keyword_params = [x for x in self.options if not x.is_positional_arg]
         if not keyword_params:
             return
@@ -79,6 +87,9 @@ class CommandGroup:
     _options: list[CommandOption] = field(init=False, default_factory=list)
     _commands: dict[str, Command] = field(init=False, default_factory=dict)
     _command_groups: dict[str, 'CommandGroup'] = field(init=False, default_factory=dict)
+
+    def __post_init__(self):
+        self.description = clean_multiline(self.description) if self.description else None
 
     @property
     def commands(self):
