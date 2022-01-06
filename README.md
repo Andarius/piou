@@ -151,7 +151,7 @@ cli = Cli(description='A CLI tool')
 def foo_main():
     pass
 
-sub_cmd = cli.add_sub_parser(cmd='sub', description='A sub command')
+sub_cmd = cli.add_sub_parser(cmd='sub', help='A sub command')
 sub_cmd.add_option('--test', help='Test mode')
 
 
@@ -206,7 +206,7 @@ cli = Cli(description='A CLI tool', propagate_options=True)
 or in the case of a **sub-command**  
 
 ```python
-cli.add_sub_parser(cmd='sub', description='A sub command', propagate_options=True)
+cli.add_sub_parser(cmd='sub', help='A sub command', propagate_options=True)
 ```
 
 
