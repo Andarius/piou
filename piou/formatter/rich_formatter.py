@@ -2,7 +2,8 @@ import sys
 from dataclasses import dataclass, field
 from typing import Optional
 
-from rich.console import Console
+from rich.console import Console, RenderableType
+from rich.markdown import Markdown
 from rich.padding import Padding
 from rich.table import Table
 
@@ -10,7 +11,7 @@ from .base import Formatter, Titles
 from ..command import Command, CommandOption, ParentArgs, CommandGroup
 
 
-def pad(s: str, padding_left: int = 1):
+def pad(s: RenderableType, padding_left: int = 1):
     return Padding(s, (0, padding_left))
 
 
@@ -80,10 +81,13 @@ class RichTitles(Titles):
 @dataclass
 class RichFormatter(Formatter):
     _console: Console = field(init=False,
-                              default_factory=lambda: Console(markup=True, highlight=False))
+                              default_factory=lambda: Console(markup=True,
+                                                              highlight=False))
     cmd_color: str = 'cyan'
     option_color: str = 'cyan'
     show_default: bool = True
+    code_theme: str = 'solarized-dark'
+    """See https://pygments.org/styles/ for a list of styles """
 
     def _color_cmd(self, cmd: str):
         return f'[{self.cmd_color}]{cmd}[/{self.cmd_color}]'
@@ -123,7 +127,7 @@ class RichFormatter(Formatter):
         if description:
             self.print_fn()
             self.print_fn(RichTitles.DESCRIPTION)
-            self.print_fn(pad(description))
+            self.print_fn(pad(Markdown(description, code_theme=self.code_theme)))
 
     def print_cmd_help(self,
                        command: Command,
@@ -160,7 +164,7 @@ class RichFormatter(Formatter):
         if description:
             self.print_fn()
             self.print_fn(RichTitles.DESCRIPTION)
-            self.print_fn(pad(description))
+            self.print_fn(pad(Markdown(description, code_theme=self.code_theme)))
 
     def print_cmd_group_help(self,
                              group: CommandGroup,
@@ -212,7 +216,7 @@ class RichFormatter(Formatter):
         description = group.description or group.help
         if description:
             self.print_fn(RichTitles.DESCRIPTION)
-            self.print_fn(pad(description))
+            self.print_fn(pad(Markdown(description, code_theme=self.code_theme)))
 
     def print_cmd_error(self, cmd: str):
         self.print_fn(f'[red]Unknown command "[bold]{cmd}[/bold]"[/red]')

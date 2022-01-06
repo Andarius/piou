@@ -21,9 +21,13 @@ def foo_main(
         baz: str = Option(..., '-b', '--baz', help='Baz keyword argument (required)'),
         foo: str = Option(None, '--foo', help='Foo keyword argument'),
 ):
-    """ 
-    A longer description 
-    on what the function is doing
+    """
+    A longer description on what the function is doing.  
+    You can run it with:
+    ```bash
+     poetry run python -m piou.test.simple foo 1 -b baz
+    ```
+    And you are good to go!
     """
     pass
 
@@ -32,9 +36,16 @@ if __name__ == '__main__':
     cli.run()
 ```
 
-The output will look like this:
+The output will look like this:  
 
-![example](https://github.com/Andarius/piou/raw/master/docs/simple-output.png)
+ - `python -m piou.test.simple -h`
+
+![example](https://github.com/Andarius/piou/raw/master/docs/simple-output.png)  
+
+ - `python -m piou.test.simple foo -h`
+
+![example](https://github.com/Andarius/piou/raw/master/docs/simple-output-foo.png)  
+
 
 # Why ?
 

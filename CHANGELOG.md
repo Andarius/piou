@@ -1,8 +1,8 @@
 # Changelog
 
-## [0.5.1] 06-01-2022
+## [0.5.2] 06-01-2022
 
 
 ### FIX:
 
-- Adding missing `description` fields for command.
+- Adding support for Markdown inside description for the Rich formatter
