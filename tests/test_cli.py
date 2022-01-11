@@ -245,8 +245,9 @@ def test_run_command():
         assert foo4 == [1, 2, 3]
 
     with pytest.raises(CommandNotFoundError,
-                       match="Unknown command given. Possible commands are 'foo'"):
-        cli._group.run_with_args('toto')
+                       match="Unknown command given. Possible commands are 'foo'") as e:
+        cli.run_with_args('toto')
+    assert e.value.input_args == ('toto',)
 
     with pytest.raises(PosParamsCountError,
                        match='Expected 1 positional values but got 0'):
