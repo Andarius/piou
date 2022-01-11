@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "piou"
-version = "0.5.4"
+version = "0.5.5"
 description = "A CLI toolkit"
 authors = ["Julien Brayere <julien.brayere@gmail.com>"]
 license = "MIT"
@@ -18,7 +18,7 @@ include = [
 
 [tool.poetry.dependencies]
 python = ">=3.9,<4.0"
-rich = "^10.11.0"
+rich = ">=10.11.0,<13.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.5"

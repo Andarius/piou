@@ -1,8 +1,8 @@
 # Changelog
 
-## [0.5.4] 11-01-2022
+## [0.5.5] 11-01-2022
 
 
-### FIX:
+### INTERNALS:
 
-- Adding debug information to CommandNotFoundError
+- Bumping `rich` version
