@@ -257,12 +257,12 @@ DESCRIPTION
 """
 
 _PARAMS = [
-    ('Simple CLI', get_simple_cli, [], _SIMPLE_CLI_OUTPUT_RICH),
+    ('Simple CLI', get_simple_cli, ['-h'], _SIMPLE_CLI_OUTPUT_RICH),
     ('Simple CLI cmd', get_simple_cli, ['foo', '-h'], _SIMPLE_CLI_COMMAND_RICH),
-    ('Simple CLI with opts', get_simple_cli_with_global_opt, [], _SIMPLE_CLI_WITH_OPTS_OUTPUT_RICH),
+    ('Simple CLI with opts', get_simple_cli_with_global_opt, ['-h'], _SIMPLE_CLI_WITH_OPTS_OUTPUT_RICH),
     ('Simple CLI with opts cmd', get_simple_cli_with_global_opt, ['foo', '-h'],
      _SIMPLE_CLI_WITH_OPTS_CMD_OUTPUT_RICH),
-    ('Simple CLI sub-cmd', get_cmd_group_cli_with_global_opt, [], _SIMPLE_CLI_SUB_CMD_RICH),
+    ('Simple CLI sub-cmd', get_cmd_group_cli_with_global_opt, ['-h'], _SIMPLE_CLI_SUB_CMD_RICH),
     ('Simple CLI sub-cmd help', get_cmd_group_cli_with_global_opt, ['sub-cmd', '-h'], _SIMPLE_CLI_SUB_CMD_HELP_RICH),
     ('Simple CLI sub-cmd help', get_cmd_group_cli_with_global_opt, ['sub-cmd2', '-h'], _SIMPLE_CLI_SUB_CMD2_HELP),
     ('Simple CLI sub-cmd cmd', get_cmd_group_cli_with_global_opt, ['sub-cmd', 'foo', '-h'],

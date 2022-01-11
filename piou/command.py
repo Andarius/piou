@@ -6,7 +6,8 @@ from inspect import getdoc, iscoroutinefunction
 from typing import get_type_hints, Optional, Any, NamedTuple, Callable
 
 from .exceptions import (
-    DuplicatedCommandError, CommandException)
+    DuplicatedCommandError, CommandException, CommandNotFoundError
+)
 from .utils import (
     CommandOption,
     get_default_args,
@@ -176,13 +177,15 @@ class CommandGroup:
                                          propagate_args=self.propagate_options))
             return command_group.run_with_args(*cmd_options, parent_args=parent_args)
 
-        if set(global_options + cmd_options) & {'-h', '--help'} or \
-                not command:
+        if set(global_options + cmd_options) & {'-h', '--help'}:
             raise ShowHelpError(
                 group=command_group or self,
                 parent_args=parent_args,
                 command=command
             )
+
+        if not command:
+            raise CommandNotFoundError(list(self.command_names))
 
         args_dict = {}
         options, input_options, processors, propagate_args = (

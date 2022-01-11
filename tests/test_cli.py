@@ -207,7 +207,7 @@ def test_run_command():
     from piou import Cli, Option
     from piou.exceptions import (
         PosParamsCountError, KeywordParamNotFoundError,
-        KeywordParamMissingError
+        KeywordParamMissingError, CommandNotFoundError
     )
 
     called, processor_called = False, False
@@ -243,6 +243,10 @@ def test_run_command():
         # assert quiet is True
         # assert verbose is False
         assert foo4 == [1, 2, 3]
+
+    with pytest.raises(CommandNotFoundError,
+                       match="Unknown command given. Possible commands are 'foo'"):
+        cli._group.run_with_args('toto')
 
     with pytest.raises(PosParamsCountError,
                        match='Expected 1 positional values but got 0'):

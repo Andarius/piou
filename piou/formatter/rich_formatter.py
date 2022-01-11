@@ -218,8 +218,9 @@ class RichFormatter(Formatter):
             self.print_fn(RichTitles.DESCRIPTION)
             self.print_fn(pad(Markdown(description, code_theme=self.code_theme)))
 
-    def print_cmd_error(self, cmd: str):
-        self.print_fn(f'[red]Unknown command "[bold]{cmd}[/bold]"[/red]')
+    def print_cmd_error(self, available_commands: list[str]):
+        _available_cmds = ', '.join(available_commands)
+        self.print_fn(f'[red]Unknown command given. Possible commands are "[bold]{_available_cmds}[/bold]"[/red]')
 
     def print_keyword_param_error(self, cmd: str, param: str) -> None:
         self.print_fn(

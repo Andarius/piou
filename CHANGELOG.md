@@ -1,8 +1,8 @@
 # Changelog
 
-## [0.5.2] 06-01-2022
+## [0.5.3] 11-01-2022
 
 
 ### FIX:
 
-- Adding support for Markdown inside description for the Rich formatter
+- Now raising an exception when no command is found

@@ -44,6 +44,7 @@ class Cli:
         try:
             return self._group.run_with_args(*args)
         except CommandNotFoundError as e:
+            # self.formatter.print_cmd_error(e.valid_commands)
             raise e
         except ShowHelpError as e:
             self.formatter.print_help(group=e.group,
