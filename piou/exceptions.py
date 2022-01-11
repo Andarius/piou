@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Any
 
 
 class CommandException(Exception):
@@ -48,7 +48,7 @@ class KeywordParamNotFoundError(CommandException):
 
 class CommandNotFoundError(Exception):
     def __init__(self, valid_commands: list[str],
-                 input_args: list[str] = None):
+                 input_args: tuple[Any, ...] = None):
         _available_cmds = ', '.join(valid_commands)
         super().__init__(f'Unknown command given. Possible commands are {_available_cmds!r}')
         self.valid_commands = sorted(valid_commands)
