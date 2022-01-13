@@ -67,8 +67,11 @@ class Cli:
             self.formatter.print_count_error(e.expected_count, e.count, e.cmd)
             return
 
-    def command(self, cmd: str, help: str = None, description: str = None):
+    def command(self, cmd: str = None, help: str = None, description: str = None):
         return self._group.command(cmd=cmd, help=help, description=description)
+
+    def processor(self):
+        return self._group.processor()
 
     def add_option(self, *args, help: str = None, data_type: Any = bool, default: Any = False):
         self._group.add_option(*args, help=help, data_type=data_type, default=default)

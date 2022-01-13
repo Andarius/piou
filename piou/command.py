@@ -72,6 +72,22 @@ class Command:
                 _keyword_args.add(_keyword_arg)
 
 
+def get_options(f) -> list[CommandOption]:
+    """Extracts the options from a function arguments"""
+    options: list[CommandOption] = []
+    defaults: list[Optional[Any]] = get_default_args(f)
+
+    for (param_name, param_type), option in zip(get_type_hints(f).items(),
+                                                defaults):
+        if not isinstance(option, CommandOption):
+            continue
+
+        option.name = param_name
+        option.data_type = param_type
+        options.append(option)
+    return options
+
+
 @dataclass
 class CommandGroup:
     name: Optional[str] = None
@@ -127,39 +143,43 @@ class CommandGroup:
                                          group.name)
         self._command_groups[group.name] = group
 
-    def add_command(self, cmd: str, f, help: str = None, description: str = None):
-        options: list[CommandOption] = []
-        defaults: list[Optional[Any]] = get_default_args(f)
+    def add_command(self, f, cmd: str = None, help: str = None, description: str = None):
+        cmd_name = cmd or f.__name__
+        if cmd_name in self.commands:
+            raise DuplicatedCommandError(f'Duplicated command found for {cmd_name!r}',
+                                         cmd_name)
 
-        for (param_name, param_type), option in zip(get_type_hints(f).items(),
-                                                    defaults):
-            if not isinstance(option, CommandOption):
-                continue
+        self._commands[cmd_name] = Command(name=cmd_name,
+                                           fn=f,
+                                           options=get_options(f),
+                                           help=help,
+                                           description=description or getdoc(f))
 
-            option.name = param_name
-            option.data_type = param_type
-            options.append(option)
-
-        self._commands[cmd] = Command(name=cmd,
-                                      fn=f,
-                                      options=options,
-                                      help=help,
-                                      description=description or getdoc(f))
-
-    def command(self, cmd: str, help: str = None, description: str = None):
-        if cmd in self.commands:
-            raise DuplicatedCommandError(f'Duplicated command found for {cmd!r}',
-                                         cmd)
+    def command(self, cmd: str = None, help: str = None, description: str = None):
 
         def _command(f):
             @wraps(f)
             def wrapper(*args, **kwargs):
                 return f(*args, **kwargs)
 
-            self.add_command(cmd, f, help=help, description=description)
+            self.add_command(f, cmd=cmd, help=help, description=description)
             return wrapper
 
         return _command
+
+    def processor(self):
+        def _processor(f):
+            @wraps(f)
+            def wrapper(*args, **kwargs):
+                return f(*args, **kwargs)
+
+            options = get_options(f)
+            for option in options:
+                self._options.append(option)
+            self.set_options_processor(f)
+            return wrapper
+
+        return _processor
 
     def run_with_args(self, *args, parent_args: ParentArgs = None):
 

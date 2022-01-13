@@ -442,3 +442,30 @@ def test_run_group_command_pass_global_args():
     assert called
     assert processor_called
     assert sub_processor_called
+
+
+def test_option_processor():
+    from piou import Cli, Option
+
+    cli = Cli(description='A CLI tool',
+              propagate_options=True)
+
+    processor_called = False
+
+    @cli.processor()
+    def processor(
+        quiet: bool = Option(False, '-q', '--quiet', help='Do not output any message'),
+        verbose: bool = Option(False, '--verbose', help='Increase verbosity')
+    ):
+        nonlocal processor_called
+        processor_called = True
+
+        assert quiet is True
+        assert verbose is False
+
+    @cli.command()
+    def test(**kwargs):
+        assert kwargs['quiet']
+
+    cli._group.run_with_args('--quiet', 'test')
+    assert processor_called

@@ -6,15 +6,12 @@ from piou.formatter import RichFormatter
 cli = Cli(description="A Cli tool",
           formatter=RichFormatter(show_default=True))
 
-cli.add_option('-q', '--quiet', help='Do not output any message')
-cli.add_option('--verbose', help='Increase verbosity')
 
-
-def processor(quiet: bool, verbose: bool):
+@cli.processor()
+def processor(quiet: bool = Option(False, '-q', '--quiet', help='Do not output any message'),
+              verbose: bool = Option(False, '--verbose', help='Increase verbosity')
+              ):
     print(f'Processing {quiet=} and {verbose=}')
-
-
-cli.set_options_processor(processor)
 
 
 @cli.command(cmd='foo',

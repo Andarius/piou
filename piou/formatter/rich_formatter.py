@@ -1,6 +1,6 @@
 import sys
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Optional, Union
 
 from rich.console import Console, RenderableType
 from rich.markdown import Markdown
@@ -78,6 +78,9 @@ class RichTitles(Titles):
     OPTIONS = f'[bold]{Titles.OPTIONS}[/bold]'
 
 
+MIN_MARKDOWN_SIZE: int = 75
+
+
 @dataclass
 class RichFormatter(Formatter):
     _console: Console = field(init=False,
@@ -94,6 +97,15 @@ class RichFormatter(Formatter):
 
     def __post_init__(self):
         self.print_fn = self._console.print
+
+    def _print_description(self, item: Union[CommandGroup, Command]):
+        description = item.description or item.help
+        if description:
+            self.print_fn()
+            self.print_fn(RichTitles.DESCRIPTION)
+            _max_width = max(len(x) for x in description.split('\n'))
+            self.print_fn(pad(Markdown('  \n'.join(description.split('\n')), code_theme=self.code_theme)),
+                          width=max(_max_width, MIN_MARKDOWN_SIZE))
 
     def _print_options(self, options: list[CommandOption]):
         self.print_rows([(fmt_option(opt, show_full=True, color=self.option_color),
@@ -122,12 +134,7 @@ class RichFormatter(Formatter):
         self.print_fn(RichTitles.AVAILABLE_CMDS)
         self.print_rows([(f' {self._color_cmd(_command.name or "")}', _command.help) for _command in
                          group.commands.values()])
-
-        description = group.description or group.help
-        if description:
-            self.print_fn()
-            self.print_fn(RichTitles.DESCRIPTION)
-            self.print_fn(pad(Markdown(description, code_theme=self.code_theme)))
+        self._print_description(group)
 
     def print_cmd_help(self,
                        command: Command,
@@ -159,12 +166,7 @@ class RichFormatter(Formatter):
             self.print_fn('\n' + RichTitles.GLOBAL_OPTIONS)
             self._print_options(global_options)
 
-        description = command.description or command.help
-
-        if description:
-            self.print_fn()
-            self.print_fn(RichTitles.DESCRIPTION)
-            self.print_fn(pad(Markdown(description, code_theme=self.code_theme)))
+        self._print_description(command)
 
     def print_cmd_group_help(self,
                              group: CommandGroup,
@@ -213,10 +215,7 @@ class RichFormatter(Formatter):
             self._print_options(global_options)
             self.print_fn()
 
-        description = group.description or group.help
-        if description:
-            self.print_fn(RichTitles.DESCRIPTION)
-            self.print_fn(pad(Markdown(description, code_theme=self.code_theme)))
+        self._print_description(group)
 
     def print_cmd_error(self, available_commands: list[str]):
         _available_cmds = ', '.join(available_commands)

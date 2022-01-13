@@ -1,8 +1,8 @@
 # Changelog
 
-## [0.5.5] 11-01-2022
+## [0.6.0] 13-01-2022
 
 
-### INTERNALS:
+### NEW:
 
-- Bumping `rich` version
+- You can now use `@cli.processor()` to set an option processor.

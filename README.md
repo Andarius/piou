@@ -196,6 +196,18 @@ def processor(verbose: bool):
 cli.set_options_processor(processor)
 ``` 
 
+You can also use the decorator syntax:
+
+```python
+from piou import Cli, Option
+
+cli = Cli(description='A CLI tool')
+
+@cli.processor()
+def processor(verbose: bool = Option(False, '--verbose', help='Increase verbosity')):
+    print(f'Processing {verbose=}')
+```
+
 By default, when a processor is set, the global arguments will not be passed downstream.  
 If you still want them to be passed to the functions by setting  
 
@@ -223,7 +235,7 @@ for example).
 
 ## Complete example
 
-You can try a more complete example by running `python -m piou.test`
+You can try a more complete example by running `python -m piou.test -h`
 
 
 ## Moving from `argparse`  
