@@ -213,7 +213,6 @@ class RichFormatter(Formatter):
         if global_options:
             self.print_fn(RichTitles.GLOBAL_OPTIONS)
             self._print_options(global_options)
-            self.print_fn()
 
         self._print_description(group)
 
