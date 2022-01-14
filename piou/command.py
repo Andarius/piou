@@ -10,6 +10,7 @@ from .exceptions import (
 )
 from .utils import (
     CommandOption,
+    CommandDerivedOption,
     get_default_args,
     parse_input_args,
     convert_args_to_dict
@@ -38,6 +39,7 @@ class Command:
     help: Optional[str] = None
     options: list[CommandOption] = field(default_factory=list)
     description: Optional[str] = None
+    derived_options: list[CommandDerivedOption] = field(default_factory=list)
 
     @property
     def positional_args(self) -> list[CommandOption]:
@@ -72,20 +74,27 @@ class Command:
                 _keyword_args.add(_keyword_arg)
 
 
-def get_options(f) -> list[CommandOption]:
+def extract_function_info(f) -> tuple[list[CommandOption], list[CommandDerivedOption]]:
     """Extracts the options from a function arguments"""
     options: list[CommandOption] = []
-    defaults: list[Optional[Any]] = get_default_args(f)
+    derived_opts: list[CommandDerivedOption] = []
+    defaults: list[CommandOption] = get_default_args(f)
 
     for (param_name, param_type), option in zip(get_type_hints(f).items(),
                                                 defaults):
-        if not isinstance(option, CommandOption):
-            continue
+        if isinstance(option, CommandOption):
+            option.name = param_name
+            option.data_type = param_type
+            options.append(option)
+        elif isinstance(option, CommandDerivedOption):
+            option.param_name = param_name
+            _options, _ = extract_function_info(option.processor)
+            options += _options
+            derived_opts.append(option)
+        else:
+            pass
 
-        option.name = param_name
-        option.data_type = param_type
-        options.append(option)
-    return options
+    return options, derived_opts
 
 
 @dataclass
@@ -149,9 +158,11 @@ class CommandGroup:
             raise DuplicatedCommandError(f'Duplicated command found for {cmd_name!r}',
                                          cmd_name)
 
+        _options, _derived_options = extract_function_info(f)
         self._commands[cmd_name] = Command(name=cmd_name,
                                            fn=f,
-                                           options=get_options(f),
+                                           options=_options,
+                                           derived_options=_derived_options,
                                            help=help,
                                            description=description or getdoc(f))
 
@@ -173,7 +184,7 @@ class CommandGroup:
             def wrapper(*args, **kwargs):
                 return f(*args, **kwargs)
 
-            options = get_options(f)
+            options, _ = extract_function_info(f)
             for option in options:
                 self._options.append(option)
             self.set_options_processor(f)
@@ -209,10 +220,12 @@ class CommandGroup:
 
         args_dict = {}
         options, input_options, processors, propagate_args = (
+            # Parent / current
             [command.options, self._options],
             [cmd_options, global_options],
             [None, self.options_processor],
-            [True, self.propagate_options])
+            [True, self.propagate_options],
+        )
 
         for parent_arg in parent_args:
             options.append(parent_arg.options)
@@ -220,7 +233,8 @@ class CommandGroup:
             processors.append(parent_arg.options_processor)
             propagate_args.append(parent_arg.propagate_args)
 
-        for _opts, _input_opts, _processor, _propagate in zip(options, input_options, processors, propagate_args):
+        for _opts, _input_opts, _processor, _propagate in zip(
+                options, input_options, processors, propagate_args):
             try:
                 _arg_dict = convert_args_to_dict(_input_opts, _opts)
             except CommandException as e:
@@ -230,6 +244,9 @@ class CommandGroup:
                 _processor(**_arg_dict)
             if _propagate is not False:
                 args_dict.update(_arg_dict)
+
+        for _derived in command.derived_options:
+            args_dict = _derived.update_args(args_dict)
 
         return command.run(**args_dict)
 

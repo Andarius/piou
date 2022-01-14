@@ -454,8 +454,8 @@ def test_option_processor():
 
     @cli.processor()
     def processor(
-        quiet: bool = Option(False, '-q', '--quiet', help='Do not output any message'),
-        verbose: bool = Option(False, '--verbose', help='Increase verbosity')
+            quiet: bool = Option(False, '-q', '--quiet', help='Do not output any message'),
+            verbose: bool = Option(False, '--verbose', help='Increase verbosity')
     ):
         nonlocal processor_called
         processor_called = True
@@ -469,3 +469,24 @@ def test_option_processor():
 
     cli._group.run_with_args('--quiet', 'test')
     assert processor_called
+
+
+def test_derived():
+    from piou import Cli, Option, Derived
+
+    cli = Cli(description='A CLI tool')
+
+    def processor(a: int = Option(1, '-a'),
+                  b: int = Option(2, '-b')):
+        return a + b
+
+    called = False
+
+    @cli.command()
+    def test(value: int = Derived(processor)):
+        nonlocal called
+        called = True
+        assert value == 5
+
+    cli._group.run_with_args('test', '-a', '3', '-b', '2')
+    assert called

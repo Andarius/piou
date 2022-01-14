@@ -36,16 +36,15 @@ if __name__ == '__main__':
     cli.run()
 ```
 
-The output will look like this:  
+The output will look like this:
 
- - `python -m piou.test.simple -h`
+- `python -m piou.test.simple -h`
 
-![example](https://github.com/Andarius/piou/raw/master/docs/simple-output.png)  
+![example](https://github.com/Andarius/piou/raw/master/docs/simple-output.png)
 
- - `python -m piou.test.simple foo -h`
+- `python -m piou.test.simple foo -h`
 
-![example](https://github.com/Andarius/piou/raw/master/docs/simple-output-foo.png)  
-
+![example](https://github.com/Andarius/piou/raw/master/docs/simple-output-foo.png)
 
 # Why ?
 
@@ -111,9 +110,7 @@ cli = Cli(description='A CLI tool')
 cli.add_option('-q', '--quiet', help='Do not output any message')
 ```
 
-The **description** can also be extracted from the function docstring.
-Both functions here return the same description.
-
+The **description** can also be extracted from the function docstring. Both functions here return the same description.
 
 ```python
 @cli.command(cmd='bar', description='Run foo command')
@@ -151,6 +148,7 @@ cli = Cli(description='A CLI tool')
 def foo_main():
     pass
 
+
 sub_cmd = cli.add_sub_parser(cmd='sub', help='A sub command')
 sub_cmd.add_option('--test', help='Test mode')
 
@@ -172,7 +170,8 @@ def sub_foo_main(
 if __name__ == '__main__':
     cli.run()
 ```
-So when running `python run.py sub -h` it will output the following:  
+
+So when running `python run.py sub -h` it will output the following:
 
 ![example](https://github.com/Andarius/piou/raw/master/docs/sub-cmd-output.png)
 
@@ -190,8 +189,10 @@ cli = Cli(description='A CLI tool')
 
 cli.add_option('--verbose', help='Increase verbosity')
 
+
 def processor(verbose: bool):
     print(f'Processing {verbose=}')
+
 
 cli.set_options_processor(processor)
 ``` 
@@ -203,44 +204,82 @@ from piou import Cli, Option
 
 cli = Cli(description='A CLI tool')
 
+
 @cli.processor()
 def processor(verbose: bool = Option(False, '--verbose', help='Increase verbosity')):
     print(f'Processing {verbose=}')
 ```
 
 By default, when a processor is set, the global arguments will not be passed downstream.  
-If you still want them to be passed to the functions by setting  
+If you still want them to be passed to the functions by setting
 
 ```python
 cli = Cli(description='A CLI tool', propagate_options=True)
 ```
 
-or in the case of a **sub-command**  
+or in the case of a **sub-command**
 
 ```python
 cli.add_sub_parser(cmd='sub', help='A sub command', propagate_options=True)
 ```
 
+### Derived Options
+
+Sometimes, you want to tbe able to reuse the options in multiple command and group them into a single output to pass to
+the command. For instance, you might want to group a connection string parameter to connect to a database. Here is a
+full example:
+
+```python
+from piou import Cli, Option, Derived
+import psycopg2
+
+cli = Cli(description='A CLI tool')
+
+
+def get_pg_conn(
+        pg_user: str = Option('postgres', '--pg-user'),
+        pg_pwd: str = Option('postgres', '--pg-pwd'),
+        pg_host: str = Option('localhost', '--pg-host'),
+        pg_port: int = Option(5432, '--pg-port'),
+        pg_db: str = Option('postgres', '--pg-db')
+
+):
+    conn = psycopg2.connect(dbname=pg_db, user=pg_user, password=pg_pwd,
+                            host=pg_host, port=pg_port)
+    return conn
+
+
+@cli.command(help='Run foo command')
+def foo(pg_conn: str = Derived(get_pg_conn)):
+    ...
+
+
+@cli.command(help='Run bar command')
+def bar(pg_conn: str = Derived(get_pg_conn)):
+    ...
+```
 
 ## Help / Errors Formatter
 
 You can customize the help and the different errors displayed by the CLI by passing a Formatter.  
 The default one is the **Rich formatter** based on the [Rich](https://github.com/Textualize/rich) package:
- - `cmd_color`: set the color of the command in the help
- - `option_color`: set the color of the positional / keyword arguments in the help
- - `show_default`: show the default values if the keyword arguments (if available)
 
-You can create your own Formatter by subclassing the `Formatter` class (see the [Rich formatter](https://github.com/Andarius/piou/blob/master/piou/formatter/rich_formatter.py)
+- `cmd_color`: set the color of the command in the help
+- `option_color`: set the color of the positional / keyword arguments in the help
+- `show_default`: show the default values if the keyword arguments (if available)
+
+You can create your own Formatter by subclassing the `Formatter` class (see
+the [Rich formatter](https://github.com/Andarius/piou/blob/master/piou/formatter/rich_formatter.py)
 for example).
 
 ## Complete example
 
 You can try a more complete example by running `python -m piou.test -h`
 
-
-## Moving from `argparse`  
+## Moving from `argparse`
 
 If you are migrating code from `argparse` to `piou` here are some differences:
- - `add_argument('--pick', choices=['foo', 'bar'])` is replaced with 
-`pick: Literal['foo', 'bar'] = Option(None, '--pick')`
- - `add_argument('--verbose', action='store_true')` is replaced with `verbose: bool = Option(False, '--verbose')`
+
+- `add_argument('--pick', choices=['foo', 'bar'])` is replaced with
+  `pick: Literal['foo', 'bar'] = Option(None, '--pick')`
+- `add_argument('--verbose', action='store_true')` is replaced with `verbose: bool = Option(False, '--verbose')`
