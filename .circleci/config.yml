@@ -31,19 +31,22 @@ jobs:
           name: Run tests
           command: |
             poetry run pytest -vv --junitxml=tests/junit.xml
+      - run:
+          name: Test Example
+          command: |
+            poetry run coverage run -a -m piou.test -h
+            poetry run coverage run -a -m piou.test foo 1 --foo2 foo
+            poetry run coverage run -a -m piou.test sub -h
+            poetry run coverage run -a -m piou.test sub foo 1 --foo2 foo
+      - run:
+          name: Generating coverage
+          command: |
             poetry run coverage xml -o tests/coverage.xml
             poetry run coverage html
       - store_test_results:
           path: tests
       - store_artifacts:
           path: htmlcov
-      - run:
-          name: Test Example
-          command: |
-            poetry run python -m piou.test -h
-            poetry run python -m piou.test foo 1 --foo2 foo
-            poetry run python -m piou.test sub -h
-            poetry run python -m piou.test sub foo 1 --foo2 foo
 
   build-publish:
     executor: test-build

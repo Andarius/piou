@@ -7,7 +7,10 @@ from collections import namedtuple
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, Optional, get_args, get_origin, Literal, TypeVar, Generic
+from typing import (
+    Union, Any, Optional, get_args, get_origin,
+    Literal, TypeVar, Generic, Callable
+)
 from uuid import UUID
 
 from .exceptions import (
@@ -192,10 +195,11 @@ def get_cmd_args(cmd: str, types: dict[str, Any]) -> tuple[list[str], dict[str, 
     return positional_args, keyword_params
 
 
-def get_default_args(func):
+def get_default_args(func) -> list[CommandOption]:
     signature = inspect.signature(func)
-    return [v.default if v is not inspect.Parameter.empty else None
-            for v in signature.parameters.values()]
+    return [v.default
+            for v in signature.parameters.values()
+            if v is not inspect.Parameter.empty]
 
 
 def parse_input_args(args: tuple[Any, ...], commands: set[str]) -> tuple[
@@ -268,3 +272,25 @@ def convert_args_to_dict(input_args: list[str],
             fn_args[_arg.name] = None if _arg.default is ... else _arg.default
 
     return fn_args
+
+
+@dataclass
+class CommandDerivedOption:
+    processor: Callable
+    param_name: Optional[str] = field(init=False)
+
+    def update_args(self, args: dict) -> dict:
+        if self.param_name is None:
+            raise ValueError('param_name not set. Did you forgot to set it?')
+        _args = args.copy()
+        fn_args = {}
+        for _opt in get_default_args(self.processor):
+            fn_args[_opt.name] = _args.pop(_opt.name)
+        _args[self.param_name] = self.processor(**fn_args)
+        return _args
+
+
+def Derived(
+        processor: Callable
+) -> Any:
+    return CommandDerivedOption(processor=processor)
