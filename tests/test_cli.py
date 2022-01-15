@@ -228,8 +228,6 @@ def test_run_command():
     @cli.command(cmd='foo',
                  help='Run foo command')
     def foo_main(
-            # quiet: bool,
-            # verbose: bool,
             foo1: int = Option(..., help='Foo arguments'),
             foo2: str = Option(..., '-f', '--foo2', help='Foo2 arguments'),
             foo3: str = Option(None, '-g', '--foo3', help='Foo3 arguments'),
@@ -240,8 +238,6 @@ def test_run_command():
         assert foo1 == 1
         assert foo2 == 'toto'
         assert foo3 is None
-        # assert quiet is True
-        # assert verbose is False
         assert foo4 == [1, 2, 3]
 
     with pytest.raises(CommandNotFoundError,
@@ -490,3 +486,33 @@ def test_derived():
 
     cli._group.run_with_args('test', '-a', '3', '-b', '2')
     assert called
+
+
+def test_on_cmd_run():
+    from piou import Cli, Option, CommandMeta, Derived
+
+    cmd_run_called = False
+
+    def on_cmd_run(meta: CommandMeta):
+        nonlocal cmd_run_called
+        cmd_run_called = True
+        assert meta == CommandMeta(cmd_name='test',
+                                   fn_args={'bar': 'bar', 'value': 5},
+                                   cmd_args={'a': 3, 'b': 2, 'bar': 'bar'})
+
+    cli = Cli(description='A CLI tool',
+              on_cmd_run=on_cmd_run)
+
+    def processor(a: int = Option(1, '-a'),
+                  b: int = Option(2, '-b')):
+        return a + b
+
+    @cli.command()
+    def test(
+            value: int = Derived(processor),
+            bar: str = Option(None, '--bar')
+    ):
+        pass
+
+    cli._group.run_with_args('test', '-a', '3', '-b', '2', '--bar', 'bar')
+    assert cmd_run_called

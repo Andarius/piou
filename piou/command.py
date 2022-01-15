@@ -98,6 +98,16 @@ def extract_function_info(f) -> tuple[list[CommandOption], list[CommandDerivedOp
 
 
 @dataclass
+class CommandMeta:
+    cmd_name: str
+    fn_args: dict
+    cmd_args: dict
+
+
+OnCommandRun = Callable[[CommandMeta], None]
+
+
+@dataclass
 class CommandGroup:
     name: Optional[str] = None
     help: Optional[str] = None
@@ -108,6 +118,8 @@ class CommandGroup:
     options_processor: Optional[Callable] = None
 
     propagate_options: Optional[bool] = None
+
+    on_cmd_run: Optional[OnCommandRun] = None
 
     # _formatter: Formatter = field(init=False, default=None)
     _options: list[CommandOption] = field(init=False, default_factory=list)
@@ -245,8 +257,12 @@ class CommandGroup:
             if _propagate is not False:
                 args_dict.update(_arg_dict)
 
+        cmd_args = args_dict.copy()
         for _derived in command.derived_options:
             args_dict = _derived.update_args(args_dict)
+
+        if self.on_cmd_run:
+            self.on_cmd_run(CommandMeta(command.name, fn_args=args_dict, cmd_args=cmd_args))
 
         return command.run(**args_dict)
 

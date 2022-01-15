@@ -1,8 +1,9 @@
 # Changelog
 
-## [0.7.0] 14-01-2022
+## [0.8.0] 15-01-2022
 
 
 ### NEW:
 
-- You can now use `Derived` as a valid option. See Readme for more information.
+- Adding `on_cmd_run` to the `Cli`. This will enable debugging of
+the arguments that are passed to the command at runtime.

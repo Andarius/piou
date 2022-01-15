@@ -2,7 +2,7 @@ import sys
 from dataclasses import dataclass, field
 from typing import Optional, Any, Callable
 
-from .command import CommandGroup, ShowHelpError, clean_multiline
+from .command import CommandGroup, ShowHelpError, clean_multiline, OnCommandRun
 from .exceptions import (
     CommandNotFoundError, PosParamsCountError,
     KeywordParamNotFoundError, KeywordParamMissingError
@@ -22,12 +22,18 @@ class Cli:
     When set to None, it depends if a processor is passed or not otherwise it 
     follows the boolean
     """
+    on_cmd_run: Optional[OnCommandRun] = None
+    """ Function called before running the actual function.
+    For instance, you can use this to get the arguments passed
+    for monitoring
+    """
 
     _group: CommandGroup = field(init=False, default_factory=CommandGroup)
 
     def __post_init__(self):
         self._group.description = clean_multiline(self.description) if self.description else None
         self._group.propagate_options = self.propagate_options
+        self._group.on_cmd_run = self.on_cmd_run
 
     @property
     def commands(self):

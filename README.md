@@ -223,7 +223,7 @@ or in the case of a **sub-command**
 cli.add_sub_parser(cmd='sub', help='A sub command', propagate_options=True)
 ```
 
-### Derived Options
+## Derived Options
 
 Sometimes, you want to tbe able to reuse the options in multiple command and group them into a single output to pass to
 the command. For instance, you might want to group a connection string parameter to connect to a database. Here is a
@@ -258,6 +258,44 @@ def foo(pg_conn: str = Derived(get_pg_conn)):
 def bar(pg_conn: str = Derived(get_pg_conn)):
     ...
 ```
+
+## On Command Run
+
+If you want to get the command name and arguments information that are passed to it (in case of general purpose
+debugging for instance), you can pass `on_cmd_run` to the CLI.
+
+```python
+from piou import Cli, Option, CommandMeta, Derived
+
+
+def on_cmd_run(meta: CommandMeta):
+    pass
+
+cli = Cli(description='A CLI tool',
+          on_cmd_run=on_cmd_run)
+
+
+def processor(a: int = Option(1, '-a'),
+              b: int = Option(2, '-b')):
+    return a + b
+
+
+@cli.command()
+def test(
+        value: int = Derived(processor),
+        bar: str = Option(None, '--bar')
+):
+    pass
+```
+
+In this case, `meta` will be equal to: 
+
+```python
+CommandMeta(cmd_name='test',
+            fn_args={'bar': 'bar', 'value': 5},
+            cmd_args={'a': 3, 'b': 2, 'bar': 'bar'})
+```
+
 
 ## Help / Errors Formatter
 
