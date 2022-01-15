@@ -1,6 +1,21 @@
 import pytest
 
 
+@pytest.mark.parametrize('options, input, expected', [
+    ({'use_markdown': True}, '**test**', '\nDESCRIPTION\n test'),
+    ({'use_markdown': True}, '[bold]test[/bold]', '\nDESCRIPTION\n [bold]test[/bold]'),
+    ({'use_markdown': False}, '**test**', '\nDESCRIPTION\n **test**'),
+    ({'use_markdown': False}, '[bold]test[/bold]', '\nDESCRIPTION\n test')
+])
+def test_rich_formatting_options(options, input, expected, capsys):
+    from piou.formatter import RichFormatter
+    from piou.command import Command
+
+    formatter = RichFormatter(**options)
+    formatter._print_description(Command('', lambda x: ..., description=input))
+    assert capsys.readouterr().out.rstrip() == expected
+
+
 def get_simple_cli(formatter):
     from piou import Cli, Option
 

@@ -89,6 +89,11 @@ class RichFormatter(Formatter):
     cmd_color: str = 'cyan'
     option_color: str = 'cyan'
     show_default: bool = True
+    use_markdown: bool = True
+    """Use Markdown object for the description, otherwise use 
+    default str
+    """
+    # Only if use_markdown is True
     code_theme: str = 'solarized-dark'
     """See https://pygments.org/styles/ for a list of styles """
 
@@ -103,9 +108,13 @@ class RichFormatter(Formatter):
         if description:
             self.print_fn()
             self.print_fn(RichTitles.DESCRIPTION)
-            _max_width = max(len(x) for x in description.split('\n'))
-            self.print_fn(pad(Markdown('  \n'.join(description.split('\n')), code_theme=self.code_theme)),
-                          width=max(_max_width, MIN_MARKDOWN_SIZE))
+            if self.use_markdown:
+                _max_width = max(len(x) for x in description.split('\n'))
+                self.print_fn(pad(Markdown('  \n'.join(description.split('\n')),
+                                           code_theme=self.code_theme)),
+                              width=max(_max_width, MIN_MARKDOWN_SIZE))
+            else:
+                self.print_fn(pad(description))
 
     def _print_options(self, options: list[CommandOption]):
         self.print_rows([(fmt_option(opt, show_full=True, color=self.option_color),
