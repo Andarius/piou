@@ -1,4 +1,4 @@
-[<img src="./docs/piou.jpg" width="250"/>](image.png)
+[<img src="https://github.com/Andarius/piou/raw/dev/docs/piou.jpg" width="250"/>](docs/logo.png)
 
 # Piou
 
