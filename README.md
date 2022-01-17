@@ -1,3 +1,5 @@
+[<img src="./docs/piou.jpg" width="250"/>](image.png)
+
 # Piou
 
 [![Python versions](https://img.shields.io/pypi/pyversions/piou)](https://pypi.python.org/pypi/piou)
