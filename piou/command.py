@@ -162,6 +162,7 @@ class CommandGroup:
         if group.name in self.command_names:
             raise DuplicatedCommandError(f'Duplicated command found for {group.name!r}',
                                          group.name)
+        group.on_cmd_run = self.on_cmd_run
         self._command_groups[group.name] = group
 
     def add_command(self, f, cmd: str = None, help: str = None, description: str = None):
@@ -262,7 +263,10 @@ class CommandGroup:
             args_dict = _derived.update_args(args_dict)
 
         if self.on_cmd_run:
-            self.on_cmd_run(CommandMeta(command.name, fn_args=args_dict, cmd_args=cmd_args))
+            full_command_name = '.'.join([x.cmd for x in parent_args] + [command.name])
+            self.on_cmd_run(CommandMeta(full_command_name,
+                                        fn_args=args_dict,
+                                        cmd_args=cmd_args))
 
         return command.run(**args_dict)
 

@@ -1,8 +1,8 @@
 # Changelog
 
-## [0.8.1] 15-01-2022
+## [0.8.2] 19-01-2022
 
 
-### NEW:
+### FIX
 
-- You can now specify `use_markdown` (default True) for the description.
+- `on_cmd_run` is now called correctly with sub-commands

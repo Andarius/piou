@@ -492,13 +492,21 @@ def test_on_cmd_run():
     from piou import Cli, Option, CommandMeta, Derived
 
     cmd_run_called = False
+    is_sub_command = False
 
     def on_cmd_run(meta: CommandMeta):
         nonlocal cmd_run_called
         cmd_run_called = True
-        assert meta == CommandMeta(cmd_name='test',
-                                   fn_args={'bar': 'bar', 'value': 5},
-                                   cmd_args={'a': 3, 'b': 2, 'bar': 'bar'})
+        if not is_sub_command:
+            assert meta == CommandMeta(cmd_name='test',
+                                       fn_args={'bar': 'bar', 'value': 5},
+                                       cmd_args={'a': 3, 'b': 2, 'bar': 'bar'})
+        else:
+            assert meta == CommandMeta(
+                cmd_name='sub.test',
+                fn_args={'baz': 'baz'},
+                cmd_args={'baz': 'baz'}
+            )
 
     cli = Cli(description='A CLI tool',
               on_cmd_run=on_cmd_run)
@@ -514,5 +522,23 @@ def test_on_cmd_run():
     ):
         pass
 
+    sub_cmd = cli.add_sub_parser('sub')
+
+    @sub_cmd.processor()
+    def sub_processor(verbose: bool = Option(False, '--verbose')):
+        pass
+
+    @sub_cmd.command('test')
+    def test_sub(
+            baz: str = Option(None, '--baz')
+    ):
+        pass
+
     cli._group.run_with_args('test', '-a', '3', '-b', '2', '--bar', 'bar')
+    assert cmd_run_called
+
+    # Testing sub command
+    cmd_run_called = False
+    is_sub_command = True
+    cli._group.run_with_args('sub', '--verbose', 'test', '--baz', 'baz')
     assert cmd_run_called
