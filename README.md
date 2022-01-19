@@ -273,6 +273,7 @@ from piou import Cli, Option, CommandMeta, Derived
 def on_cmd_run(meta: CommandMeta):
     pass
 
+
 cli = Cli(description='A CLI tool',
           on_cmd_run=on_cmd_run)
 
@@ -290,14 +291,13 @@ def test(
     pass
 ```
 
-In this case, `meta` will be equal to: 
+In this case, `meta` will be equal to:
 
 ```python
 CommandMeta(cmd_name='test',
             fn_args={'bar': 'bar', 'value': 5},
             cmd_args={'a': 3, 'b': 2, 'bar': 'bar'})
 ```
-
 
 ## Help / Errors Formatter
 
@@ -320,6 +320,12 @@ You can try a more complete example by running `python -m piou.test -h`
 
 If you are migrating code from `argparse` to `piou` here are some differences:
 
-- `add_argument('--pick', choices=['foo', 'bar'])` is replaced with
-  `pick: Literal['foo', 'bar'] = Option(None, '--pick')`
-- `add_argument('--verbose', action='store_true')` is replaced with `verbose: bool = Option(False, '--verbose')`
+**choices**:  
+`add_argument('--pick', choices=['foo', 'bar'])` can be replaced by
+`pick: Literal['foo', 'bar'] = Option(None, '--pick')`.
+
+You can also disable the case sensitivity by passing `Option(None, '--pick', case_sentitive=False)`
+
+**action=store_true**  
+`add_argument('--verbose', action='store_true')` can be replaced by
+`verbose: bool = Option(False, '--verbose')`

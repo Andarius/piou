@@ -56,6 +56,16 @@ def test_convert_to_type(data_type, value, expected):
     assert convert_to_type(data_type, value) == expected
 
 
+def testing_case_sensitivity():
+    from piou.utils import convert_to_type
+    _type = Literal['foo', 'bar']
+    assert convert_to_type(_type, 'FOO', case_sensitive=False) == 'FOO'
+    assert convert_to_type(_type, 'foo', case_sensitive=False) == 'foo'
+    with pytest.raises(ValueError,
+                       match=re.escape('"toto" is not a valid value for Literal[foo, bar]')):
+        convert_to_type(_type, 'toto', case_sensitive=False)
+
+
 @pytest.mark.parametrize('data_type, value, expected, expected_str', [
     (Path, 'a-file.py', FileNotFoundError, f'File not found: "a-file.py"'),
     (Literal['foo', 'bar'], 'baz', ValueError, '"baz" is not a valid value for Literal[foo, bar]')

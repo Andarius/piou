@@ -20,7 +20,8 @@ def foo_main(
         foo1: int = Option(..., help='Foo argument'),
         foo2: str = Option(..., '-f', '--foo2', help='Foo2 argument'),
         foo3: str = Option(None, '-g', '--foo3', help='Foo3 argument'),
-        foo4: Literal['foo', 'bar'] = Option(None, '--foo4', help='Foo4 argument'),
+        foo4: Literal['foo', 'bar'] = Option(None, '--foo4', help='Foo4 argument',
+                                             case_sensitive=False),
         foo5: list[int] = Option(None, '--foo5', help='Foo5 arguments'),
 ):
     """

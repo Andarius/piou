@@ -1,8 +1,8 @@
 # Changelog
 
-## [0.8.2] 19-01-2022
+## [0.9.0] 19-01-2022
 
 
-### FIX
+### NEW
 
-- `on_cmd_run` is now called correctly with sub-commands
+- adding `case_sensitivity` for `Literal` data type (default to `True`)

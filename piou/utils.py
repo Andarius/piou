@@ -21,7 +21,9 @@ from .exceptions import (
 T = TypeVar('T', str, int, float, dt.date, dt.datetime, Path, dict, list)
 
 
-def convert_to_type(data_type: Any, value: str):
+def convert_to_type(data_type: Any, value: str,
+                    *,
+                    case_sensitive: bool = True):
     """
     Converts `value` to `data_type`, if not possible raises the appropriate error
     """
@@ -49,7 +51,11 @@ def convert_to_type(data_type: Any, value: str):
         return json.loads(value)
     elif get_origin(data_type) is Literal:
         possible_fields = get_args(data_type)
-        if value not in possible_fields:
+        _possible_fields_case = possible_fields
+        if not case_sensitive:
+            _possible_fields_case = [x.lower() for x in possible_fields] + [
+                x.upper() for x in possible_fields]
+        if value not in _possible_fields_case:
             possible_fields = ', '.join(possible_fields)
             raise ValueError(f'"{value}" is not a valid value for Literal[{possible_fields}]')
         return value
@@ -80,6 +86,9 @@ class CommandOption(Generic[T]):
     _name: Optional[str] = field(init=False, default=None)
     data_type: type[T] = field(init=False, default=Any)  # noqa
 
+    # Only for literal types
+    case_sensitive: bool = True
+
     @property
     def name(self):
         return self._name or keyword_arg_to_name(sorted(self.keyword_args)[0])
@@ -106,18 +115,22 @@ class CommandOption(Generic[T]):
         return len(self.keyword_args) == 0
 
     def validate(self, value: str) -> T:
-        return convert_to_type(self.data_type, value)  # type: ignore
+        return convert_to_type(self.data_type, value,
+                               case_sensitive=self.case_sensitive)  # type: ignore
 
 
 def Option(
         default: Any,
         *keyword_args: str,
-        help: str = None
+        help: str = None,
+        # Only for type Literal
+        case_sensitive: bool = True
 ) -> Any:
     return CommandOption(
         default=default,
         help=help,
         keyword_args=keyword_args,
+        case_sensitive=case_sensitive
     )
 
 
