@@ -153,7 +153,7 @@ class RichFormatter(Formatter):
         usage = get_usage(
             global_options=options,
             command=command.name,
-            command_options=command.options,
+            command_options=command.options_sorted,
             parent_args=parent_args
         )
         self.print_fn(RichTitles.USAGE)
@@ -190,7 +190,7 @@ class RichFormatter(Formatter):
                 if group.options and cmd_lvl == len(parent_commands) - 1:
                     _cmds.append(fmt_cmd_options(group.options))
             _cmds_str = ' '.join(_cmds)
-            _line = f'{"" if i == 0 else "or: ":>5}{_cmds_str} {fmt_cmd_options(cmd.options)}'.rstrip()
+            _line = f'{"" if i == 0 else "or: ":>5}{_cmds_str} {fmt_cmd_options(cmd.options_sorted)}'.rstrip()
             commands_str.append(_line)
         commands_str = '\n'.join(commands_str)
 
@@ -208,7 +208,7 @@ class RichFormatter(Formatter):
             if cmd.options:
                 self.print_rows([(fmt_option(opt, show_full=True, color=self.option_color),
                                   fmt_help(opt, show_default=self.show_default))
-                                 for opt in cmd.options])
+                                 for opt in cmd.options_sorted])
                 self.print_fn()
 
         if group.options:

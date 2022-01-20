@@ -66,9 +66,9 @@ def get_cmd_group_cli_with_global_opt(formatter):
     @sub_cmd.command(cmd='foo',
                      help='Run foo command')
     def foo_main(
-            foo1: int = Option(..., help='Foo arguments'),
-            foo2: str = Option(..., '-f', '--foo2', help='Foo2 arguments'),
             foo3: str = Option('a sub value', '-g', '--foo3', help='Foo3 arguments'),
+            foo2: str = Option(..., '-f', '--foo2', help='Foo2 arguments'),
+            foo1: int = Option(..., help='Foo arguments'),
     ):
         pass
 
@@ -279,10 +279,10 @@ _PARAMS = [
      _SIMPLE_CLI_WITH_OPTS_CMD_OUTPUT_RICH),
     ('Simple CLI sub-cmd', get_cmd_group_cli_with_global_opt, ['-h'], _SIMPLE_CLI_SUB_CMD_RICH),
     ('Simple CLI sub-cmd help', get_cmd_group_cli_with_global_opt, ['sub-cmd', '-h'], _SIMPLE_CLI_SUB_CMD_HELP_RICH),
-    ('Simple CLI sub-cmd help', get_cmd_group_cli_with_global_opt, ['sub-cmd2', '-h'], _SIMPLE_CLI_SUB_CMD2_HELP),
+    ('Simple CLI sub-cmd 2 help', get_cmd_group_cli_with_global_opt, ['sub-cmd2', '-h'], _SIMPLE_CLI_SUB_CMD2_HELP),
     ('Simple CLI sub-cmd cmd', get_cmd_group_cli_with_global_opt, ['sub-cmd', 'foo', '-h'],
      _SIMPLE_CLI_SUB_CMD_CMD_RICH),
-    # Errors
+    # # Errors
     ('Simple CLI keyword error', get_simple_cli, ['foo', '-vvv'],
      "Could not find keyword parameter '-vvv' for command 'foo'"),
     ('Simple CLI keyword error', get_simple_cli, ['foo'],

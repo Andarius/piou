@@ -1,8 +1,8 @@
 # Changelog
 
-## [0.9.1] 19-01-2022
+## [0.9.2] 20-01-2022
 
 
-### NEW
+### FIX
 
-- adding support for async derived processor
+- Fix options and argument ordering with `RichFormatter`

@@ -147,6 +147,28 @@ def test_command():
     assert called
 
 
+def test_command_options():
+    from piou.command import Command, CommandOption
+
+    # Required Pos at the end
+    opt1 = CommandOption(...)
+    opt1.name = 'z'
+    # Required Keyword
+    opt2 = CommandOption(..., keyword_args=('-a', ))
+    opt2.name = 'a'
+    # Optional Keyword
+    opt3 = CommandOption(False, keyword_args=('-b', ))
+    opt3.name = 'b'
+    opt4 = CommandOption(False, keyword_args=('-c', ))
+    opt4.name = 'c'
+    opt5 = CommandOption(False, keyword_args=('-d', ))
+    opt5.name = 'd'
+
+    def fn(*args, **kwargs): pass
+    cmd = Command(name='', fn=fn, options=[opt4, opt5, opt3, opt2, opt1])
+    assert [x.name for x in cmd.options_sorted] == ['z', 'a', 'b', 'c', 'd']
+
+
 def test_command_async():
     from piou.command import Command
     called = False

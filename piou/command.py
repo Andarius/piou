@@ -47,7 +47,17 @@ class Command:
 
     @property
     def keyword_args(self) -> list[CommandOption]:
-        return [opt for opt in self.options if not opt.is_positional_arg]
+        return sorted([opt for opt in self.options if not opt.is_positional_arg],
+                      key=lambda x: (-x.is_required, x.name))
+
+    @property
+    def options_sorted(self) -> list[CommandOption]:
+        """ Sorts with the following order:
+         - positional
+         - keyword required
+         - keyword optional
+        """
+        return self.positional_args + self.keyword_args
 
     def run(self, *args, loop: asyncio.AbstractEventLoop = None, **kwargs):
         if iscoroutinefunction(self.fn):
@@ -130,12 +140,12 @@ class CommandGroup:
         self.description = clean_multiline(self.description) if self.description else None
 
     @property
-    def commands(self):
+    def commands(self) -> dict:
         return {k: self._commands.get(k) or self._command_groups[k] for k in sorted(self.command_names)}
 
     @property
     def options(self):
-        return self._options
+        return sorted(self._options, key=lambda x: x.is_required, reverse=True)
 
     def add_sub_parser(self, help: Optional[str] = None, description: Optional[str] = None):
         cls = type(self)
