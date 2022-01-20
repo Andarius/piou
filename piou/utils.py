@@ -1,3 +1,4 @@
+import asyncio
 import datetime as dt
 import inspect
 import json
@@ -6,9 +7,11 @@ import shlex
 from collections import namedtuple
 from dataclasses import dataclass, field
 from enum import Enum
+from functools import partial
+from inspect import iscoroutinefunction
 from pathlib import Path
 from typing import (
-    Union, Any, Optional, get_args, get_origin,
+    Any, Optional, get_args, get_origin,
     Literal, TypeVar, Generic, Callable
 )
 from uuid import UUID
@@ -287,9 +290,24 @@ def convert_args_to_dict(input_args: list[str],
     return fn_args
 
 
+def run_function(fn: Callable, *args, loop: asyncio.AbstractEventLoop = None, **kwargs):
+    """ Runs a async / non async function """
+    if iscoroutinefunction(fn):
+        if loop is not None:
+            return loop.run_until_complete(fn(*args, **kwargs))
+        else:
+            return asyncio.run(fn(*args, **kwargs))
+    else:
+        return fn(*args, **kwargs)
+
+
+run_function_no_loop = partial(run_function, loop=None)
+
+
 @dataclass
 class CommandDerivedOption:
     processor: Callable
+    """Processor function, can be async """
     param_name: Optional[str] = field(init=False)
 
     def update_args(self, args: dict) -> dict:
@@ -299,7 +317,7 @@ class CommandDerivedOption:
         fn_args = {}
         for _opt in get_default_args(self.processor):
             fn_args[_opt.name] = _args.pop(_opt.name)
-        _args[self.param_name] = self.processor(**fn_args)
+        _args[self.param_name] = run_function_no_loop(self.processor, **fn_args)
         return _args
 
 

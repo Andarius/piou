@@ -1,3 +1,4 @@
+import asyncio
 import datetime as dt
 import re
 from enum import Enum
@@ -484,6 +485,28 @@ def test_derived():
 
     def processor(a: int = Option(1, '-a'),
                   b: int = Option(2, '-b')):
+        return a + b
+
+    called = False
+
+    @cli.command()
+    def test(value: int = Derived(processor)):
+        nonlocal called
+        called = True
+        assert value == 5
+
+    cli._group.run_with_args('test', '-a', '3', '-b', '2')
+    assert called
+
+
+def test_async_derived():
+    from piou import Cli, Option, Derived
+
+    cli = Cli(description='A CLI tool')
+
+    async def processor(a: int = Option(1, '-a'),
+                        b: int = Option(2, '-b')):
+        await asyncio.sleep(0.01)
         return a + b
 
     called = False
