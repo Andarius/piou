@@ -197,7 +197,6 @@ def get_cmd_args(cmd: str, types: dict[str, Any]) -> tuple[list[str], dict[str, 
         except KeyError:
             raise KeywordParamNotFoundError(f'Could not find parameter {_arg!r}',
                                             _arg)
-
         if curr_type is bool:
             keyword_params[_arg] = True
         else:

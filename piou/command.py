@@ -1,6 +1,7 @@
 import asyncio
 import textwrap
-from dataclasses import dataclass, field
+import dataclasses
+from dataclasses import dataclass, field, asdict
 from functools import wraps
 from inspect import getdoc, iscoroutinefunction
 from typing import get_type_hints, Optional, Any, NamedTuple, Callable
@@ -93,14 +94,17 @@ def extract_function_info(f) -> tuple[list[CommandOption], list[CommandDerivedOp
     for (param_name, param_type), option in zip(get_type_hints(f).items(),
                                                 defaults):
         if isinstance(option, CommandOption):
-            option.name = param_name
-            option.data_type = param_type
-            options.append(option)
+            # Making a copy in case of reuse
+            _option = dataclasses.replace(option)
+            _option.name = param_name
+            _option.data_type = param_type
+            options.append(_option)
         elif isinstance(option, CommandDerivedOption):
-            option.param_name = param_name
-            _options, _ = extract_function_info(option.processor)
+            _option = dataclasses.replace(option)
+            _option.param_name = param_name
+            _options, _ = extract_function_info(_option.processor)
             options += _options
-            derived_opts.append(option)
+            derived_opts.append(_option)
         else:
             pass
 

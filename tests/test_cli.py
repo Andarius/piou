@@ -90,7 +90,8 @@ def test_convert_to_type_invalid_data(data_type, value, expected,
             {'foo1': list[int], 'foo2': bool, 'foo3': str},
             ['foo', 'bar'],
             {'--foo1': '1 2 3', '--foo2': True, '--foo3': 'test'}
-    )
+    ),
+    ('--foo /tmp', {'foo': Path}, [], {'--foo': '/tmp'})
 ])
 def test_get_cmd_args(input_str, types, expected_pos_args, expected_key_args):
     from piou.utils import get_cmd_args
@@ -154,17 +155,18 @@ def test_command_options():
     opt1 = CommandOption(...)
     opt1.name = 'z'
     # Required Keyword
-    opt2 = CommandOption(..., keyword_args=('-a', ))
+    opt2 = CommandOption(..., keyword_args=('-a',))
     opt2.name = 'a'
     # Optional Keyword
-    opt3 = CommandOption(False, keyword_args=('-b', ))
+    opt3 = CommandOption(False, keyword_args=('-b',))
     opt3.name = 'b'
-    opt4 = CommandOption(False, keyword_args=('-c', ))
+    opt4 = CommandOption(False, keyword_args=('-c',))
     opt4.name = 'c'
-    opt5 = CommandOption(False, keyword_args=('-d', ))
+    opt5 = CommandOption(False, keyword_args=('-d',))
     opt5.name = 'd'
 
     def fn(*args, **kwargs): pass
+
     cmd = Command(name='', fn=fn, options=[opt4, opt5, opt3, opt2, opt1])
     assert [x.name for x in cmd.options_sorted] == ['z', 'a', 'b', 'c', 'd']
 
@@ -300,6 +302,30 @@ def test_run_command():
     cli._group.run_with_args('-q', 'foo', '1', '-f', 'toto', '--foo4', '1 2 3')
     assert called
     assert processor_called
+
+
+def test_reuse_option():
+    from piou import Cli, Option
+
+    called = False
+
+    cli = Cli(description='A CLI tool',
+              propagate_options=True)
+
+    Test = Option(1, '--test')
+
+    @cli.command()
+    def foo(test1: int = Test):
+        nonlocal called
+        assert isinstance(test1, int)
+        called = True
+
+    @cli.command()
+    def bar(test2: int = Test):
+        assert isinstance(test2, int)
+
+    cli._group.run_with_args('foo')
+    assert called
 
 
 def test_run_command_pass_global_args():

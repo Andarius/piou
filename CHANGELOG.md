@@ -1,8 +1,8 @@
 # Changelog
 
-## [0.9.2] 20-01-2022
+## [0.9.3] 23-01-2022
 
 
 ### FIX
 
-- Fix options and argument ordering with `RichFormatter`
+- Fix `Option` / `CommandDerivedOption` where when reused the fields were overwritten

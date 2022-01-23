@@ -1,4 +1,5 @@
 from typing import Literal
+from pathlib import Path
 
 from piou import Cli, Option
 from piou.formatter import RichFormatter
@@ -47,8 +48,11 @@ sub_cmd.add_option('--test', help='Test mode')
 
 
 @sub_cmd.command(cmd='bar', help='Run bar command')
-def sub_bar_main(**kwargs):
+def sub_bar_main(
+        foo: Path = Option(Path('/tmp'), '--foo', help='Foo argument'),
+        **kwargs):
     print('Running sub-bar command')
+    print(f'foo ({type(foo)})')
 
 
 @sub_cmd.command(cmd='foo', help='Run foo command')
