@@ -1,8 +1,8 @@
 # Changelog
 
-## [0.9.3] 23-01-2022
+## [0.9.4] 24-01-2022
 
 
 ### FIX
 
-- Fix `Option` / `CommandDerivedOption` where when reused the fields were overwritten
+- Fix `Option` of `CommandDerivedOption` processor where the `name` was not set properly.

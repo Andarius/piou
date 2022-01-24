@@ -1,10 +1,9 @@
 import asyncio
 import textwrap
-import dataclasses
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from functools import wraps
 from inspect import getdoc, iscoroutinefunction
-from typing import get_type_hints, Optional, Any, NamedTuple, Callable
+from typing import Optional, Any, NamedTuple, Callable
 
 from .exceptions import (
     DuplicatedCommandError, CommandException, CommandNotFoundError
@@ -12,7 +11,7 @@ from .exceptions import (
 from .utils import (
     CommandOption,
     CommandDerivedOption,
-    get_default_args,
+    extract_function_info,
     parse_input_args,
     convert_args_to_dict
 )
@@ -83,32 +82,6 @@ class Command:
                 if _keyword_arg in _keyword_args:
                     raise ValueError(f'Duplicate keyword args found "{_keyword_arg}"')
                 _keyword_args.add(_keyword_arg)
-
-
-def extract_function_info(f) -> tuple[list[CommandOption], list[CommandDerivedOption]]:
-    """Extracts the options from a function arguments"""
-    options: list[CommandOption] = []
-    derived_opts: list[CommandDerivedOption] = []
-    defaults: list[CommandOption] = get_default_args(f)
-
-    for (param_name, param_type), option in zip(get_type_hints(f).items(),
-                                                defaults):
-        if isinstance(option, CommandOption):
-            # Making a copy in case of reuse
-            _option = dataclasses.replace(option)
-            _option.name = param_name
-            _option.data_type = param_type
-            options.append(_option)
-        elif isinstance(option, CommandDerivedOption):
-            _option = dataclasses.replace(option)
-            _option.param_name = param_name
-            _options, _ = extract_function_info(_option.processor)
-            options += _options
-            derived_opts.append(_option)
-        else:
-            pass
-
-    return options, derived_opts
 
 
 @dataclass

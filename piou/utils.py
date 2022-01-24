@@ -1,4 +1,5 @@
 import asyncio
+import dataclasses
 import datetime as dt
 import inspect
 import json
@@ -11,7 +12,7 @@ from functools import partial
 from inspect import iscoroutinefunction
 from pathlib import Path
 from typing import (
-    Any, Optional, get_args, get_origin,
+    Any, Optional, get_args, get_origin, get_type_hints,
     Literal, TypeVar, Generic, Callable
 )
 from uuid import UUID
@@ -303,6 +304,31 @@ def run_function(fn: Callable, *args, loop: asyncio.AbstractEventLoop = None, **
 run_function_no_loop = partial(run_function, loop=None)
 
 
+def extract_function_info(f) -> tuple[list[CommandOption], list['CommandDerivedOption']]:
+    """Extracts the options from a function arguments"""
+    options: list[CommandOption] = []
+    derived_opts: list[CommandDerivedOption] = []
+
+    for (param_name, param_type), option in zip(get_type_hints(f).items(),
+                                                get_default_args(f)):
+        if isinstance(option, CommandOption):
+            # Making a copy in case of reuse
+            _option = dataclasses.replace(option)
+            _option.name = param_name
+            _option.data_type = param_type
+            options.append(_option)
+        elif isinstance(option, CommandDerivedOption):
+            _option = option  # dataclasses.replace(option)
+            _option.param_name = param_name
+            _options, _ = extract_function_info(_option.processor)
+            options += _options
+            derived_opts.append(_option)
+        else:
+            pass
+
+    return options, derived_opts
+
+
 @dataclass
 class CommandDerivedOption:
     processor: Callable
@@ -314,7 +340,8 @@ class CommandDerivedOption:
             raise ValueError('param_name not set. Did you forgot to set it?')
         _args = args.copy()
         fn_args = {}
-        for _opt in get_default_args(self.processor):
+        _options, _ = extract_function_info(self.processor)
+        for _opt in _options:
             fn_args[_opt.name] = _args.pop(_opt.name)
         _args[self.param_name] = run_function_no_loop(self.processor, **fn_args)
         return _args

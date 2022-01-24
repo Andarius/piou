@@ -6,11 +6,11 @@ cli = Cli(description='A CLI tool')
 
 
 def get_pg_url(
-        pg_user: str = Option('postgres', '--pg-user'),
-        pg_pwd: str = Option('postgres', '--pg-pwd'),
-        pg_host: str = Option('localhost', '--pg-host'),
-        pg_port: int = Option(5432, '--pg-port'),
-        pg_db: str = Option('postgres', '--pg-db')
+        pg_user: str = Option('postgres', '--user'),
+        pg_pwd: str = Option('postgres', '--pwd'),
+        pg_host: str = Option('localhost', '--host'),
+        pg_port: int = Option(5432, '--port'),
+        pg_db: str = Option('postgres', '--db')
 
 ):
     return f'postgresql://{pg_user}:{pg_pwd}@{pg_host}:{pg_port}/{pg_db}'

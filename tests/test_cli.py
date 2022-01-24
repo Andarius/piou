@@ -531,8 +531,8 @@ def test_derived():
 
     cli = Cli(description='A CLI tool')
 
-    def processor(a: int = Option(1, '-a'),
-                  b: int = Option(2, '-b')):
+    def processor(a: int = Option(1, '--first-val'),
+                  b: int = Option(2, '--second-val')):
         return a + b
 
     called = False
@@ -543,7 +543,7 @@ def test_derived():
         called = True
         assert value == 5
 
-    cli._group.run_with_args('test', '-a', '3', '-b', '2')
+    cli._group.run_with_args('test', '--first-val', '3', '--second-val', '2')
     assert called
 
 
