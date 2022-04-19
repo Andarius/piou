@@ -47,9 +47,9 @@ def fmt_help(option: CommandOption, show_default: bool):
 
 
 def get_usage(global_options: list[CommandOption],
-              command: str = None,
-              command_options: list[CommandOption] = None,
-              parent_args: ParentArgs = None):
+              command: Optional[str] = None,
+              command_options: Optional[list[CommandOption]] = None,
+              parent_args: Optional[ParentArgs] = None):
     parent_args = parent_args or []
     _global_options = ' '.join(['[' + sorted(x.keyword_args)[-1] + ']' for x in global_options])
     command = f'[underline]{command}[/underline]' if command else '<command>'
@@ -148,7 +148,7 @@ class RichFormatter(Formatter):
     def print_cmd_help(self,
                        command: Command,
                        options: list[CommandOption],
-                       parent_args: ParentArgs = None):
+                       parent_args: Optional[ParentArgs] = None):
 
         usage = get_usage(
             global_options=options,

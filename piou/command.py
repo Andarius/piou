@@ -59,7 +59,7 @@ class Command:
         """
         return self.positional_args + self.keyword_args
 
-    def run(self, *args, loop: asyncio.AbstractEventLoop = None, **kwargs):
+    def run(self, *args, loop: Optional[asyncio.AbstractEventLoop] = None, **kwargs):
         if iscoroutinefunction(self.fn):
             if loop is not None:
                 return loop.run_until_complete(self.fn(*args, **kwargs))
@@ -128,7 +128,7 @@ class CommandGroup:
         cls = type(self)
         return cls(help=help, description=description)  # noqa
 
-    def add_option(self, *args: str, help: str = None, data_type: Any = bool,
+    def add_option(self, *args: str, help: Optional[str] = None, data_type: Any = bool,
                    default: Any = False):
         opt = CommandOption(
             default=default,
@@ -152,7 +152,7 @@ class CommandGroup:
         group.on_cmd_run = self.on_cmd_run
         self._command_groups[group.name] = group
 
-    def add_command(self, f, cmd: str = None, help: str = None, description: str = None):
+    def add_command(self, f, cmd: Optional[str] = None, help: Optional[str] = None, description: Optional[str] = None):
         cmd_name = cmd or f.__name__
         if cmd_name in self.commands:
             raise DuplicatedCommandError(f'Duplicated command found for {cmd_name!r}',
@@ -166,7 +166,7 @@ class CommandGroup:
                                            help=help,
                                            description=description or getdoc(f))
 
-    def command(self, cmd: str = None, help: str = None, description: str = None):
+    def command(self, cmd: Optional[str] = None, help: Optional[str] = None, description: Optional[str] = None):
 
         def _command(f):
             @wraps(f)
@@ -192,7 +192,7 @@ class CommandGroup:
 
         return _processor
 
-    def run_with_args(self, *args, parent_args: ParentArgs = None):
+    def run_with_args(self, *args, parent_args: Optional[ParentArgs] = None):
 
         cmd, global_options, cmd_options = parse_input_args(args, self.command_names)
 
@@ -267,8 +267,8 @@ class CommandGroup:
 class ShowHelpError(Exception):
     def __init__(self,
                  group: CommandGroup,
-                 command: Command = None,
-                 parent_args: ParentArgs = None):
+                 command: Optional[Command] = None,
+                 parent_args: Optional[ParentArgs] = None):
         self.command = command
         self.group = group
         self.parent_args = parent_args

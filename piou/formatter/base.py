@@ -72,7 +72,7 @@ class Formatter(abc.ABC):
     def print_help(self, *,
                    group: CommandGroup,
                    command: Optional[Command] = None,
-                   parent_args: ParentArgs = None
+                   parent_args: Optional[ParentArgs] = None
                    ) -> None:
         # We are printing a command help
         if command:
@@ -96,7 +96,7 @@ class Formatter(abc.ABC):
     def print_cmd_help(self,
                        command: Command,
                        options: list[CommandOption],
-                       parent_args: ParentArgs = None) -> None:
+                       parent_args: Optional[ParentArgs] = None) -> None:
         ...
 
     def print_cmd_error(self, cmd: str) -> None:

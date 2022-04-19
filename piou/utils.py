@@ -126,7 +126,7 @@ class CommandOption(Generic[T]):
 def Option(
         default: Any,
         *keyword_args: str,
-        help: str = None,
+        help: Optional[str] = None,
         # Only for type Literal
         case_sensitive: bool = True
 ) -> Any:
@@ -290,7 +290,7 @@ def convert_args_to_dict(input_args: list[str],
     return fn_args
 
 
-def run_function(fn: Callable, *args, loop: asyncio.AbstractEventLoop = None, **kwargs):
+def run_function(fn: Callable, *args, loop: Optional[asyncio.AbstractEventLoop] = None, **kwargs):
     """ Runs a async / non async function """
     if iscoroutinefunction(fn):
         if loop is not None:

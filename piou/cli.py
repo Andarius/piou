@@ -73,20 +73,20 @@ class Cli:
             self.formatter.print_count_error(e.expected_count, e.count, e.cmd)
             return
 
-    def command(self, cmd: str = None, help: str = None, description: str = None):
+    def command(self, cmd: Optional[str] = None, help: Optional[str] = None, description: Optional[str] = None):
         return self._group.command(cmd=cmd, help=help, description=description)
 
     def processor(self):
         return self._group.processor()
 
-    def add_option(self, *args, help: str = None, data_type: Any = bool, default: Any = False):
+    def add_option(self, *args, help: Optional[str] = None, data_type: Any = bool, default: Any = False):
         self._group.add_option(*args, help=help, data_type=data_type, default=default)
 
     def set_options_processor(self, fn: Callable):
         """ Function to call with all the options before running `run` or `run_with_args`"""
         self._group.set_options_processor(fn)
 
-    def add_command(self, cmd: str, f, help: str = None, description: str = None):
+    def add_command(self, cmd: str, f, help: Optional[str] = None, description: Optional[str] = None):
         self._group.add_command(cmd=cmd, f=f, help=help, description=description)
 
     def add_command_group(self, group: CommandGroup):
