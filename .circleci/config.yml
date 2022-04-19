@@ -6,7 +6,7 @@ orbs:
 executors:
   test-build:
     docker:
-      - image: circleci/python:3.9
+      - image: cimg/python:3.9
 
 jobs:
 
