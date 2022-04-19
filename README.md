@@ -24,7 +24,7 @@ def foo_main(
         foo: str = Option(None, '--foo', help='Foo keyword argument'),
 ):
     """
-    A longer description on what the function is doing.  
+    A longer description on what the function is doing.
     You can run it with:
     ```bash
      poetry run python -m piou.test.simple foo 1 -b baz
@@ -100,7 +100,7 @@ def bar_main(
 
 if __name__ == '__main__':
     cli.run()
-```  
+```
 
 In this case, `foo1` is a positional argument while `foo2` and `foo3` are keyword arguments.
 
@@ -197,7 +197,7 @@ def processor(verbose: bool):
 
 
 cli.set_options_processor(processor)
-``` 
+```
 
 You can also use the decorator syntax:
 
@@ -212,7 +212,7 @@ def processor(verbose: bool = Option(False, '--verbose', help='Increase verbosit
     print(f'Processing {verbose=}')
 ```
 
-By default, when a processor is set, the global arguments will not be passed downstream.  
+By default, when a processor is set, the global arguments will not be passed downstream.
 If you still want them to be passed to the functions by setting
 
 ```python
@@ -227,7 +227,7 @@ cli.add_sub_parser(cmd='sub', help='A sub command', propagate_options=True)
 
 ## Derived Options
 
-Sometimes, you want to tbe able to reuse the options in multiple command and group them into a single output to pass to
+Sometimes, you want to reuse the options in multiple command and group them into a single output to pass to
 the command. For instance, you might want to group a connection string parameter to connect to a database. Here is a
 full example:
 
@@ -301,7 +301,7 @@ CommandMeta(cmd_name='test',
 
 ## Help / Errors Formatter
 
-You can customize the help and the different errors displayed by the CLI by passing a Formatter.  
+You can customize the help and the different errors displayed by the CLI by passing a Formatter.
 The default one is the **Rich formatter** based on the [Rich](https://github.com/Textualize/rich) package:
 
 - `cmd_color`: set the color of the command in the help
@@ -320,12 +320,12 @@ You can try a more complete example by running `python -m piou.test -h`
 
 If you are migrating code from `argparse` to `piou` here are some differences:
 
-**choices**:  
+**choices**:
 `add_argument('--pick', choices=['foo', 'bar'])` can be replaced by
 `pick: Literal['foo', 'bar'] = Option(None, '--pick')`.
 
 You can also disable the case sensitivity by passing `Option(None, '--pick', case_sentitive=False)`
 
-**action=store_true**  
+**action=store_true**
 `add_argument('--verbose', action='store_true')` can be replaced by
 `verbose: bool = Option(False, '--verbose')`
