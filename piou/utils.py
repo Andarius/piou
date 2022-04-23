@@ -301,9 +301,6 @@ def run_function(fn: Callable, *args, loop: Optional[asyncio.AbstractEventLoop] 
         return fn(*args, **kwargs)
 
 
-run_function_no_loop = partial(run_function, loop=None)
-
-
 def extract_function_info(f) -> tuple[list[CommandOption], list['CommandDerivedOption']]:
     """Extracts the options from a function arguments"""
     options: list[CommandOption] = []
@@ -345,7 +342,7 @@ class CommandDerivedOption:
     """Processor function, can be async """
     param_name: Optional[str] = field(init=False)
 
-    def update_args(self, args: dict) -> dict:
+    def update_args(self, args: dict, *, loop: Optional[asyncio.AbstractEventLoop] = None) -> dict:
         if self.param_name is None:
             raise ValueError('param_name not set. Did you forget to set it?')
         _args = args.copy()
@@ -356,9 +353,9 @@ class CommandDerivedOption:
             fn_args[_opt.name] = _args.pop(_opt.name)
 
         for _der in _derived:
-            fn_args = _der.update_args(fn_args)
+            fn_args = _der.update_args(fn_args, loop=loop)
 
-        _args[self.param_name] = run_function_no_loop(self.processor, **fn_args)
+        _args[self.param_name] = run_function(self.processor, **fn_args, loop=loop)
         return _args
 
 
