@@ -547,6 +547,33 @@ def test_derived():
     assert called
 
 
+def test_chained_derived():
+    from piou import Cli, Option, Derived
+
+    cli = Cli(description='A CLI tool')
+
+    def processor_1(a: int = Option(1, '-a'),
+                    b: int = Option(2, '-b')):
+        return a + b
+
+    def processor_2(c: int = Derived(processor_1)):
+        return c + 2
+
+    def processor_3(d: int = Derived(processor_2)):
+        return d * 2
+
+    called = False
+
+    @cli.command()
+    def test(value: int = Derived(processor_3)):
+        nonlocal called
+        called = True
+        assert value == 10
+
+    cli._group.run_with_args('test')  # , '-a', '3', '-b', '2')
+    assert called
+
+
 def test_async_derived():
     from piou import Cli, Option, Derived
 

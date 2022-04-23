@@ -329,6 +329,16 @@ def extract_function_info(f) -> tuple[list[CommandOption], list['CommandDerivedO
     return options, derived_opts
 
 
+"""
+CommandDerivedOption(processor=<function test_chained_derived.<locals>.processor_3 at 0x7f086de0b130>, param_name='value') {'a': 1, 'b': 2}
+[CommandOption(default=1, help=None, keyword_args=('-a',), _name='a', data_type=<class 'int'>, case_sensitive=True), 
+CommandOption(default=2, help=None, keyword_args=('-b',), _name='b', data_type=<class 'int'>, case_sensitive=True)] 
+
+[CommandDerivedOption(processor=<function test_chained_derived.<locals>.processor_2 at 0x7f086de0b1c0>, param_name='d')]
+
+"""
+
+
 @dataclass
 class CommandDerivedOption:
     processor: Callable
@@ -337,12 +347,16 @@ class CommandDerivedOption:
 
     def update_args(self, args: dict) -> dict:
         if self.param_name is None:
-            raise ValueError('param_name not set. Did you forgot to set it?')
+            raise ValueError('param_name not set. Did you forget to set it?')
         _args = args.copy()
         fn_args = {}
-        _options, _ = extract_function_info(self.processor)
+        _options, _derived = extract_function_info(self.processor)
         for _opt in _options:
             fn_args[_opt.name] = _args.pop(_opt.name)
+
+        for _der in _derived:
+            fn_args = _der.update_args(fn_args)
+
         _args[self.param_name] = run_function_no_loop(self.processor, **fn_args)
         return _args
 
