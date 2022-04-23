@@ -351,6 +351,7 @@ class CommandDerivedOption:
         _args = args.copy()
         fn_args = {}
         _options, _derived = extract_function_info(self.processor)
+
         for _opt in _options:
             fn_args[_opt.name] = _args.pop(_opt.name)
 
