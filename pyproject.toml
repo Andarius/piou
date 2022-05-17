@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "piou"
-version = "0.9.7"
+version = "0.9.8"
 description = "A CLI toolkit"
 authors = ["Julien Brayere <julien.brayere@gmail.com>"]
 license = "MIT"

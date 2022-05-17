@@ -37,6 +37,7 @@ def test_command_option(cmd, is_required, is_positional):
 
 @pytest.mark.parametrize('data_type, value, expected', [
     (str, '123', '123'),
+    (str, 'foo bar', 'foo bar'),
     (int, '123', 123),
     (float, '123', 123),
     (float, '0.123', 0.123),
@@ -80,9 +81,11 @@ def test_convert_to_type_invalid_data(data_type, value, expected,
 
 @pytest.mark.parametrize('input_str, types, expected_pos_args, expected_key_args', [
     ('--foo buz', {'foo': str}, [], {'--foo': 'buz'}),
+    ('--foo "buz biz"', {'foo': str}, [], {'--foo': 'buz biz'}),
     ('--foo buz -b baz', {'foo': str, 'b': str}, [], {'--foo': 'buz', '-b': 'baz'}),
     ('--foo -b', {'foo': bool, 'b': True}, [], {'--foo': True, '-b': True}),
     ('foo buz -b baz', {'b': str}, ['foo', 'buz'], {'-b': 'baz'}),
+    ('"buz baz"', {}, ['buz baz'], {}),
     ('foo', {}, ['foo'], {}),
     ('--foo 1 2 3 --bar', {'foo': list[int], 'bar': str}, [], {'--foo': '1 2 3', '--bar': True}),
     (
@@ -116,7 +119,15 @@ def test_get_cmd_args(input_str, types, expected_pos_args, expected_key_args):
                 {'default': ..., 'keyword_args': ['--foo', '-f'], 'name': 'foo'}
             ],
             {'foo': 'buz'}
-    )
+    ),
+    (
+            '"baz buz"',
+            [
+                {'default': ..., 'name': 'baz'},
+
+            ],
+            {'baz': 'baz buz'}
+    ),
 
 ])
 def test_validate_arguments(input_str, args, expected):
@@ -302,6 +313,22 @@ def test_run_command():
     cli._group.run_with_args('-q', 'foo', '1', '-f', 'toto', '--foo4', '1 2 3')
     assert called
     assert processor_called
+
+
+def test_run_async_cmd():
+    from piou import Cli
+
+    called = False
+
+    cli = Cli(description='A CLI tool')
+
+    @cli.command('foo')
+    async def foo():
+        nonlocal called
+        called = True
+
+    cli.run_with_args('foo')
+    assert called
 
 
 def test_reuse_option():

@@ -246,11 +246,10 @@ KeywordParam = namedtuple('KeywordParam', ['name', 'validate'])
 
 def convert_args_to_dict(input_args: list[str],
                          options: list[CommandOption]) -> dict:
-    _input_pos_args, _input_keyword_args = get_cmd_args(' '.join(input_args),
+    _input_pos_args, _input_keyword_args = get_cmd_args(' '.join(f'"{x}"' for x in input_args),
                                                         {name: opt.data_type
                                                          for opt in options
                                                          for name in opt.names})
-
     positional_args, keyword_args = [], {}
     for _arg in options:
         if _arg.is_positional_arg:

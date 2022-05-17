@@ -38,7 +38,6 @@ class Cli:
     For instance, you can use this to get the arguments passed
     for monitoring
     """
-
     _group: CommandGroup = field(init=False, default_factory=CommandGroup)
 
     _loop: asyncio.AbstractEventLoop = field(init=False, default_factory=get_loop)
