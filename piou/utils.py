@@ -8,7 +8,6 @@ import shlex
 from collections import namedtuple
 from dataclasses import dataclass, field
 from enum import Enum
-from functools import partial
 from inspect import iscoroutinefunction
 from pathlib import Path
 from typing import (
@@ -22,7 +21,12 @@ from .exceptions import (
     KeywordParamNotFoundError,
     KeywordParamMissingError)
 
-T = TypeVar('T', str, int, float, dt.date, dt.datetime, Path, dict, list)
+
+class Password(str):
+    pass
+
+
+T = TypeVar('T', str, int, float, dt.date, dt.datetime, Path, dict, list, Password)
 
 
 def convert_to_type(data_type: Any, value: str,
@@ -34,7 +38,7 @@ def convert_to_type(data_type: Any, value: str,
 
     if data_type is Any or data_type is bool:
         return value
-    elif data_type is str:
+    elif data_type is str or data_type is Password:
         return str(value)
     elif data_type is int:
         return int(value)
@@ -92,6 +96,10 @@ class CommandOption(Generic[T]):
 
     # Only for literal types
     case_sensitive: bool = True
+
+    @property
+    def is_password(self):
+        return self.data_type == Password
 
     @property
     def name(self):

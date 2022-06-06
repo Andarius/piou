@@ -40,7 +40,8 @@ def fmt_cmd_options(options: list[CommandOption]) -> str:
 
 def fmt_help(option: CommandOption, show_default: bool):
     if show_default and option.default is not None and not option.is_required:
-        default_str = f'[bold](default: {option.default})[/bold]'
+        default_str = option.default if not option.is_password else '******'
+        default_str = f'[bold](default: {default_str})[/bold]'
         return option.help + f' {default_str}' if option.help else default_str
     else:
         return option.help

@@ -1,7 +1,7 @@
 # Changelog
 
-## [0.9.8] 17-05-2022
+## [0.10.0] 06-06-2022
 
-### FIX
+### NEW
 
-- Fix issue where positional argument with quotation marks was not working as expected
+- Adding a new `Password` type that will hide the default value when printing help with the Rich Formatter.

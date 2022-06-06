@@ -17,7 +17,7 @@ def test_rich_formatting_options(options, input, expected, capsys):
 
 
 def get_simple_cli(formatter):
-    from piou import Cli, Option
+    from piou import Cli, Option, Password
 
     cli = Cli(description='A CLI tool', formatter=formatter)
 
@@ -27,6 +27,7 @@ def get_simple_cli(formatter):
             foo1: int = Option(..., help='Foo arguments'),
             foo2: str = Option(..., '-f', '--foo2', help='Foo2 arguments'),
             foo3: str = Option('a-value', '-g', '--foo3', help='Foo3 arguments'),
+            pwd: Password = Option('a-password', '-p', help='Password')
     ):
         pass
 
@@ -68,7 +69,7 @@ def get_cmd_group_cli_with_global_opt(formatter):
     def foo_main(
             foo3: str = Option('a sub value', '-g', '--foo3', help='Foo3 arguments'),
             foo2: str = Option(..., '-f', '--foo2', help='Foo2 arguments'),
-            foo1: int = Option(..., help='Foo arguments'),
+            foo1: int = Option(..., help='Foo arguments')
     ):
         pass
 
@@ -145,7 +146,7 @@ DESCRIPTION
 
 _SIMPLE_CLI_COMMAND_RICH = """
 USAGE 
- pytest foo <foo1> [-f] [-g] 
+ pytest foo <foo1> [-f] [-g] [-p]                                                                                                    
 
 ARGUMENTS
     <foo1>                      Foo arguments    
@@ -153,6 +154,7 @@ ARGUMENTS
 OPTIONS
     -f (--foo2)*                Foo2 arguments    
     -g (--foo3)                 Foo3 arguments    
+    -p                          Password            
 
 DESCRIPTION
  Run foo command
@@ -175,7 +177,7 @@ DESCRIPTION
 
 _SIMPLE_CLI_WITH_OPTS_CMD_OUTPUT_RICH = """
 USAGE 
- pytest [-q] [--verbose] foo <foo1> [-f] [-g] 
+ pytest [-q] [--verbose] foo <foo1> [-f] [-g]                                                                                        
 
 ARGUMENTS
     <foo1>                      Foo arguments    
@@ -309,14 +311,15 @@ def test_rich_formatting(name, cli_fn, args, expected, capsys):
 
 _SIMPLE_CLI_COMMAND_RICH_DEFAULT = """
 USAGE 
- pytest foo <foo1> [-f] [-g] 
+ pytest foo <foo1> [-f] [-g] [-p]                                                                                                    
 
 ARGUMENTS
     <foo1>                      Foo arguments    
 
 OPTIONS
-    -f (--foo2)*                Foo2 arguments    
+    -f (--foo2)*                Foo2 arguments                       
     -g (--foo3)                 Foo3 arguments (default: a-value)    
+    -p                          Password (default: ******)  
 
 DESCRIPTION
  Run foo command

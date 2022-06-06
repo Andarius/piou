@@ -232,7 +232,7 @@ the command. For instance, you might want to group a connection string parameter
 full example:
 
 ```python
-from piou import Cli, Option, Derived
+from piou import Cli, Option, Derived, Password
 import psycopg2
 
 cli = Cli(description='A CLI tool')
@@ -240,7 +240,7 @@ cli = Cli(description='A CLI tool')
 
 def get_pg_conn(
         pg_user: str = Option('postgres', '--pg-user'),
-        pg_pwd: str = Option('postgres', '--pg-pwd'),
+        pg_pwd: Password = Option('postgres', '--pg-pwd'),
         pg_host: str = Option('localhost', '--pg-host'),
         pg_port: int = Option(5432, '--pg-port'),
         pg_db: str = Option('postgres', '--pg-db')
@@ -299,6 +299,7 @@ CommandMeta(cmd_name='test',
             cmd_args={'a': 3, 'b': 2, 'bar': 'bar'})
 ```
 
+
 ## Help / Errors Formatter
 
 You can customize the help and the different errors displayed by the CLI by passing a Formatter.
@@ -310,7 +311,17 @@ The default one is the **Rich formatter** based on the [Rich](https://github.com
 
 You can create your own Formatter by subclassing the `Formatter` class (see
 the [Rich formatter](https://github.com/Andarius/piou/blob/master/piou/formatter/rich_formatter.py)
-for example).
+for example). 
+
+The **Rich Formatter** supports the `Password` type that will hide the default value when printing help.  
+For instance:  
+```python
+from piou import Password, Option
+
+def test(pg_pwd: Password = Option('postgres', '--pg-pwd')):
+    ...
+```
+
 
 ## Complete example
 
