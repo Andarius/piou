@@ -12,7 +12,7 @@ from inspect import iscoroutinefunction
 from pathlib import Path
 from typing import (
     Any, Optional, get_args, get_origin, get_type_hints,
-    Literal, TypeVar, Generic, Callable
+    Literal, TypeVar, Generic, Callable, Union
 )
 from uuid import UUID
 
@@ -29,36 +29,50 @@ class Password(str):
 T = TypeVar('T', str, int, float, dt.date, dt.datetime, Path, dict, list, Password)
 
 
+def extract_optional_type(t: Any):
+    if get_origin(t) is Union:
+        types = tuple(x for x in get_args(t) if x is not type(None))
+        return Union[types] # type: ignore
+    return t
+
+
 def convert_to_type(data_type: Any, value: str,
                     *,
                     case_sensitive: bool = True):
     """
     Converts `value` to `data_type`, if not possible raises the appropriate error
     """
+    _data_type = extract_optional_type(data_type)
 
-    if data_type is Any or data_type is bool:
+    if _data_type is Any or _data_type is bool:
         return value
-    elif data_type is str or data_type is Password:
+    elif _data_type is str or _data_type is Password:
         return str(value)
-    elif data_type is int:
+    elif _data_type is int:
         return int(value)
-    elif data_type is float:
+    elif _data_type is float:
         return float(value)
-    elif data_type is UUID:
+    elif _data_type is UUID:
         return UUID(value)
-    elif data_type is dt.date:
+    elif _data_type is dt.date:
         return dt.date.fromisoformat(value)
-    elif data_type is dt.datetime:
+    elif _data_type is dt.datetime:
         return dt.datetime.fromisoformat(value)
-    elif data_type is Path:
+    elif _data_type is Path:
         p = Path(value)
         if not p.exists():
             raise FileNotFoundError(f'File not found: "{value}"')
         return p
-    elif data_type is dict:
+    elif _data_type is dict:
         return json.loads(value)
-    elif get_origin(data_type) is Literal:
-        possible_fields = get_args(data_type)
+    elif inspect.isclass(_data_type) and issubclass(_data_type, Enum):
+        return _data_type[value].value
+    elif _data_type is list or get_origin(_data_type) is list:
+        list_type = get_args(_data_type)
+        return [convert_to_type(list_type[0] if list_type else str,
+                                x) for x in value.split(' ')]
+    elif get_origin(_data_type) is Literal:
+        possible_fields = get_args(_data_type)
         _possible_fields_case = possible_fields
         if not case_sensitive:
             _possible_fields_case = [x.lower() for x in possible_fields] + [
@@ -67,12 +81,10 @@ def convert_to_type(data_type: Any, value: str,
             possible_fields = ', '.join(possible_fields)
             raise ValueError(f'"{value}" is not a valid value for Literal[{possible_fields}]')
         return value
-    elif data_type is list or get_origin(data_type) is list:
-        list_type = get_args(data_type)
+    elif _data_type is list or get_origin(_data_type) is list:
+        list_type = get_args(_data_type)
         return [convert_to_type(list_type[0] if list_type else str,
                                 x) for x in value.split(' ')]
-    elif issubclass(data_type, Enum):
-        return data_type[value].value
     else:
         raise NotImplementedError(f'No parser implemented for data type "{data_type}"')
 

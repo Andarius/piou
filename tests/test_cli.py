@@ -3,7 +3,7 @@ import datetime as dt
 import re
 from enum import Enum
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Optional
 from uuid import UUID
 
 import pytest
@@ -35,9 +35,23 @@ def test_command_option(cmd, is_required, is_positional):
     assert cmd.is_positional_arg == is_positional
 
 
+@pytest.mark.parametrize('data_type, expected', [
+    (str, str),
+    (Optional[str], str),
+    (list, list),
+    (list[str], list[str]),
+    (Optional[list[int]], list[int]),
+    ])
+def test_extract_optional_type(data_type, expected):
+    from piou.utils import extract_optional_type
+
+    assert extract_optional_type(data_type) == expected
+
+
 @pytest.mark.parametrize('data_type, value, expected', [
     (str, '123', '123'),
     (str, 'foo bar', 'foo bar'),
+    (int, '123', 123),
     (int, '123', 123),
     (float, '123', 123),
     (float, '0.123', 0.123),
@@ -56,6 +70,7 @@ def test_command_option(cmd, is_required, is_positional):
 def test_convert_to_type(data_type, value, expected):
     from piou.utils import convert_to_type
     assert convert_to_type(data_type, value) == expected
+    assert convert_to_type(Optional[data_type], value) == expected
 
 
 def testing_case_sensitivity():
