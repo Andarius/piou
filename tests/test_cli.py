@@ -1,12 +1,15 @@
 import asyncio
 import datetime as dt
 import re
+import sys
 from enum import Enum
 from pathlib import Path
 from typing import Literal, Optional
 from uuid import UUID
 
 import pytest
+
+_IS_GE_PY310 = f'{sys.version_info.major}.{sys.version_info.minor:02}' >= '3.10'
 
 
 class MyEnum(Enum):
@@ -71,6 +74,8 @@ def test_convert_to_type(data_type, value, expected):
     from piou.utils import convert_to_type
     assert convert_to_type(data_type, value) == expected
     assert convert_to_type(Optional[data_type], value) == expected
+    if _IS_GE_PY310:
+        assert convert_to_type(data_type | None, value) == expected
 
 
 def testing_case_sensitivity():

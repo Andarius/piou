@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from inspect import iscoroutinefunction
 from pathlib import Path
+from types import UnionType, NoneType # type: ignore
 from typing import (
     Any, Optional, get_args, get_origin, get_type_hints,
     Literal, TypeVar, Generic, Callable, Union
@@ -30,9 +31,10 @@ T = TypeVar('T', str, int, float, dt.date, dt.datetime, Path, dict, list, Passwo
 
 
 def extract_optional_type(t: Any):
-    if get_origin(t) is Union:
-        types = tuple(x for x in get_args(t) if x is not type(None))
-        return Union[types] # type: ignore
+    _origin = get_origin(t)
+    if _origin is Union or _origin is UnionType:
+        types = tuple(x for x in get_args(t) if x is not NoneType)
+        return Union[types]  # type: ignore
     return t
 
 
