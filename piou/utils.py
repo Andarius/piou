@@ -10,11 +10,17 @@ from dataclasses import dataclass, field
 from enum import Enum
 from inspect import iscoroutinefunction
 from pathlib import Path
-from types import UnionType, NoneType # type: ignore
 from typing import (
     Any, Optional, get_args, get_origin, get_type_hints,
     Literal, TypeVar, Generic, Callable, Union
 )
+
+try:
+    from types import UnionType, NoneType # type: ignore
+except ImportError:
+    UnionType = Union
+    NoneType = type(None)
+
 from uuid import UUID
 
 from .exceptions import (
