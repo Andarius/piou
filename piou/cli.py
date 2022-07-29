@@ -40,7 +40,7 @@ class Cli:
     """
     _group: CommandGroup = field(init=False, default_factory=CommandGroup)
 
-    _loop: asyncio.AbstractEventLoop = field(init=False, default_factory=get_loop)
+    # _loop: asyncio.AbstractEventLoop = field(init=False, default_factory=get_loop)
 
     def __post_init__(self):
         self._group.description = clean_multiline(self.description) if self.description else None
@@ -58,9 +58,10 @@ class Cli:
             return
         self.run_with_args(*args)
 
-    def run_with_args(self, *args):
+    def run_with_args(self, *args, loop: Optional[asyncio.AbstractEventLoop] = None):
+        _loop = loop or get_loop()
         try:
-            return self._group.run_with_args(*args, loop=self._loop)
+            return self._group.run_with_args(*args, loop=loop)
         except CommandNotFoundError as e:
             e.input_args = args
             # self.formatter.print_cmd_error(e.valid_commands)
@@ -84,9 +85,9 @@ class Cli:
                 raise NotImplementedError('Got empty command')
             self.formatter.print_count_error(e.expected_count, e.count, e.cmd)
             return
-        finally:
-            if self._loop is not None:
-                self._loop.close()
+        # finally:
+        #     if self._loop is not None:
+        #         self._loop.close()
 
     def command(self, cmd: Optional[str] = None, help: Optional[str] = None, description: Optional[str] = None):
         return self._group.command(cmd=cmd, help=help, description=description)

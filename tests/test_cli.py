@@ -335,7 +335,7 @@ def test_run_command():
     assert processor_called
 
 
-def test_run_async_cmd():
+def test_run_async_cmd(loop):
     from piou import Cli
 
     called = False
@@ -349,6 +349,8 @@ def test_run_async_cmd():
 
     cli.run_with_args('foo')
     assert called
+    # Can run again
+    cli.run_with_args('foo', loop=loop)
 
 
 def test_reuse_option():
@@ -590,7 +592,7 @@ def test_derived():
         called = True
         assert value == 5
 
-    cli._group.run_with_args('test', '--first-val', '3', '--second-val', '2')
+    cli.run_with_args('test', '--first-val', '3', '--second-val', '2')
     assert called
 
 
@@ -617,7 +619,7 @@ def test_chained_derived():
         called = True
         assert value == 10
 
-    cli._group.run_with_args('test')  # , '-a', '3', '-b', '2')
+    cli.run_with_args('test')  # , '-a', '3', '-b', '2')
     assert called
 
 
@@ -639,7 +641,7 @@ def test_async_derived():
         called = True
         assert value == 5
 
-    cli._group.run_with_args('test', '-a', '3', '-b', '2')
+    cli.run_with_args('test', '-a', '3', '-b', '2')
     assert called
 
 
