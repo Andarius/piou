@@ -318,7 +318,7 @@ def convert_args_to_dict(input_args: list[str],
 
 
 def run_function(fn: Callable, *args, loop: Optional[asyncio.AbstractEventLoop] = None, **kwargs):
-    """ Runs a async / non async function """
+    """ Runs an async / non async function """
     if iscoroutinefunction(fn):
         if loop is not None:
             return loop.run_until_complete(fn(*args, **kwargs))

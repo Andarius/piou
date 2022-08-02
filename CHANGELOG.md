@@ -1,7 +1,7 @@
 # Changelog
 
-## [0.10.3] 29-07-2022
+## [0.10.4] 02-08-2022
 
 ### FIX
 
-- Fix loop closing on async function.
+- Fix loop not properly passed to run_with_args.

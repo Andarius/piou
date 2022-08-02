@@ -61,7 +61,7 @@ class Cli:
     def run_with_args(self, *args, loop: Optional[asyncio.AbstractEventLoop] = None):
         _loop = loop or get_loop()
         try:
-            return self._group.run_with_args(*args, loop=loop)
+            return self._group.run_with_args(*args, loop=_loop)
         except CommandNotFoundError as e:
             e.input_args = args
             # self.formatter.print_cmd_error(e.valid_commands)

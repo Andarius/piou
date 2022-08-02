@@ -13,6 +13,7 @@ from .utils import (
     CommandDerivedOption,
     extract_function_info,
     parse_input_args,
+    run_function,
     convert_args_to_dict
 )
 
@@ -60,6 +61,7 @@ class Command:
         return self.positional_args + self.keyword_args
 
     def run(self, *args, loop: Optional[asyncio.AbstractEventLoop] = None, **kwargs):
+        run_function(self.fn, *args, loop=loop, **kwargs)
         if iscoroutinefunction(self.fn):
             if loop is not None:
                 return loop.run_until_complete(self.fn(*args, **kwargs))
