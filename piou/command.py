@@ -62,13 +62,6 @@ class Command:
 
     def run(self, *args, loop: Optional[asyncio.AbstractEventLoop] = None, **kwargs):
         run_function(self.fn, *args, loop=loop, **kwargs)
-        if iscoroutinefunction(self.fn):
-            if loop is not None:
-                return loop.run_until_complete(self.fn(*args, **kwargs))
-            else:
-                return asyncio.run(self.fn(*args, **kwargs))
-        else:
-            return self.fn(*args, **kwargs)
 
     def __post_init__(self):
 
