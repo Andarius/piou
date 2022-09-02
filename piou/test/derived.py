@@ -1,4 +1,6 @@
 import asyncio
+import os
+from typing import Literal
 
 from piou import Cli, Option, Derived
 
@@ -18,7 +20,7 @@ def get_pg_url(
 
 async def get_sleep(
         duration: float = Option(0.01, '--duration'),
-):
+) -> bool:
     await asyncio.sleep(duration)
     return True
 
@@ -29,6 +31,28 @@ def foo(
         has_slept: bool = Derived(get_sleep)
 ):
     print(has_slept, pg_url)
+
+
+def get_pg_url_dynamic(source: Literal['db1', 'db2']):
+    _source_upper = source.upper()
+    _host_arg = f'--host-{source}'
+    _db_arg = f'--{source}'
+
+    def _derived(
+            pg_host: str = Option(os.getenv(f'PG_HOST_{_source_upper}', 'localhost'),
+                                  _host_arg, arg_name=_host_arg),
+            pg_db: str = Option(os.getenv(f'PG_DB_{_source_upper}', source),
+                                _db_arg, arg_name=_db_arg),
+    ):
+        return f'postgresql://postgres:postgres@{pg_host}:5432/{pg_db}'
+
+    return _derived
+
+
+@cli.command(help='Run dynamic command')
+def dynamic(url_1: str = Derived(get_pg_url_dynamic('db1')),
+            url_2: str = Derived(get_pg_url_dynamic('db2'))):
+    print(url_1, url_2)
 
 
 if __name__ == '__main__':

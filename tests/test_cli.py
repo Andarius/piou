@@ -44,7 +44,7 @@ def test_command_option(cmd, is_required, is_positional):
     (list, list),
     (list[str], list[str]),
     (Optional[list[int]], list[int]),
-    ])
+])
 def test_extract_optional_type(data_type, expected):
     from piou.utils import extract_optional_type
 
@@ -642,6 +642,37 @@ def test_async_derived():
         assert value == 5
 
     cli.run_with_args('test', '-a', '3', '-b', '2')
+    assert called
+
+
+def test_dynamic_derived():
+    from piou import Cli, Option, Derived
+
+    cli = Cli(description='A CLI tool')
+
+    def processor(arg_name: str):
+        def _processor(v: int = Option(1, f'--{arg_name}', arg_name=arg_name)):
+            return v
+
+        return _processor
+
+    def processor2(arg_name: str):
+        def _processor(v: int = Option(1, arg_name=arg_name)):
+            return v
+
+        return _processor
+
+    called = False
+
+    @cli.command()
+    def test(foo: int = Derived(processor('foo')),
+             bar: int = Derived(processor('bar')),
+             baz: int = Derived(processor2('baz'))):
+        nonlocal called
+        called = True
+        assert foo + bar + baz == 6
+
+    cli.run_with_args('test', '1', '--foo', '3', '--bar', '2')
     assert called
 
 

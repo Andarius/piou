@@ -12,11 +12,11 @@ from inspect import iscoroutinefunction
 from pathlib import Path
 from typing import (
     Any, Optional, get_args, get_origin, get_type_hints,
-    Literal, TypeVar, Generic, Callable, Union
+    Literal, TypeVar, Generic, Callable, Union, Coroutine
 )
 
 try:
-    from types import UnionType, NoneType # type: ignore
+    from types import UnionType, NoneType  # type: ignore
 except ImportError:
     UnionType = Union
     NoneType = type(None)
@@ -117,6 +117,9 @@ class CommandOption(Generic[T]):
     # Only for literal types
     case_sensitive: bool = True
 
+    # For dynamic derived
+    arg_name: Optional[str] = None
+
     @property
     def is_password(self):
         return self.data_type == Password
@@ -156,13 +159,15 @@ def Option(
         *keyword_args: str,
         help: Optional[str] = None,
         # Only for type Literal
-        case_sensitive: bool = True
+        case_sensitive: bool = True,
+        arg_name: Optional[str] = None
 ) -> Any:
     return CommandOption(
         default=default,
         help=help,
         keyword_args=keyword_args,
-        case_sensitive=case_sensitive
+        case_sensitive=case_sensitive,
+        arg_name=arg_name
     )
 
 
@@ -283,7 +288,7 @@ def convert_args_to_dict(input_args: list[str],
         if _arg.is_positional_arg:
             positional_args.append(_arg)
         for _keyword_arg in _arg.keyword_args:
-            keyword_args[_keyword_arg] = KeywordParam(_arg.name, _arg.validate)
+            keyword_args[_keyword_arg] = KeywordParam(_arg.arg_name or _arg.name, _arg.validate)
 
     # Positional arguments
     if len(_input_pos_args) != len(positional_args):
@@ -294,10 +299,9 @@ def convert_args_to_dict(input_args: list[str],
         )
 
     fn_args = {
-        _param.name: _param.validate(_param_value)
+        _param.arg_name or _param.name: _param.validate(_param_value)
         for _param, _param_value in zip(positional_args, _input_pos_args)
     }
-
     # Keyword Arguments
     for _keyword_arg_key, _keyword_arg_value in _input_keyword_args.items():
         _keyword_param = keyword_args.get(_keyword_arg_key)
@@ -308,11 +312,12 @@ def convert_args_to_dict(input_args: list[str],
 
     # We fill optional fields with None and check for missing ones
     for _arg in options:
-        if _arg.name not in fn_args:
+        if (_arg.arg_name or _arg.name) not in fn_args:
             if _arg.is_required:
-                raise KeywordParamMissingError(f'Missing value for required keyword parameter {_arg.name!r}',
-                                               _arg.name)
-            fn_args[_arg.name] = None if _arg.default is ... else _arg.default
+                raise KeywordParamMissingError(
+                    f'Missing value for required keyword parameter {_arg.arg_name or _arg.name!r}',
+                    _arg.arg_name or _arg.name)
+            fn_args[_arg.arg_name or _arg.name] = None if _arg.default is ... else _arg.default
 
     return fn_args
 
@@ -353,16 +358,6 @@ def extract_function_info(f) -> tuple[list[CommandOption], list['CommandDerivedO
     return options, derived_opts
 
 
-"""
-CommandDerivedOption(processor=<function test_chained_derived.<locals>.processor_3 at 0x7f086de0b130>, param_name='value') {'a': 1, 'b': 2}
-[CommandOption(default=1, help=None, keyword_args=('-a',), _name='a', data_type=<class 'int'>, case_sensitive=True), 
-CommandOption(default=2, help=None, keyword_args=('-b',), _name='b', data_type=<class 'int'>, case_sensitive=True)] 
-
-[CommandDerivedOption(processor=<function test_chained_derived.<locals>.processor_2 at 0x7f086de0b1c0>, param_name='d')]
-
-"""
-
-
 @dataclass
 class CommandDerivedOption:
     processor: Callable
@@ -375,9 +370,8 @@ class CommandDerivedOption:
         _args = args.copy()
         fn_args = {}
         _options, _derived = extract_function_info(self.processor)
-
         for _opt in _options:
-            fn_args[_opt.name] = _args.pop(_opt.name)
+            fn_args[_opt.name] = _args.pop(_opt.arg_name, None) or _args.pop(_opt.name, None)
 
         for _der in _derived:
             fn_args = _der.update_args(fn_args, loop=loop)
@@ -386,7 +380,10 @@ class CommandDerivedOption:
         return _args
 
 
+R = TypeVar('R')
+
+
 def Derived(
-        processor: Callable
-) -> Any:
-    return CommandDerivedOption(processor=processor)
+        processor: Callable[..., Union[Coroutine[Any, Any, R], R]]
+) -> R:
+    return CommandDerivedOption(processor=processor)  # type: ignore

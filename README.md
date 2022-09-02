@@ -267,6 +267,44 @@ def bar(pg_conn: str = Derived(get_pg_conn)):
     ...
 ```
 
+You can also pass dynamic derived functions to avoid duplicating the derived logic:
+
+```python
+import os
+from typing import Literal
+from piou import Cli, Option, Derived
+
+cli = Cli(description='A CLI tool')
+
+
+def get_pg_url_dynamic(source: Literal['db1', 'db2']):
+    _source_upper = source.upper()
+    _host_arg = f'--host-{source}'
+    _db_arg = f'--{source}'
+
+    def _derived(
+            # We need to specify the `arg_name` here
+            pg_host: str = Option(os.getenv(f'PG_HOST_{_source_upper}', 'localhost'),
+                                  _host_arg, arg_name=_host_arg),
+            pg_db: str = Option(os.getenv(f'PG_DB_{_source_upper}', source),
+                                _db_arg, arg_name=_db_arg),
+    ):
+        return f'postgresql://postgres:postgres@{pg_host}:5432/{pg_db}'
+
+    return _derived
+
+
+@cli.command(help='Run dynamic command')
+def dynamic(url_1: str = Derived(get_pg_url_dynamic('db1')),
+            url_2: str = Derived(get_pg_url_dynamic('db2'))):
+    ...
+```
+
+So that the output will look like this:
+
+![dynamic-derived](https://github.com/Andarius/piou/raw/master/docs/dynamic-derived.png)
+
+
 ## On Command Run
 
 If you want to get the command name and arguments information that are passed to it (in case of general purpose
@@ -305,7 +343,6 @@ CommandMeta(cmd_name='test',
             cmd_args={'a': 3, 'b': 2, 'bar': 'bar'})
 ```
 
-
 ## Help / Errors Formatter
 
 You can customize the help and the different errors displayed by the CLI by passing a Formatter.
@@ -317,17 +354,18 @@ The default one is the **Rich formatter** based on the [Rich](https://github.com
 
 You can create your own Formatter by subclassing the `Formatter` class (see
 the [Rich formatter](https://github.com/Andarius/piou/blob/master/piou/formatter/rich_formatter.py)
-for example). 
+for example).
 
 The **Rich Formatter** supports the `Password` type that will hide the default value when printing help.  
-For instance:  
+For instance:
+
 ```python
 from piou import Password, Option
+
 
 def test(pg_pwd: Password = Option('postgres', '--pg-pwd')):
     ...
 ```
-
 
 ## Complete example
 

@@ -42,6 +42,7 @@ jobs:
             poetry run coverage run -a -m piou.test sub foo 1 --foo2 foo
             poetry run coverage run -a -m piou.test.derived -h
             poetry run coverage run -a -m piou.test.derived foo --host postgres
+            poetry run coverage run -a -m piou.test.derived dynamic --db1 test
       - run:
           name: Generating coverage
           command: |

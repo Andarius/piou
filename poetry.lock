@@ -41,7 +41,7 @@ test = ["flake8 (==3.7.8)", "hypothesis (==3.55.3)"]
 
 [[package]]
 name = "coverage"
-version = "6.4.2"
+version = "6.4.4"
 description = "Code coverage measurement for Python"
 category = "dev"
 optional = false
@@ -121,7 +121,7 @@ diagrams = ["jinja2", "railroad-diagrams"]
 
 [[package]]
 name = "pyright"
-version = "1.1.264"
+version = "1.1.269"
 description = "Command line wrapper for pyright"
 category = "dev"
 optional = false
@@ -205,7 +205,7 @@ python-versions = ">=3.7"
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.9,<4.0"
-content-hash = "0cdc5e6e606e571ef2b30c46979d63e29b09e28c13db9846ffad8773d9fb641a"
+content-hash = "3358e1c73b6094113045eb6a02e2bb4c71957359471ada46268ea967d01d8cef"
 
 [metadata.files]
 atomicwrites = [

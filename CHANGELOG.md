@@ -1,7 +1,7 @@
 # Changelog
 
-## [0.10.5] 03-08-2022
+## [0.11.0] 02-09-2022
 
-### FIX
+### Feat
 
-- Fix `command.run` for async functions
+- Adding support for dynamic derived processor. See the README in **Derived Options** for more information

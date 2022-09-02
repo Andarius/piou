@@ -2,7 +2,7 @@ import asyncio
 import textwrap
 from dataclasses import dataclass, field
 from functools import wraps
-from inspect import getdoc, iscoroutinefunction
+from inspect import getdoc
 from typing import Optional, Any, NamedTuple, Callable
 
 from .exceptions import (
