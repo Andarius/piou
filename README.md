@@ -258,12 +258,12 @@ def get_pg_conn(
 
 
 @cli.command(help='Run foo command')
-def foo(pg_conn: str = Derived(get_pg_conn)):
+def foo(pg_conn=Derived(get_pg_conn)):
     ...
 
 
 @cli.command(help='Run bar command')
-def bar(pg_conn: str = Derived(get_pg_conn)):
+def bar(pg_conn=Derived(get_pg_conn)):
     ...
 ```
 
