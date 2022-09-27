@@ -44,6 +44,19 @@ def extract_optional_type(t: Any):
     return t
 
 
+def get_type_hints_derived(f):
+    hints = get_type_hints(f)
+    for v in inspect.signature(f).parameters.values():
+        if v.name not in hints and isinstance(v.default, CommandDerivedOption):
+            try:
+                hints[v.name] = get_type_hints(v.default.processor)['return']
+            except KeyError:
+                raise ValueError(f'Could not find a return type for attribute {v.name!r}.'
+                                 f'Did you forget to specify the return type of the function?')
+
+    return hints
+
+
 def convert_to_type(data_type: Any, value: str,
                     *,
                     case_sensitive: bool = True):
@@ -338,7 +351,7 @@ def extract_function_info(f) -> tuple[list[CommandOption], list['CommandDerivedO
     options: list[CommandOption] = []
     derived_opts: list[CommandDerivedOption] = []
 
-    for (param_name, param_type), option in zip(get_type_hints(f).items(),
+    for (param_name, param_type), option in zip(get_type_hints_derived(f).items(),
                                                 get_default_args(f)):
         if isinstance(option, CommandOption):
             # Making a copy in case of reuse
@@ -378,6 +391,12 @@ class CommandDerivedOption:
 
         _args[self.param_name] = run_function(self.processor, **fn_args, loop=loop)
         return _args
+
+    def __repr__(self):
+        if hasattr(self, 'param_name'):
+            return f'<CommandDerivedOption param_name={self.param_name} processor={self.processor}/>'
+        else:
+            return f'<CommandDerivedOption processor={self.processor}/>'
 
 
 R = TypeVar('R')

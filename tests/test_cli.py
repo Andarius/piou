@@ -51,6 +51,22 @@ def test_extract_optional_type(data_type, expected):
     assert extract_optional_type(data_type) == expected
 
 
+def test_get_type_hints_derived():
+    from piou import Cli
+    from piou.utils import get_type_hints_derived, Derived
+
+    cli = Cli('foo')
+
+    def _derived() -> str:
+        return 'hello'
+
+    def foo(a: int, bar=Derived(_derived)):
+        ...
+
+    hints = get_type_hints_derived(foo)
+    assert hints == {'a': int, 'bar': str}
+
+
 @pytest.mark.parametrize('data_type, value, expected', [
     (str, '123', '123'),
     (str, 'foo bar', 'foo bar'),
@@ -584,6 +600,10 @@ def test_derived():
                   b: int = Option(2, '--second-val')):
         return a + b
 
+    def processor2(a: int = Option(1, '--first-val'),
+                   b: int = Option(2, '--second-val')) -> int:
+        return a + b
+
     called = False
 
     @cli.command()
@@ -592,7 +612,17 @@ def test_derived():
         called = True
         assert value == 5
 
+    @cli.command()
+    def test2(value=Derived(processor2)):
+        nonlocal called
+        called = True
+        assert value == 5
+
     cli.run_with_args('test', '--first-val', '3', '--second-val', '2')
+    assert called
+    called = False
+
+    cli.run_with_args('test2', '--first-val', '3', '--second-val', '2')
     assert called
 
 
@@ -629,7 +659,7 @@ def test_async_derived():
     cli = Cli(description='A CLI tool')
 
     async def processor(a: int = Option(1, '-a'),
-                        b: int = Option(2, '-b')):
+                        b: int = Option(2, '-b')) -> int:
         await asyncio.sleep(0.01)
         return a + b
 
@@ -640,8 +670,19 @@ def test_async_derived():
         nonlocal called
         called = True
         assert value == 5
+        assert isinstance(value, int)
+
+    @cli.command()
+    def test2(value=Derived(processor)):
+        nonlocal called
+        called = True
+        assert value == 5
+        assert isinstance(value, int)
 
     cli.run_with_args('test', '-a', '3', '-b', '2')
+    assert called
+    called = False
+    cli.run_with_args('test2', '-a', '3', '-b', '2')
     assert called
 
 

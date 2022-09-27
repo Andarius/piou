@@ -1,7 +1,7 @@
 # Changelog
 
-## [0.11.0] 02-09-2022
+## [0.11.1] 27-09-2022
 
-### Feat
+### Fix
 
-- Adding support for dynamic derived processor. See the README in **Derived Options** for more information
+- Fix return type of `Derived` option when a type is not specified (thanks @flam)
