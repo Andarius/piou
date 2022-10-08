@@ -3,7 +3,7 @@
   <source media="(prefers-color-scheme: light)" srcset="https://github.com/Andarius/piou/raw/dev/docs/piou.jpg">
   <img alt="Piou logo" 
     src="https://user-images.githubusercontent.com/25423296/163456779-a8556205-d0a5-45e2-ac17-42d089e3c3f8.png"
-    width="250"/>]>
+    width="250"/>
 </picture>
 
 # Piou
@@ -304,7 +304,6 @@ So that the output will look like this:
 
 ![dynamic-derived](https://github.com/Andarius/piou/raw/master/docs/dynamic-derived.png)
 
-
 ## On Command Run
 
 If you want to get the command name and arguments information that are passed to it (in case of general purpose
@@ -350,6 +349,7 @@ The default one is the **Rich formatter** based on the [Rich](https://github.com
 
 - `cmd_color`: set the color of the command in the help
 - `option_color`: set the color of the positional / keyword arguments in the help
+- `default_color`: set the color of the default values in the help
 - `show_default`: show the default values if the keyword arguments (if available)
 
 You can create your own Formatter by subclassing the `Formatter` class (see
@@ -375,12 +375,19 @@ You can try a more complete example by running `python -m piou.test -h`
 
 If you are migrating code from `argparse` to `piou` here are some differences:
 
-**choices**:
-`add_argument('--pick', choices=['foo', 'bar'])` can be replaced by
-`pick: Literal['foo', 'bar'] = Option(None, '--pick')`.
+### 1. choices:
 
-You can also disable the case sensitivity by passing `Option(None, '--pick', case_sentitive=False)`
+`add_argument('--pick', choices=['foo', 'bar'])`  
+can be replaced with  
+`pick: Literal['foo', 'bar'] = Option(None, '--pick')`
 
-**action=store_true**
-`add_argument('--verbose', action='store_true')` can be replaced by
+**Notes**:
+
+- You can disable the case sensitivity by passing `Option(None, '--pick', case_sentitive=False)`
+- You can use `Literal` unions such as `pick: Literal['foo'] | Literal['bar']`
+
+### 2. action=store_true:
+
+`add_argument('--verbose', action='store_true')`  
+can be replaced with  
 `verbose: bool = Option(False, '--verbose')`

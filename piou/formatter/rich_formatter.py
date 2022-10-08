@@ -38,11 +38,26 @@ def fmt_cmd_options(options: list[CommandOption]) -> str:
             )
 
 
-def fmt_help(option: CommandOption, show_default: bool):
+def fmt_help(option: CommandOption, show_default: bool,
+             *,
+             markdown_open: Optional[str] = '[bold]',
+             markdown_close: Optional[str] = '[/bold]'):
+    _choices = option.choices
+    _markdown_open, _markdown_close = markdown_open or '', markdown_close or ''
+
     if show_default and option.default is not None and not option.is_required:
         default_str = option.default if not option.is_password else '******'
-        default_str = f'[bold](default: {default_str})[/bold]'
+        default_str = f'{_markdown_open}(default: {default_str}){_markdown_close}'
         return option.help + f' {default_str}' if option.help else default_str
+    elif _choices is not None and not option.hide_choices:
+        if len(_choices) <= 3:
+            possible_choices = ', '.join(str(_choice) for _choice in _choices)
+            choices_help = f'{_markdown_open}(choices are: {possible_choices}){_markdown_close}'
+        else:
+            sep = ' \n - '
+            possible_choices = sep + sep.join(str(_choice) for _choice in _choices)
+            choices_help = f'\n{_markdown_open}Possible choices are:' + possible_choices + _markdown_close
+        return option.help + f' {choices_help}' if option.help else choices_help
     else:
         return option.help
 
@@ -89,14 +104,15 @@ class RichFormatter(Formatter):
                                                               highlight=False))
     cmd_color: str = 'cyan'
     option_color: str = 'cyan'
+    default_color: str = 'white'
     show_default: bool = True
-    use_markdown: bool = True
     """Use Markdown object for the description, otherwise use 
     default str
     """
-    # Only if use_markdown is True
-    code_theme: str = 'solarized-dark'
+    use_markdown: bool = True
     """See https://pygments.org/styles/ for a list of styles """
+    # Only usable if use_markdown is True
+    code_theme: str = 'solarized-dark'
 
     def _color_cmd(self, cmd: str):
         return f'[{self.cmd_color}]{cmd}[/{self.cmd_color}]'
@@ -117,9 +133,14 @@ class RichFormatter(Formatter):
             else:
                 self.print_fn(pad(description))
 
+    def _fmt_help(self, option: CommandOption):
+        return fmt_help(option, self.show_default,
+                        markdown_open=f'[{self.default_color}][bold]',
+                        markdown_close=f'[/{self.default_color}][/bold]')
+
     def _print_options(self, options: list[CommandOption]):
         self.print_rows([(fmt_option(opt, show_full=True, color=self.option_color),
-                          fmt_help(opt, show_default=self.show_default))
+                          self._fmt_help(opt))
                          for opt in options])
 
     def print_rows(self, rows: list[tuple[str, Optional[str]]]):
@@ -164,7 +185,7 @@ class RichFormatter(Formatter):
         if command.positional_args:
             self.print_fn(RichTitles.ARGUMENTS)
             self.print_rows(
-                [(fmt_option(option, color=self.option_color), fmt_help(option, show_default=self.show_default))
+                [(fmt_option(option, color=self.option_color), self._fmt_help(option))
                  for option in command.positional_args])
         if command.keyword_args:
             self.print_fn('\n' + RichTitles.OPTIONS)
@@ -208,7 +229,7 @@ class RichFormatter(Formatter):
                 self.print_fn()
             if cmd.options:
                 self.print_rows([(fmt_option(opt, show_full=True, color=self.option_color),
-                                  fmt_help(opt, show_default=self.show_default))
+                                  self._fmt_help(opt))
                                  for opt in cmd.options_sorted])
                 self.print_fn()
 

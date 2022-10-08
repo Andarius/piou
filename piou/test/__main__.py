@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, Union
 from pathlib import Path
 
 from piou import Cli, Option
@@ -15,6 +15,10 @@ def processor(quiet: bool = Option(False, '-q', '--quiet', help='Do not output a
     print(f'Processing {quiet=} and {verbose=}')
 
 
+LongLiteral = Literal['foo1', 'foo2', 'foo3', 'foo4']
+UnionLiteral = Union[Literal['foo1'], Literal['foo2']]
+
+
 @cli.command(cmd='foo',
              help='Run foo command')
 def foo_main(
@@ -24,6 +28,9 @@ def foo_main(
         foo4: Literal['foo', 'bar'] = Option(None, '--foo4', help='Foo4 argument',
                                              case_sensitive=False),
         foo5: list[int] = Option(None, '--foo5', help='Foo5 arguments'),
+        foo6: LongLiteral = Option('foo1', '--foo6', help='Foo6 argument'),
+        foo7: LongLiteral = Option(None, '--foo7', help='Foo7 argument'),
+        foo8: UnionLiteral = Option(None, '--foo8', help='Foo8 argument'),
 ):
     """
     A test command
@@ -33,7 +40,10 @@ def foo_main(
                         ('foo2', foo2),
                         ('foo3', foo3),
                         ('foo4', foo4),
-                        ('foo5', foo5)
+                        ('foo5', foo5),
+                        ('foo6', foo6),
+                        ('foo7', foo7),
+                        ('foo8', foo8)
                         ]:
         print(f'{name} = {value} ({type(value)})')
 

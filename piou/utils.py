@@ -44,6 +44,21 @@ def extract_optional_type(t: Any):
     return t
 
 
+def get_literals_union_args(literal: Any):
+    values = []
+    if get_origin(literal) is not Literal:
+        return values
+
+    for _l in get_args(literal):
+        if get_origin(_l) is Union:
+            values += get_literals_union_args(_l)
+        elif get_origin(_l) is Literal:
+            values += get_args(_l)
+        else:
+            values.append(_l)
+    return values
+
+
 def get_type_hints_derived(f):
     hints = get_type_hints(f)
     for v in inspect.signature(f).parameters.values():
@@ -129,6 +144,7 @@ class CommandOption(Generic[T]):
 
     # Only for literal types
     case_sensitive: bool = True
+    hide_choices: bool = False
 
     # For dynamic derived
     arg_name: Optional[str] = None
@@ -161,6 +177,11 @@ class CommandOption(Generic[T]):
     @property
     def is_positional_arg(self):
         return len(self.keyword_args) == 0
+
+    @property
+    def choices(self):
+        _choices = get_literals_union_args(self.data_type)
+        return _choices if _choices else None
 
     def validate(self, value: str) -> T:
         return convert_to_type(self.data_type, value,

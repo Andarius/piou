@@ -1,7 +1,8 @@
 # Changelog
 
-## [0.11.1] 27-09-2022
+## [0.12.0] 08-10-2022
 
-### Fix
+### Feat
 
-- Fix return type of `Derived` option when a type is not specified (thanks @flam)
+- Show `choices` when `Literal` if specified.
+- Support for `Union` of `Literal`
