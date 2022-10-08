@@ -2,7 +2,7 @@
   <source media="(prefers-color-scheme: dark)" srcset="https://github.com/Andarius/piou/raw/dev/docs/piou-dark.png">
   <source media="(prefers-color-scheme: light)" srcset="https://github.com/Andarius/piou/raw/dev/docs/piou.jpg">
   <img alt="Piou logo" 
-    src="https://user-images.githubusercontent.com/25423296/163456779-a8556205-d0a5-45e2-ac17-42d089e3c3f8.png"
+    src="https://github.com/Andarius/piou/raw/dev/docs/piou.jpg"
     width="250"/>
 </picture>
 
