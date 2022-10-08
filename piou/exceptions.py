@@ -53,3 +53,9 @@ class CommandNotFoundError(Exception):
         super().__init__(f'Unknown command given. Possible commands are {_available_cmds!r}')
         self.valid_commands = sorted(valid_commands)
         self.input_args = input_args
+
+
+class InvalidChoiceError(Exception):
+    def __init__(self, value: str, choices: list[str]):
+        self.value = value
+        self.choices = choices

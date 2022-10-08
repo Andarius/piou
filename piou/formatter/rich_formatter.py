@@ -261,3 +261,9 @@ class RichFormatter(Formatter):
     def print_count_error(self, expected_count: int, count: int, cmd: str):
         self.print_fn(
             f'[red]Expected {expected_count} positional arguments but got {count} for command [bold]{cmd}[/bold][/red]')
+
+    def print_invalid_value_error(self, value: str, choices: list[str]):
+        sep = '\n - '
+        possible_fields = sep + sep.join(_choice for _choice in choices)
+        msg = f'Invalid value [bold]{value}[/bold] found. Possible values are: {possible_fields}'
+        self.print_fn(f'[red]{msg}[/red]')

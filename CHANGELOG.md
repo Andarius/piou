@@ -1,7 +1,8 @@
 # Changelog
 
-## [0.12.1] 08-10-2022
+## [0.12.2] 08-10-2022
 
 ### Feat
 
-- Adding `choices` to `Option`. See Readme for more information
+- Improving error message for invalid value
+- Now exiting with an exit code of 1 if an error occurred
