@@ -39,6 +39,7 @@ jobs:
             poetry run coverage run -a -m piou.test -h
             poetry run coverage run -a -m piou.test foo 1 --foo2 foo
             poetry run coverage run -a -m piou.test sub -h
+            poetry run coverage run -a -m piou.test foo -h
             poetry run coverage run -a -m piou.test sub foo 1 --foo2 foo
             poetry run coverage run -a -m piou.test.derived -h
             poetry run coverage run -a -m piou.test.derived foo --host postgres
