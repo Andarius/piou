@@ -1,7 +1,7 @@
 import pytest
-from typing import Literal, get_origin
+from typing import Literal
 
-from piou.utils import Password, CommandOption, convert_to_type
+from piou.utils import Password
 
 
 @pytest.mark.parametrize('options, input, expected', [

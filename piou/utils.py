@@ -72,13 +72,21 @@ def get_type_hints_derived(f):
     return hints
 
 
-def convert_to_type(data_type: Any, value: str,
-                    *,
-                    case_sensitive: bool = True):
+def validate_value(data_type: Any, value: str,
+                   *,
+                   case_sensitive: bool = True,
+                   choices: Optional[list[Any]] = None):
     """
     Converts `value` to `data_type`, if not possible raises the appropriate error
     """
     _data_type = extract_optional_type(data_type)
+
+    if choices:
+        _choices = choices if case_sensitive else [x.lower() for x in choices]
+        _value = value if case_sensitive else value.lower()
+        if _value not in _choices:
+            possible_fields = ', '.join(choices)
+            raise ValueError(f'Invalid value {value!r} found. Possible values are: {possible_fields}')
 
     if _data_type is Any or _data_type is bool:
         return value
@@ -105,22 +113,14 @@ def convert_to_type(data_type: Any, value: str,
         return _data_type[value].value
     elif _data_type is list or get_origin(_data_type) is list:
         list_type = get_args(_data_type)
-        return [convert_to_type(list_type[0] if list_type else str,
-                                x) for x in value.split(' ')]
+        return [validate_value(list_type[0] if list_type else str,
+                               x) for x in value.split(' ')]
     elif get_origin(_data_type) is Literal:
-        possible_fields = get_args(_data_type)
-        _possible_fields_case = possible_fields
-        if not case_sensitive:
-            _possible_fields_case = [x.lower() for x in possible_fields] + [
-                x.upper() for x in possible_fields]
-        if value not in _possible_fields_case:
-            possible_fields = ', '.join(possible_fields)
-            raise ValueError(f'"{value}" is not a valid value for Literal[{possible_fields}]')
         return value
     elif _data_type is list or get_origin(_data_type) is list:
         list_type = get_args(_data_type)
-        return [convert_to_type(list_type[0] if list_type else str,
-                                x) for x in value.split(' ')]
+        return [validate_value(list_type[0] if list_type else str,
+                               x) for x in value.split(' ')]
     else:
         raise NotImplementedError(f'No parser implemented for data type "{data_type}"')
 
@@ -139,8 +139,10 @@ class CommandOption(Generic[T]):
     help: Optional[str] = None
     keyword_args: tuple[str, ...] = field(default_factory=tuple)
 
+    choices: Optional[list[T]] = None
+
     _name: Optional[str] = field(init=False, default=None)
-    data_type: type[T] = field(init=False, default=Any)  # noqa
+    _data_type: type[T] = field(init=False, default=Any)  # noqa
 
     # Only for literal types
     case_sensitive: bool = True
@@ -148,6 +150,20 @@ class CommandOption(Generic[T]):
 
     # For dynamic derived
     arg_name: Optional[str] = None
+
+    @property
+    def data_type(self):
+        return self._data_type
+
+    @property
+    def literal_values(self):
+        return get_literals_union_args(self.data_type)
+
+    @data_type.setter
+    def data_type(self, v: type[T]):
+        if self.choices and get_literals_union_args(v):
+            raise ValueError('Pick either a Literal type or choices')
+        self._data_type = v
 
     @property
     def is_password(self):
@@ -178,14 +194,14 @@ class CommandOption(Generic[T]):
     def is_positional_arg(self):
         return len(self.keyword_args) == 0
 
-    @property
-    def choices(self):
-        _choices = get_literals_union_args(self.data_type)
-        return _choices if _choices else None
+    def get_choices(self):
+        return self.literal_values or self.choices
 
     def validate(self, value: str) -> T:
-        return convert_to_type(self.data_type, value,
-                               case_sensitive=self.case_sensitive)  # type: ignore
+        _value = validate_value(self.data_type, value,
+                                case_sensitive=self.case_sensitive,
+                                choices=self.get_choices())
+        return _value  # type: ignore
 
 
 def Option(
@@ -194,14 +210,16 @@ def Option(
         help: Optional[str] = None,
         # Only for type Literal
         case_sensitive: bool = True,
-        arg_name: Optional[str] = None
+        arg_name: Optional[str] = None,
+        choices: Optional[Any] = None
 ) -> Any:
     return CommandOption(
         default=default,
         help=help,
         keyword_args=keyword_args,
         case_sensitive=case_sensitive,
-        arg_name=arg_name
+        arg_name=arg_name,
+        choices=choices
     )
 
 

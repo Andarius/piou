@@ -378,13 +378,16 @@ If you are migrating code from `argparse` to `piou` here are some differences:
 ### 1. choices:
 
 `add_argument('--pick', choices=['foo', 'bar'])`  
-can be replaced with  
-`pick: Literal['foo', 'bar'] = Option(None, '--pick')`
+can be replaced with the following:
+
+- `pick: Literal['foo', 'bar'] = Option(None, '--pick')`
+- `pick: Literal['foo'] | Literal['bar'] = Option(None, '--pick')`
+- `pick: str = Option(None, '--pick', choices=['foo', 'bar'])`
 
 **Notes**:
 
 - You can disable the case sensitivity by passing `Option(None, '--pick', case_sentitive=False)`
-- You can use `Literal` unions such as `pick: Literal['foo'] | Literal['bar']`
+- Specifying both a `Literal` type and `choices` will raise an error.
 
 ### 2. action=store_true:
 

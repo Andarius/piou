@@ -31,6 +31,8 @@ def foo_main(
         foo6: LongLiteral = Option('foo1', '--foo6', help='Foo6 argument'),
         foo7: LongLiteral = Option(None, '--foo7', help='Foo7 argument'),
         foo8: UnionLiteral = Option(None, '--foo8', help='Foo8 argument'),
+        foo9: str = Option(None, '--foo9', help='Foo9 argument',
+                           choices=[f'item{i}' for i in range(4)]),
 ):
     """
     A test command
@@ -43,7 +45,8 @@ def foo_main(
                         ('foo5', foo5),
                         ('foo6', foo6),
                         ('foo7', foo7),
-                        ('foo8', foo8)
+                        ('foo8', foo8),
+                        ('foo9', foo9)
                         ]:
         print(f'{name} = {value} ({type(value)})')
 

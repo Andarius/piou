@@ -42,7 +42,7 @@ def fmt_help(option: CommandOption, show_default: bool,
              *,
              markdown_open: Optional[str] = '[bold]',
              markdown_close: Optional[str] = '[/bold]'):
-    _choices = option.choices
+    _choices = option.get_choices()
     _markdown_open, _markdown_close = markdown_open or '', markdown_close or ''
 
     if show_default and option.default is not None and not option.is_required:

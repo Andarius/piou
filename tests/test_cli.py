@@ -52,10 +52,7 @@ def test_extract_optional_type(data_type, expected):
 
 
 def test_get_type_hints_derived():
-    from piou import Cli
     from piou.utils import get_type_hints_derived, Derived
-
-    cli = Cli('foo')
 
     def _derived() -> str:
         return 'hello'
@@ -86,33 +83,40 @@ def test_get_type_hints_derived():
     (UUID, '00000000-0000-0000-0000-000000000000', UUID('00000000-0000-0000-0000-000000000000')),
     (MyEnum, 'foo', 'bar')
 ])
-def test_convert_to_type(data_type, value, expected):
-    from piou.utils import convert_to_type
-    assert convert_to_type(data_type, value) == expected
-    assert convert_to_type(Optional[data_type], value) == expected
+def test_validate_value(data_type, value, expected):
+    from piou.utils import validate_value
+    assert validate_value(data_type, value) == expected
+    assert validate_value(Optional[data_type], value) == expected
     if _IS_GE_PY310:
-        assert convert_to_type(data_type | None, value) == expected
+        assert validate_value(data_type | None, value) == expected
 
 
-def testing_case_sensitivity():
-    from piou.utils import convert_to_type
-    _type = Literal['foo', 'bar']
-    assert convert_to_type(_type, 'FOO', case_sensitive=False) == 'FOO'
-    assert convert_to_type(_type, 'foo', case_sensitive=False) == 'foo'
-    with pytest.raises(ValueError,
-                       match=re.escape('"toto" is not a valid value for Literal[foo, bar]')):
-        convert_to_type(_type, 'toto', case_sensitive=False)
+@pytest.mark.parametrize('input_type, value, options, expected, error',
+                         [
+                             (str, 'FOO', {'case_sensitive': False, 'choices': ['foo', 'bar']}, 'FOO', None),
+                             (str, 'foo', {'case_sensitive': False, 'choices': ['foo', 'bar']}, 'foo', None),
+                             (str, 'fOo', {'case_sensitive': False, 'choices': ['foo', 'bar']}, 'fOo', None),
+                             (str, 'fOo', {'case_sensitive': True, 'choices': ['foo', 'bar']}, None,
+                              "Invalid value 'fOo' found. Possible values are: foo, bar"),
+                             (Literal['fOo'], 'fOo', {'case_sensitive': False, 'choices': ['foo', 'bar']}, 'fOo', None),
+                         ])
+def testing_choices(input_type, value, options, expected, error):
+    from piou.utils import validate_value
+    if error:
+        with pytest.raises(ValueError, match=re.escape(error)):
+            validate_value(input_type, value, **options)
+    else:
+        assert validate_value(input_type, value, **options) == expected
 
 
 @pytest.mark.parametrize('data_type, value, expected, expected_str', [
     (Path, 'a-file.py', FileNotFoundError, f'File not found: "a-file.py"'),
-    (Literal['foo', 'bar'], 'baz', ValueError, '"baz" is not a valid value for Literal[foo, bar]')
 ])
-def test_convert_to_type_invalid_data(data_type, value, expected,
-                                      expected_str):
-    from piou.utils import convert_to_type
+def test_invalid_validate_value(data_type, value, expected,
+                                expected_str):
+    from piou.utils import validate_value
     with pytest.raises(expected, match=re.escape(expected_str)):
-        convert_to_type(data_type, value)
+        validate_value(data_type, value)
 
 
 @pytest.mark.parametrize('input_str, types, expected_pos_args, expected_key_args', [
@@ -216,6 +220,13 @@ def test_command_options():
 
     cmd = Command(name='', fn=fn, options=[opt4, opt5, opt3, opt2, opt1])
     assert [x.name for x in cmd.options_sorted] == ['z', 'a', 'b', 'c', 'd']
+
+
+def test_invalid_command_options_choices():
+    from piou.command import CommandOption
+    opt = CommandOption(None, choices=[1, 2])
+    with pytest.raises(ValueError, match='Pick either a Literal type or choices'):
+        opt.data_type = Literal['foo']
 
 
 def test_command_async():
