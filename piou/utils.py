@@ -26,7 +26,9 @@ from uuid import UUID
 from .exceptions import (
     PosParamsCountError,
     KeywordParamNotFoundError,
-    KeywordParamMissingError)
+    KeywordParamMissingError,
+    InvalidChoiceError
+)
 
 
 class Password(str):
@@ -85,8 +87,7 @@ def validate_value(data_type: Any, value: str,
         _choices = choices if case_sensitive else [x.lower() for x in choices]
         _value = value if case_sensitive else value.lower()
         if _value not in _choices:
-            possible_fields = ', '.join(choices)
-            raise ValueError(f'Invalid value {value!r} found. Possible values are: {possible_fields}')
+            raise InvalidChoiceError(value, choices)
 
     if _data_type is Any or _data_type is bool:
         return value

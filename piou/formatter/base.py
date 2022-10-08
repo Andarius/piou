@@ -99,8 +99,9 @@ class Formatter(abc.ABC):
                        parent_args: Optional[ParentArgs] = None) -> None:
         ...
 
-    def print_cmd_error(self, cmd: str) -> None:
-        self.print_fn(f'Unknown command {cmd!r}')
+    def print_cmd_error(self, available_commands: list[str]) -> None:
+        _available_cmds = ', '.join(available_commands)
+        self.print_fn(f'Unknown command given. Possible commands are "{_available_cmds}"')
 
     def print_param_error(self, key: str, cmd: str) -> None:
         self.print_fn(f'Could not find value for {key!r} in command {cmd!r}')
@@ -110,3 +111,7 @@ class Formatter(abc.ABC):
 
     def print_count_error(self, expected_count: int, count: int, cmd: str) -> None:
         self.print_fn(f'Expected {expected_count} positional arguments but got {count} for command {cmd!r}')
+
+    def print_invalid_value_error(self, value: str, choices: list[str]) -> None:
+        possible_fields = '\n' + '\n - '.join(_choice for _choice in choices)
+        self.print_fn(f'Invalid value {value!r} found. Possible values are: {possible_fields}')

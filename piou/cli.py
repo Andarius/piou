@@ -1,12 +1,13 @@
+import asyncio
 import sys
 from dataclasses import dataclass, field
 from typing import Optional, Any, Callable
-import asyncio
 
 from .command import CommandGroup, ShowHelpError, clean_multiline, OnCommandRun
 from .exceptions import (
     CommandNotFoundError, PosParamsCountError,
-    KeywordParamNotFoundError, KeywordParamMissingError
+    KeywordParamNotFoundError, KeywordParamMissingError,
+    InvalidChoiceError
 )
 from .formatter import Formatter, RichFormatter
 
@@ -64,8 +65,8 @@ class Cli:
             return self._group.run_with_args(*args, loop=_loop)
         except CommandNotFoundError as e:
             e.input_args = args
-            # self.formatter.print_cmd_error(e.valid_commands)
-            raise e
+            self.formatter.print_cmd_error(e.valid_commands)
+            sys.exit(1)
         except ShowHelpError as e:
             self.formatter.print_help(group=e.group,
                                       command=e.command,
@@ -74,17 +75,20 @@ class Cli:
             if not e.cmd:
                 raise NotImplementedError('Got empty command')
             self.formatter.print_keyword_param_error(e.cmd, e.param)
-            return
+            sys.exit(1)
         except KeywordParamMissingError as e:
             if not e.cmd:
                 raise NotImplementedError('Got empty command')
             self.formatter.print_param_error(e.param, e.cmd)
-            return
+            sys.exit(1)
         except PosParamsCountError as e:
             if not e.cmd:
                 raise NotImplementedError('Got empty command')
             self.formatter.print_count_error(e.expected_count, e.count, e.cmd)
-            return
+            sys.exit(1)
+        except InvalidChoiceError as e:
+            self.formatter.print_invalid_value_error(e.value, e.choices)
+            sys.exit(1)
         # finally:
         #     if self._loop is not None:
         #         self._loop.close()

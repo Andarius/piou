@@ -1,5 +1,6 @@
-import pytest
 from typing import Literal
+
+import pytest
 
 from piou.utils import Password
 
@@ -326,12 +327,16 @@ def _compare_str(output, expected):
 
 
 @pytest.mark.parametrize('cli_fn, args, expected', _PARAMS)
-def test_rich_formatting(cli_fn, args, expected, capsys):
+def test_rich_formatting(cli_fn, args, expected, capsys,
+                         sys_exit_counter, request):
     from piou.formatter import RichFormatter
     cli = cli_fn(RichFormatter(show_default=False))
+
     cli.run_with_args(*args)
+
     output = capsys.readouterr().out
     _compare_str(output.strip(), expected.strip())
+    assert sys_exit_counter() == (1 if 'error' in request.node.callspec.id else 0)
 
 
 _SIMPLE_CLI_COMMAND_RICH_DEFAULT = """

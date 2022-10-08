@@ -2,6 +2,7 @@ import asyncio
 import datetime as dt
 import re
 import sys
+from contextlib import contextmanager
 from enum import Enum
 from pathlib import Path
 from typing import Literal, Optional
@@ -102,9 +103,12 @@ def test_validate_value(data_type, value, expected):
                          ])
 def testing_choices(input_type, value, options, expected, error):
     from piou.utils import validate_value
+    from piou.exceptions import InvalidChoiceError
     if error:
-        with pytest.raises(ValueError, match=re.escape(error)):
+        with pytest.raises(InvalidChoiceError) as e:
             validate_value(input_type, value, **options)
+        assert e.value.args[0] == value
+        assert e.value.args[1] == options['choices']
     else:
         assert validate_value(input_type, value, **options) == expected
 
@@ -296,6 +300,15 @@ def test_command_wrapper_help():
     assert cli.commands['foo3'].description is None
 
 
+@contextmanager
+def raises_exit(code: int = 1):
+    with pytest.raises(SystemExit) as exit_error:
+        fn = yield
+        print(fn)
+    assert exit_error.type == SystemExit
+    assert exit_error.value.code == code
+
+
 def test_run_command():
     from piou import Cli, Option
     from piou.exceptions import (
@@ -335,12 +348,13 @@ def test_run_command():
 
     with pytest.raises(CommandNotFoundError,
                        match="Unknown command given. Possible commands are 'foo'") as e:
-        cli.run_with_args('toto')
-    assert e.value.input_args == ('toto',)
+        cli._group.run_with_args('toto')
+
 
     with pytest.raises(PosParamsCountError,
                        match='Expected 1 positional values but got 0'):
         cli._group.run_with_args('foo')
+
     assert not called
     assert not processor_called
 
