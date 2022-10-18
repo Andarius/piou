@@ -375,13 +375,10 @@ def convert_args_to_dict(input_args: list[str],
     return fn_args
 
 
-def run_function(fn: Callable, *args, loop: Optional[asyncio.AbstractEventLoop] = None, **kwargs):
+def run_function(fn: Callable, *args, **kwargs):
     """ Runs an async / non async function """
     if iscoroutinefunction(fn):
-        if loop is not None:
-            return loop.run_until_complete(fn(*args, **kwargs))
-        else:
-            return asyncio.run(fn(*args, **kwargs))
+        return asyncio.run(fn(*args, **kwargs))
     else:
         return fn(*args, **kwargs)
 
@@ -417,7 +414,7 @@ class CommandDerivedOption:
     """Processor function, can be async """
     param_name: Optional[str] = field(init=False)
 
-    def update_args(self, args: dict, *, loop: Optional[asyncio.AbstractEventLoop] = None) -> dict:
+    def update_args(self, args: dict) -> dict:
         if self.param_name is None:
             raise ValueError('param_name not set. Did you forget to set it?')
         _args = args.copy()
@@ -427,9 +424,9 @@ class CommandDerivedOption:
             fn_args[_opt.name] = _args.pop(_opt.arg_name, None) or _args.pop(_opt.name, None)
 
         for _der in _derived:
-            fn_args = _der.update_args(fn_args, loop=loop)
+            fn_args = _der.update_args(fn_args)
 
-        _args[self.param_name] = run_function(self.processor, **fn_args, loop=loop)
+        _args[self.param_name] = run_function(self.processor, **fn_args)
         return _args
 
     def __repr__(self):
