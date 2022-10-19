@@ -72,18 +72,20 @@ jobs:
           command: bash .circleci/scripts/release.sh
       - store_artifacts:
           path: dist
-      - persist_to_workspace:
-          root: ~/
+      - save_cache:
+          name: Saving wheel
+          key: piou-wheel
           paths:
-            - project/dist
-
+            - pyproject.toml
+            - dist/
 
   publish:
     executor: test-build
     steps:
-      - checkout
-      - attach_workspace:
-          at: ~/
+      - restore_cache:
+          name: Restore wheel
+          keys:
+            - piou-wheel
       - run:
           name: Publishing
           command: poetry publish -u __token__ -p $PYPI_TOKEN
