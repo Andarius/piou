@@ -77,12 +77,6 @@ jobs:
   publish:
     executor: test-build
     steps:
-      - checkout
-      - run:
-          name: Building
-          command: poetry build
-      - store_artifacts:
-          path: dist
       - run:
           name: Publishing
           command: poetry publish -u __token__ -p $PYPI_TOKEN
