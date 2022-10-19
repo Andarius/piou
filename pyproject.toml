@@ -33,7 +33,7 @@ tag_format = "$version"
 version_files = [
     "pyproject.toml:version"
 ]
-bump_message = "release $current_version → $new_version [skip-ci]"
+bump_message = "release $current_version → $new_version [skip ci]"
 
 
 [build-system]
