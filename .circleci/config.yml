@@ -74,19 +74,18 @@ jobs:
           path: dist
       - save_cache:
           name: Saving wheel
-          key: piou-wheel-v2
+          key: piou-{{ checksum "pyproject.toml" }}
           paths:
-            - pyproject.toml
-            - README.md
             - dist/
 
   publish:
     executor: test-build
     steps:
+      - checkout
       - restore_cache:
           name: Restore wheel
           keys:
-            - piou-wheel-v2
+            - piou-{{ checksum "pyproject.toml" }}
       - run:
           name: Publishing
           command: poetry publish -u __token__ -p $PYPI_TOKEN
