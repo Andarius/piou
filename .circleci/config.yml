@@ -68,7 +68,6 @@ jobs:
             git config --global user.email "julien.brayere@obitrain.com"
             git config --global user.name "Andarius"
             poetry run cz bump --changelog --yes
-            git commit -am "chore: bump version (skip ci)"
             export TAG=$(poetry version -s)
             gh release create -F CHANGELOG.md $TAG ./dist/*.whl
 
