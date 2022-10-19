@@ -64,13 +64,7 @@ jobs:
             - deps-{{ checksum "poetry.lock" }}
       - run:
           name: Create release
-          command: |
-            git config --global user.email "julien.brayere@obitrain.com"
-            git config --global user.name "Andarius"
-            poetry run cz bump --changelog --yes
-            export TAG=$(poetry version -s)
-            poetry build
-            gh release create -F CHANGELOG.md $TAG ./dist/*.whl
+          command: bash .circleci/scripts/release.sh
       - store_artifacts:
           path: dist
 
