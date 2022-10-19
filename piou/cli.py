@@ -2,6 +2,7 @@ import asyncio
 import sys
 from dataclasses import dataclass, field
 from typing import Optional, Any, Callable
+import contextlib
 
 from .command import CommandGroup, ShowHelpError, clean_multiline, OnCommandRun
 from .exceptions import (
@@ -10,16 +11,6 @@ from .exceptions import (
     InvalidChoiceError
 )
 from .formatter import Formatter, RichFormatter
-
-
-def get_loop():
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
-    return loop
 
 
 @dataclass
@@ -41,8 +32,6 @@ class Cli:
     """
     _group: CommandGroup = field(init=False, default_factory=CommandGroup)
 
-    # _loop: asyncio.AbstractEventLoop = field(init=False, default_factory=get_loop)
-
     def __post_init__(self):
         self._group.description = clean_multiline(self.description) if self.description else None
         self._group.propagate_options = self.propagate_options
@@ -59,10 +48,9 @@ class Cli:
             return
         self.run_with_args(*args)
 
-    def run_with_args(self, *args, loop: Optional[asyncio.AbstractEventLoop] = None):
-        _loop = loop or get_loop()
+    def run_with_args(self, *args):
         try:
-            return self._group.run_with_args(*args, loop=_loop)
+            return self._group.run_with_args(*args)
         except CommandNotFoundError as e:
             e.input_args = args
             self.formatter.print_cmd_error(e.valid_commands)
@@ -89,9 +77,6 @@ class Cli:
         except InvalidChoiceError as e:
             self.formatter.print_invalid_value_error(e.value, e.choices)
             sys.exit(1)
-        # finally:
-        #     if self._loop is not None:
-        #         self._loop.close()
 
     def command(self, cmd: Optional[str] = None, help: Optional[str] = None, description: Optional[str] = None):
         return self._group.command(cmd=cmd, help=help, description=description)

@@ -54,10 +54,25 @@ jobs:
       - store_artifacts:
           path: htmlcov
 
-  build-publish:
+  bump-version:
     executor: test-build
     steps:
       - gh/setup
+      - checkout
+      - restore_cache:
+          keys:
+            - deps-{{ checksum "poetry.lock" }}
+      - run:
+          name: Create release
+          command: |
+            poetry run cz bump --changelog --yes
+            git commit -am "chore: bump version (skip ci)"
+            export TAG=$(poetry version -s)
+            gh release create -F CHANGELOG.md $TAG ./dist/*.whl
+
+  publish:
+    executor: test-build
+    steps:
       - checkout
       - run:
           name: Building
@@ -67,33 +82,30 @@ jobs:
       - run:
           name: Publishing
           command: poetry publish -u __token__ -p $PYPI_TOKEN
-      - run:
-          command: |
-            export TAG=$(poetry version -s)
-            gh release create -F CHANGELOG.md $TAG ./dist/*.whl
-          name: Create Pull Request
+
 
 workflows:
 
-  features:
-    when:
-      matches:
-        pattern: "^(feat|feature)\\/.*$"
-        value: << pipeline.git.branch >>
+  run-tests:
     jobs:
-      - run-tests
-
-  staging:
-    when:
-      equal: [ dev, << pipeline.git.branch >> ]
-    jobs:
-      - run-tests
-
-  production:
-    when:
-      equal: [ master, << pipeline.git.branch >> ]
-    jobs:
-      - run-tests
-      - build-publish:
-          requires: [ run-tests ]
+      - run-tests:
+          filters:
+            tags:
+              ignore: /.*/
+      - bump-version:
           context: piou-deploy
+          filters:
+            tags:
+              only: /.*/
+            branches:
+              only: /^master$/
+
+  publish:
+    jobs:
+      - publish:
+          context: piou-deploy
+          filters:
+            tags:
+              only: /.*/
+            branches:
+              ignore: /.*/

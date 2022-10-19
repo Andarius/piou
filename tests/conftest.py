@@ -1,14 +1,4 @@
-import asyncio
-from typing import Iterator
-
 import pytest
-
-
-@pytest.fixture(scope='function')
-def loop() -> Iterator[asyncio.AbstractEventLoop]:
-    loop = asyncio.new_event_loop()
-    yield loop
-    loop.close()
 
 
 @pytest.fixture(scope='function')

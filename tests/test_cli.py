@@ -350,7 +350,6 @@ def test_run_command():
                        match="Unknown command given. Possible commands are 'foo'") as e:
         cli._group.run_with_args('toto')
 
-
     with pytest.raises(PosParamsCountError,
                        match='Expected 1 positional values but got 0'):
         cli._group.run_with_args('foo')
@@ -376,7 +375,7 @@ def test_run_command():
     assert processor_called
 
 
-def test_run_async_cmd(loop):
+def test_run_async_cmd():
     from piou import Cli
 
     called = False
@@ -391,7 +390,7 @@ def test_run_async_cmd(loop):
     cli.run_with_args('foo')
     assert called
     # Can run again
-    cli.run_with_args('foo', loop=loop)
+    cli.run_with_args('foo')
 
 
 def test_reuse_option():

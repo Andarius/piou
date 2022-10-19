@@ -60,8 +60,8 @@ class Command:
         """
         return self.positional_args + self.keyword_args
 
-    def run(self, *args, loop: Optional[asyncio.AbstractEventLoop] = None, **kwargs):
-        run_function(self.fn, *args, loop=loop, **kwargs)
+    def run(self, *args, **kwargs):
+        run_function(self.fn, *args, **kwargs)
 
     def __post_init__(self):
 
@@ -107,8 +107,8 @@ class CommandGroup:
     _options: list[CommandOption] = field(init=False, default_factory=list)
     _commands: dict[str, Command] = field(init=False, default_factory=dict)
     _command_groups: dict[str, 'CommandGroup'] = field(init=False, default_factory=dict)
+
     #
-    _loop: Optional[asyncio.AbstractEventLoop] = field(init=False, default=None)
 
     def __post_init__(self):
         self.description = clean_multiline(self.description) if self.description else None
@@ -190,8 +190,7 @@ class CommandGroup:
         return _processor
 
     def run_with_args(self, *args,
-                      parent_args: Optional[ParentArgs] = None,
-                      loop: Optional[asyncio.AbstractEventLoop] = None):
+                      parent_args: Optional[ParentArgs] = None):
 
         cmd, global_options, cmd_options = parse_input_args(args, self.command_names)
 
@@ -205,7 +204,7 @@ class CommandGroup:
             parent_args.append(ParentArg(cmd, self.options, global_options,
                                          options_processor=self.options_processor,
                                          propagate_args=self.propagate_options))
-            return command_group.run_with_args(*cmd_options, parent_args=parent_args, loop=loop)
+            return command_group.run_with_args(*cmd_options, parent_args=parent_args)
 
         if set(global_options + cmd_options) & {'-h', '--help'}:
             raise ShowHelpError(
@@ -246,7 +245,7 @@ class CommandGroup:
 
         cmd_args = args_dict.copy()
         for _derived in command.derived_options:
-            args_dict = _derived.update_args(args_dict, loop=loop)
+            args_dict = _derived.update_args(args_dict)
 
         if self.on_cmd_run:
             full_command_name = '.'.join([x.cmd for x in parent_args] + [command.name])
@@ -254,7 +253,7 @@ class CommandGroup:
                                         fn_args=args_dict,
                                         cmd_args=cmd_args))
 
-        return command.run(**args_dict, loop=loop)
+        return command.run(**args_dict)
 
     def set_options_processor(self, fn: Callable):
         self.options_processor = fn
