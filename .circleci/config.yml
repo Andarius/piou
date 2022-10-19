@@ -66,7 +66,10 @@ jobs:
           name: Create release
           command: |
             poetry run cz bump --changelog --yes
+            git config --global user.email "julien.brayere@obitrain.com"
+            git config --global user.name "Andarius"
             git commit -am "chore: bump version (skip ci)"
+            git push
             export TAG=$(poetry version -s)
             gh release create -F CHANGELOG.md $TAG ./dist/*.whl
 
@@ -94,6 +97,7 @@ workflows:
               ignore: /.*/
       - bump-version:
           context: piou-deploy
+          requires: [ run-tests ]
           filters:
             tags:
               only: /.*/
