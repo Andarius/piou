@@ -1,17 +1,18 @@
 #!/usr/bin/env bash
 
-set -xe
+#set -xe
 
 cd "$(dirname "$0")/../.." || exit
 
 git config --global user.email "$CI_EMAIL"
 git config --global user.name "$CI_USER"
 
-poetry run cz bump --changelog --yes
+poetry run cz bump --yes
 
 if [ $? -eq 0 ]; then
-  git push origin master
   readonly TAG=$(poetry version -s)
+  poetry run cz changelog "$TAG"
+  git push origin master
   poetry build
   gh release create -F CHANGELOG.md "$TAG" ./dist/*.whl
 fi
