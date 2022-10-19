@@ -13,6 +13,8 @@ if [ $? -eq 0 ]; then
   readonly TAG=$(poetry version -s)
   poetry run cz changelog "$TAG"
   poetry build
-  gh release create -F CHANGELOG.md "$TAG" ./dist/*.whl
+  # We need to push before releasing so that the pyproject.toml matches
+  # for the cache
   git push origin master
+  gh release create -F CHANGELOG.md "$TAG" ./dist/*.whl
 fi
