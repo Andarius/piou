@@ -33,6 +33,7 @@ tag_format = "$version"
 version_files = [
     "pyproject.toml:version"
 ]
+message_template = "{{change_type}}:{% if show_message %} {{message}}{% endif %} [skip ci]"
 
 
 [build-system]
