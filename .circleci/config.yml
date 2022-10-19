@@ -65,9 +65,9 @@ jobs:
       - run:
           name: Create release
           command: |
-            poetry run cz bump --changelog --yes
             git config --global user.email "julien.brayere@obitrain.com"
             git config --global user.name "Andarius"
+            poetry run cz bump --changelog --yes
             git commit -am "chore: bump version (skip ci)"
             git push
             export TAG=$(poetry version -s)
