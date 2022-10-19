@@ -72,11 +72,18 @@ jobs:
           command: bash .circleci/scripts/release.sh
       - store_artifacts:
           path: dist
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - dist
+
 
   publish:
     executor: test-build
     steps:
       - checkout
+      - attach_workspace:
+          at: ~/
       - run:
           name: Publishing
           command: poetry publish -u __token__ -p $PYPI_TOKEN

@@ -12,7 +12,7 @@ poetry run cz bump --yes
 if [ $? -eq 0 ]; then
   readonly TAG=$(poetry version -s)
   poetry run cz changelog "$TAG"
-  git push origin master
   poetry build
   gh release create -F CHANGELOG.md "$TAG" ./dist/*.whl
+  git push origin master
 fi
