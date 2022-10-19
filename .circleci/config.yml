@@ -81,7 +81,6 @@ jobs:
           name: Publishing
           command: poetry publish -u __token__ -p $PYPI_TOKEN
 
-
 workflows:
 
   run-tests:
