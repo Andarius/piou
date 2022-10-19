@@ -63,6 +63,11 @@ jobs:
           keys:
             - deps-{{ checksum "poetry.lock" }}
       - run:
+          name: Adding github.com to known hosts
+          command: |
+            mkdir -p ~/.ssh
+            ssh-keyscan github.com >> ~/.ssh/known_hosts
+      - run:
           name: Create release
           command: bash .circleci/scripts/release.sh
       - store_artifacts:
