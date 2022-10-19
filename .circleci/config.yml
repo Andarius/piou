@@ -74,7 +74,7 @@ jobs:
           path: dist
       - save_cache:
           name: Saving wheel
-          key: piou-wheel
+          key: piou-wheel-v2
           paths:
             - pyproject.toml
             - README.md
@@ -86,7 +86,7 @@ jobs:
       - restore_cache:
           name: Restore wheel
           keys:
-            - piou-wheel
+            - piou-wheel-v2
       - run:
           name: Publishing
           command: poetry publish -u __token__ -p $PYPI_TOKEN
