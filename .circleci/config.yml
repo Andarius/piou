@@ -69,7 +69,10 @@ jobs:
             git config --global user.name "Andarius"
             poetry run cz bump --changelog --yes
             export TAG=$(poetry version -s)
+            poetry build
             gh release create -F CHANGELOG.md $TAG ./dist/*.whl
+      - store_artifacts:
+          path: dist
 
   publish:
     executor: test-build
