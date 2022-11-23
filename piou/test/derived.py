@@ -3,11 +3,6 @@ import os
 from typing import Literal
 from piou import Cli, Option, Derived
 
-try:
-    import asyncpg
-except ImportError as e:
-    asyncpg = None
-
 cli = Cli(description='A CLI tool')
 
 
@@ -22,11 +17,15 @@ def get_pg_url(
     return f'postgresql://{pg_user}:{pg_pwd}@{pg_host}:{pg_port}/{pg_db}'
 
 
-if asyncpg is not None:
+try:
+    import asyncpg
+
+
     async def get_pg_conn(
             pg_url: str = Derived(get_pg_url)
     ) -> asyncpg.Connection:
         return await asyncpg.connect(pg_url)
+
 
     @cli.command(help='Run bar command')
     async def bar(
@@ -35,6 +34,8 @@ if asyncpg is not None:
     ):
         res = await pg_conn.fetchval(query)
         print(res)
+except ImportError:
+    pass
 
 
 async def get_sleep(
@@ -50,8 +51,6 @@ def foo(
         has_slept: bool = Derived(get_sleep)
 ):
     print(has_slept, pg_url)
-
-
 
 
 def get_pg_url_dynamic(source: Literal['db1', 'db2']):
