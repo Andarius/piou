@@ -17,25 +17,21 @@ def get_pg_url(
     return f'postgresql://{pg_user}:{pg_pwd}@{pg_host}:{pg_port}/{pg_db}'
 
 
-try:
-    import asyncpg
+async def async_processor() -> asyncio.Future:
+    return asyncio.get_event_loop().create_future()
 
 
-    async def get_pg_conn(
-            pg_url: str = Derived(get_pg_url)
-    ) -> asyncpg.Connection:
-        return await asyncpg.connect(pg_url)
-
-
-    @cli.command(help='Run bar command')
-    async def bar(
-            pg_conn=Derived(get_pg_conn),
-            query: str = Option('SELECT 1 FROM pg_namespace', '-q', help='Query to execute')
-    ):
-        res = await pg_conn.fetchval(query)
-        print(res)
-except ImportError:
-    pass
+@cli.command(help='Run bar command')
+async def bar(
+        fut=Derived(async_processor),
+):
+    """
+    Function to test that the future passed does not belong to another loop
+    """
+    try:
+        await asyncio.wait_for(fut, timeout=0.1)
+    except asyncio.TimeoutError:
+        pass
 
 
 async def get_sleep(
