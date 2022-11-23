@@ -63,15 +63,19 @@ def get_literals_union_args(literal: Any):
 
 def get_type_hints_derived(f):
     hints = get_type_hints(f)
-    for v in inspect.signature(f).parameters.values():
-        if v.name not in hints and isinstance(v.default, CommandDerivedOption):
+    fn_parameters = inspect.signature(f).parameters
+    _all_hints = {}
+    for v in fn_parameters.values():
+        _value = hints.get(v.name)
+        if _value is None and isinstance(v.default, CommandDerivedOption):
             try:
-                hints[v.name] = get_type_hints(v.default.processor)['return']
+                _value = get_type_hints(v.default.processor)['return']
             except KeyError:
                 raise ValueError(f'Could not find a return type for attribute {v.name!r}.'
                                  f'Did you forget to specify the return type of the function?')
+        _all_hints[v.name] = _value
 
-    return hints
+    return _all_hints
 
 
 def validate_value(data_type: Any, value: str,
@@ -378,7 +382,8 @@ def convert_args_to_dict(input_args: list[str],
 def run_function(fn: Callable, *args, **kwargs):
     """ Runs an async / non async function """
     if iscoroutinefunction(fn):
-        return asyncio.run(fn(*args, **kwargs))
+        return asyncio.get_event_loop().run_until_complete(fn(*args, **kwargs))
+        # return asyncio.run(fn(*args, **kwargs))
     else:
         return fn(*args, **kwargs)
 

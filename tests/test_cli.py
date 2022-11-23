@@ -65,7 +65,41 @@ def test_get_type_hints_derived():
     assert hints == {'a': int, 'bar': str}
 
 
+def _get_cmd_opt(default,
+                 help,
+                 keyword_args,
+                 name,
+                 data_type
+                 ):
+    from piou.utils import CommandOption
+    opt = CommandOption(default=default, help=help, keyword_args=keyword_args)
+    opt.name = name
+    opt.data_type = data_type
+    return opt
+
+
+def test_extract_function_info():
+    from piou.utils import Derived, Option, extract_function_info
+
+    def processor(a: int = Option(1, '-a'),
+                  b: int = Option(2, '-b')) -> int:
+        return a + b
+
+    def test(value=Derived(processor),
+             value2: str = Option('foo', '--value2')):
+        ...
+
+    expected_options = [
+        _get_cmd_opt(default=1, help=None, keyword_args=('-a',), name='a', data_type=int),
+        _get_cmd_opt(default=2, help=None, keyword_args=('-b',), name='b', data_type=int),
+        _get_cmd_opt(default='foo', help=None, keyword_args=('--value2',), name='value2', data_type=str)
+    ]
+    _options, _ = extract_function_info(test)
+    assert expected_options == _options
+
+
 @pytest.mark.parametrize('data_type, value, expected', [
+
     (str, '123', '123'),
     (str, 'foo bar', 'foo bar'),
     (int, '123', 123),
@@ -83,6 +117,7 @@ def test_get_type_hints_derived():
     (Literal['foo', 'bar'], 'bar', 'bar'),
     (UUID, '00000000-0000-0000-0000-000000000000', UUID('00000000-0000-0000-0000-000000000000')),
     (MyEnum, 'foo', 'bar')
+
 ])
 def test_validate_value(data_type, value, expected):
     from piou.utils import validate_value
@@ -690,24 +725,27 @@ def test_async_derived():
     called = False
 
     @cli.command()
-    def test(value: int = Derived(processor)):
+    def test(value=Derived(processor),
+             value2: str = Option('foo', '--value')):
         nonlocal called
         called = True
         assert value == 5
         assert isinstance(value, int)
+        assert value2 == 'foo'
 
-    @cli.command()
-    def test2(value=Derived(processor)):
-        nonlocal called
-        called = True
-        assert value == 5
-        assert isinstance(value, int)
+    #
+    # @cli.command()
+    # def test2(value=Derived(processor)):
+    #     nonlocal called
+    #     called = True
+    #     assert value == 5
+    #     assert isinstance(value, int)
 
     cli.run_with_args('test', '-a', '3', '-b', '2')
     assert called
     called = False
-    cli.run_with_args('test2', '-a', '3', '-b', '2')
-    assert called
+    # cli.run_with_args('test2', '-a', '3', '-b', '2')
+    # assert called
 
 
 def test_dynamic_derived():

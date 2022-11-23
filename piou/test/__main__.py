@@ -1,5 +1,6 @@
-from typing import Literal, Union
+from enum import Enum
 from pathlib import Path
+from typing import Literal, Union
 
 from piou import Cli, Option
 from piou.formatter import RichFormatter
@@ -19,6 +20,11 @@ LongLiteral = Literal['foo1', 'foo2', 'foo3', 'foo4']
 UnionLiteral = Union[Literal['foo1'], Literal['foo2']]
 
 
+class AnEnum(Enum):
+    value_1 = 'value-1'
+    value_2 = 'value-2'
+
+
 @cli.command(cmd='foo',
              help='Run foo command')
 def foo_main(
@@ -33,6 +39,8 @@ def foo_main(
         foo8: UnionLiteral = Option(None, '--foo8', help='Foo8 argument'),
         foo9: str = Option(None, '--foo9', help='Foo9 argument',
                            choices=[f'item{i}' for i in range(4)]),
+        foo10: AnEnum = Option(AnEnum.value_1, '--foo10',
+                               help='Foo10 argument')
 ):
     """
     A test command
@@ -46,7 +54,8 @@ def foo_main(
                         ('foo6', foo6),
                         ('foo7', foo7),
                         ('foo8', foo8),
-                        ('foo9', foo9)
+                        ('foo9', foo9),
+                        ('foo10', foo10)
                         ]:
         print(f'{name} = {value} ({type(value)})')
 

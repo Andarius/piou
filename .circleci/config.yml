@@ -8,10 +8,8 @@ executors:
     docker:
       - image: cimg/python:3.9
 
-jobs:
-
+commands:
   run-tests:
-    executor: test-build
     steps:
       - checkout
       - restore_cache:
@@ -19,7 +17,7 @@ jobs:
             - deps-{{ checksum "poetry.lock" }}
       - run:
           name: Install python dependencies
-          command: poetry install
+          command: poetry install --all-extras
       - save_cache:
           key: deps-{{ checksum "poetry.lock" }}
           paths:
@@ -42,6 +40,7 @@ jobs:
             poetry run coverage run -a -m piou.test foo -h
             poetry run coverage run -a -m piou.test sub foo 1 --foo2 foo
             poetry run coverage run -a -m piou.test.derived -h
+            poetry run coverage run -a -m piou.test.derived bar
             poetry run coverage run -a -m piou.test.derived foo --host postgres
             poetry run coverage run -a -m piou.test.derived dynamic --db1 test
       - run:
@@ -53,6 +52,26 @@ jobs:
           path: tests
       - store_artifacts:
           path: htmlcov
+
+jobs:
+
+  run-tests-3-9:
+    docker:
+      - image: cimg/python:3.9
+    steps:
+      - run-tests
+
+  run-tests-3-10:
+    docker:
+      - image: cimg/python:3.10
+    steps:
+      - run-tests
+
+  run-tests-3-11:
+    docker:
+      - image: cimg/python:3.11
+    steps:
+      - run-tests
 
   bump-version:
     executor: test-build
@@ -94,13 +113,21 @@ workflows:
 
   run-tests:
     jobs:
-      - run-tests:
+      - run-tests-3-9:
+          filters:
+            tags:
+              ignore: /.*/
+      - run-tests-3-10:
+          filters:
+            tags:
+              ignore: /.*/
+      - run-tests-3-11:
           filters:
             tags:
               ignore: /.*/
       - bump-version:
           context: piou-deploy
-          requires: [ run-tests ]
+          requires: [ run-tests-3-9, run-tests-3-10, run-tests-3-11 ]
           filters:
             tags:
               only: /.*/
