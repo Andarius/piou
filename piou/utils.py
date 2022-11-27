@@ -379,7 +379,7 @@ def convert_args_to_dict(input_args: list[str],
     return fn_args
 
 
-_LOOP: asyncio.AbstractEventLoop  | None = None
+_LOOP: Optional[asyncio.AbstractEventLoop] = None
 
 
 def run_function(fn: Callable, *args, **kwargs):
