@@ -24,12 +24,3 @@ def monkeysession():
     mpatch = MonkeyPatch()
     yield mpatch
     mpatch.undo()
-
-
-@pytest.fixture(scope='session', autouse=True)
-def loop(monkeysession):
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    monkeysession.setattr('piou.utils.asyncio.get_event_loop', lambda: loop)
-    yield
-    loop.stop()
