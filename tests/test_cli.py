@@ -9,6 +9,7 @@ from typing import Literal, Optional
 from uuid import UUID
 
 import pytest
+from typing_extensions import LiteralString
 
 _IS_GE_PY310 = f'{sys.version_info.major}.{sys.version_info.minor:02}' >= '3.10'
 
@@ -116,7 +117,8 @@ def test_extract_function_info():
     (dt.datetime, '2019-01-01T01:01:01', dt.datetime(2019, 1, 1, 1, 1, 1)),
     (Literal['foo', 'bar'], 'bar', 'bar'),
     (UUID, '00000000-0000-0000-0000-000000000000', UUID('00000000-0000-0000-0000-000000000000')),
-    (MyEnum, 'foo', 'bar')
+    (MyEnum, 'foo', 'bar'),
+    (LiteralString, 'foo', 'foo'),
 
 ])
 def test_validate_value(data_type, value, expected):
@@ -533,7 +535,7 @@ def test_run_group_command():
             # verbose: bool = False,
             foo1: int = Option(..., help='Foo arguments'),
             foo2: str = Option(..., '-f', '--foo2', help='Foo2 arguments'),
-            foo3: str = Option('a value', '--foo3', help='Foo3 arguments'),
+            foo3: LiteralString = Option('a value', '--foo3', help='Foo3 arguments'),
     ):
         nonlocal called
         called = True

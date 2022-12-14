@@ -12,8 +12,11 @@ from inspect import iscoroutinefunction
 from pathlib import Path
 from typing import (
     Any, Optional, get_args, get_origin, get_type_hints,
-    Literal, TypeVar, Generic, Callable, Union, Coroutine
+    Literal, TypeVar, Generic, Callable, Union, Coroutine,
+    cast
 )
+
+from typing_extensions import LiteralString
 
 try:
     from types import UnionType, NoneType  # type: ignore
@@ -97,6 +100,8 @@ def validate_value(data_type: Any, value: str,
         return value
     elif _data_type is str or _data_type is Password:
         return str(value)
+    elif _data_type is LiteralString:
+        return cast(LiteralString, str(value))
     elif _data_type is int:
         return int(value)
     elif _data_type is float:

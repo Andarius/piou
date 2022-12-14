@@ -2,6 +2,8 @@ from enum import Enum
 from pathlib import Path
 from typing import Literal, Union
 
+from typing_extensions import LiteralString
+
 from piou import Cli, Option
 from piou.formatter import RichFormatter
 
@@ -40,7 +42,9 @@ def foo_main(
         foo9: str = Option(None, '--foo9', help='Foo9 argument',
                            choices=[f'item{i}' for i in range(4)]),
         foo10: AnEnum = Option(AnEnum.value_1, '--foo10',
-                               help='Foo10 argument')
+                               help='Foo10 argument'),
+        foo11: LiteralString = Option(None, '--foo11',
+                                      help='Foo11 argument')
 ):
     """
     A test command
@@ -55,7 +59,8 @@ def foo_main(
                         ('foo7', foo7),
                         ('foo8', foo8),
                         ('foo9', foo9),
-                        ('foo10', foo10)
+                        ('foo10', foo10),
+                        ('foo11', foo11)
                         ]:
         print(f'{name} = {value} ({type(value)})')
 
