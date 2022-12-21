@@ -87,7 +87,7 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - deps-3.10-{{ checksum "poetry.lock" }}
+            - deps-3.9-{{ checksum "poetry.lock" }}
       - run:
           name: Adding github.com to known hosts
           command: |

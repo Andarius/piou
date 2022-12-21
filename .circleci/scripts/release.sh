@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-#set -xe
+set -xe
 
 cd "$(dirname "$0")/../.." || exit
 
