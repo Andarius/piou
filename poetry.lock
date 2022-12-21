@@ -335,7 +335,7 @@ python-versions = ">=3.6"
 name = "typing-extensions"
 version = "4.4.0"
 description = "Backported and Experimental Type Hints for Python 3.7+"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.7"
 
@@ -350,7 +350,7 @@ python-versions = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.9,<4.0"
-content-hash = "3495e97f968ea09de1276bbf284969bcd9e1ed602e0eda1db6a76e7dd7145b15"
+content-hash = "de7b71fdce4061d2602ae342ef1631af717f611bf95b957832d4a1f89b13d6f8"
 
 [metadata.files]
 argcomplete = [
