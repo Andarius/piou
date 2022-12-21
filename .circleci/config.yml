@@ -10,16 +10,20 @@ executors:
 
 commands:
   run-tests:
+    parameters:
+      python-version:
+        type: string
+        description: Name of the image
     steps:
       - checkout
       - restore_cache:
           keys:
-            - deps-{{ checksum "poetry.lock" }}
+            - deps-<< parameters.python-version >>-{{ checksum "poetry.lock" }}
       - run:
           name: Install python dependencies
           command: poetry install --all-extras
       - save_cache:
-          key: deps-{{ checksum "poetry.lock" }}
+          key: deps-<< parameters.python-version >>-{{ checksum "poetry.lock" }}
           paths:
             - /home/circleci/.cache/pypoetry/virtualenvs
       - run:
@@ -59,19 +63,22 @@ jobs:
     docker:
       - image: cimg/python:3.9.15
     steps:
-      - run-tests
+      - run-tests:
+          python-version: "3.9"
 
   run-tests-3-10:
     docker:
       - image: cimg/python:3.10.8
     steps:
-      - run-tests
+      - run-tests:
+          python-version: "3.10"
 
   run-tests-3-11:
     docker:
       - image: cimg/python:3.11
     steps:
-      - run-tests
+      - run-tests:
+          python-version: "3.11"
 
   bump-version:
     executor: test-build
@@ -80,7 +87,7 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - deps-{{ checksum "poetry.lock" }}
+            - deps-3.10-{{ checksum "poetry.lock" }}
       - run:
           name: Adding github.com to known hosts
           command: |
