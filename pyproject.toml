@@ -18,7 +18,7 @@ include = [
 
 [tool.poetry.dependencies]
 python = ">=3.9,<4.0"
-rich = ">=10.11.0,<13.0"
+rich = ">=10.11.0,<14.0"
 typing-extensions = "^4.4.0"
 
 [tool.poetry.group.dev.dependencies]
