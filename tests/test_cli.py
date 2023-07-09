@@ -151,7 +151,7 @@ def testing_choices(input_type, value, options, expected, error):
 
 
 @pytest.mark.parametrize('data_type, value, expected, expected_str', [
-    (Path, 'a-file.py', FileNotFoundError, f'File not found: "a-file.py"'),
+    (Path, 'a-file.py', FileNotFoundError, 'File not found: "a-file.py"'),
 ])
 def test_invalid_validate_value(data_type, value, expected,
                                 expected_str):
@@ -384,7 +384,7 @@ def test_run_command():
         assert foo4 == [1, 2, 3]
 
     with pytest.raises(CommandNotFoundError,
-                       match="Unknown command given. Possible commands are 'foo'") as e:
+                       match="Unknown command given. Possible commands are 'foo'"):
         cli._group.run_with_args('toto')
 
     with pytest.raises(PosParamsCountError,
