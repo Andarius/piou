@@ -53,7 +53,7 @@ commands:
             poetry run coverage xml -o tests/coverage.xml
             poetry run coverage html
       - store_test_results:
-          path: tests
+          path: tests/junit.xml
       - store_artifacts:
           path: htmlcov
 
