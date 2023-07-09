@@ -202,7 +202,7 @@ def test_get_cmd_args(input_str, types, expected_pos_args, expected_key_args):
             {'foo': 'buz'}
     ),
     (
-            '"baz buz"',
+            "'baz buz'",
             [
                 {'default': ..., 'name': 'baz'},
 
@@ -835,3 +835,24 @@ def test_on_cmd_run():
     is_sub_command = True
     cli._group.run_with_args('sub', '--verbose', 'test', '--baz', 'baz')
     assert cmd_run_called
+
+
+@pytest.mark.parametrize('arg_type, arg_value, expected', [
+    (int, '5', 5),
+    (dict, '{"foo": 1, "bar": "baz"}', {'foo': 1, 'bar': 'baz'}),
+])
+def test_cmd_args(arg_type, arg_value, expected):
+    from piou import Cli, Option
+
+    cli = Cli(description='A CLI tool')
+
+    called = False
+
+    @cli.command(cmd='foo', help='Run foo command')
+    def foo_main(bar: arg_type = Option(...)):
+        nonlocal called
+        called = True
+        assert bar == expected
+
+    cli._group.run_with_args('foo', arg_value)
+    assert called
