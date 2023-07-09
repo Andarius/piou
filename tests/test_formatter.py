@@ -177,7 +177,7 @@ OPTIONS
 
 DESCRIPTION
  Run foo command
-"""
+""" # noqa
 
 _SIMPLE_CLI_WITH_OPTS_OUTPUT_RICH = """
 USAGE 
@@ -192,7 +192,7 @@ AVAILABLE COMMANDS
 
 DESCRIPTION
  A CLI tool
-"""
+""" # noqa
 
 _SIMPLE_CLI_WITH_OPTS_CMD_OUTPUT_RICH = """
 USAGE 
@@ -211,7 +211,7 @@ GLOBAL OPTIONS
 
 DESCRIPTION
  Run foo command
-"""
+""" # noqa
 
 _SIMPLE_CLI_SUB_CMD_RICH = """
 USAGE 
@@ -227,7 +227,7 @@ AVAILABLE COMMANDS
 
 DESCRIPTION
  A CLI tool
-"""
+""" # noqa
 
 _SIMPLE_CLI_SUB_CMD_HELP_RICH = """
 USAGE
@@ -254,7 +254,7 @@ GLOBAL OPTIONS
 
 DESCRIPTION
  A sub command
-"""
+""" # noqa
 
 _SIMPLE_CLI_SUB_CMD2_HELP = """
 USAGE
@@ -270,7 +270,7 @@ GLOBAL OPTIONS
 
 DESCRIPTION
  Another sub command
-"""
+""" # noqa
 
 _SIMPLE_CLI_SUB_CMD_CMD_RICH = """
 USAGE 
@@ -290,7 +290,7 @@ GLOBAL OPTIONS
 
 DESCRIPTION
  Run foo command
-"""
+""" # noqa
 
 _PARAMS = [
     pytest.param(get_simple_cli, ['-h'], _SIMPLE_CLI_OUTPUT_RICH, id='Simple CLI'),
@@ -353,7 +353,7 @@ OPTIONS
 
 DESCRIPTION
  Run foo command
-"""
+""" # noqa
 
 _SIMPLE_CLI_SUB_CMD_HELP_DEFAULT = """
 USAGE
@@ -380,7 +380,7 @@ GLOBAL OPTIONS
 
 DESCRIPTION
  A sub command
-"""
+""" # noqa
 
 _SIMPLE_CLI_SUB_CMD_CMD_DEFAULT = """
 USAGE 
@@ -400,7 +400,7 @@ GLOBAL OPTIONS
 
 DESCRIPTION
  Run foo command
-"""
+""" # noqa
 
 _PARAMS_WITH_DEFAULTS = [
     ('Simple CLI cmd', get_simple_cli, ['foo', '-h'], _SIMPLE_CLI_COMMAND_RICH_DEFAULT),
