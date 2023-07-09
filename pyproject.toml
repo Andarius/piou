@@ -26,6 +26,7 @@ pyright = "^1.1.281"
 commitizen = "^2.35.0"
 pytest = "^6.2.5"
 pytest-cov = "^3.0.0"
+ruff = "^0.0.277"
 
 
 [tool.commitizen]
@@ -56,3 +57,23 @@ exclude = []
 
 pythonVersion = "3.9"
 pythonPlatform = "Linux"
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.per-file-ignores]
+"__init__.py" = [
+    # imported but unused
+    "F401",
+    # unable to detect undefined names
+    "F403",
+    #
+    "F405"
+]
+"conftest.py" = [
+    # unable to detect undefined names
+    "F403",
+    #
+    "F405"
+]
