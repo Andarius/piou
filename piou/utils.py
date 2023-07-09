@@ -37,6 +37,8 @@ from .exceptions import (
 class Password(str):
     pass
 
+class Secret(str):
+    pass
 
 T = TypeVar('T', str, int, float, dt.date, dt.datetime, Path, dict, list, Password)
 

@@ -1,0 +1,15 @@
+---
+repos:
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v2.35.0
+    hooks:
+      - id: commitizen
+  #      - id: commitizen-branch
+  #        stages: [ push ]
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: 'v0.0.277'
+    hooks:
+      - id: ruff
+        language_version: python3.10
+        args:
+          - --fix

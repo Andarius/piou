@@ -1,5 +1,4 @@
 import pytest
-import asyncio
 
 
 @pytest.fixture(scope='function')
