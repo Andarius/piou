@@ -44,7 +44,9 @@ def foo_main(
         foo10: AnEnum = Option(AnEnum.value_1, '--foo10',
                                help='Foo10 argument'),
         foo11: LiteralString = Option(None, '--foo11',
-                                      help='Foo11 argument')
+                                      help='Foo11 argument'),
+        foo12: dict = Option(None, '--foo12',
+                                help='Foo12 argument'),
 ):
     """
     A test command
@@ -60,7 +62,8 @@ def foo_main(
                         ('foo8', foo8),
                         ('foo9', foo9),
                         ('foo10', foo10),
-                        ('foo11', foo11)
+                        ('foo11', foo11),
+                        ('foo12', foo12)
                         ]:
         print(f'{name} = {value} ({type(value)})')
 

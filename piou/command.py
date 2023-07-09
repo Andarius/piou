@@ -192,7 +192,6 @@ class CommandGroup:
                       parent_args: Optional[ParentArgs] = None):
 
         cmd, global_options, cmd_options = parse_input_args(args, self.command_names)
-
         command_group = self._command_groups.get(cmd) if cmd else None
         command = (command_group or self)._commands.get(cmd) if cmd else None
 

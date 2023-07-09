@@ -249,9 +249,7 @@ def _split_cmd(cmd: str) -> list[str]:
     is_pos_arg = True
     buff = []
     cmd_split = []
-
     for arg in shlex.split(cmd):
-
         if arg.startswith('-'):
             if buff:
                 reset_buff()
@@ -343,7 +341,7 @@ KeywordParam = namedtuple('KeywordParam', ['name', 'validate'])
 
 def convert_args_to_dict(input_args: list[str],
                          options: list[CommandOption]) -> dict:
-    _input_pos_args, _input_keyword_args = get_cmd_args(' '.join(f'"{x}"' for x in input_args),
+    _input_pos_args, _input_keyword_args = get_cmd_args(' '.join(f"'{x}'" for x in input_args),
                                                         {name: opt.data_type
                                                          for opt in options
                                                          for name in opt.names})
