@@ -27,14 +27,14 @@ commands:
           paths:
             - /home/circleci/.cache/pypoetry/virtualenvs
       - run:
-          name: Running type checking
-          command: poetry run pyright
-      - run:
           name: Running lint check
           command: poetry run ruff check .
       - run:
           name: Running black
           command: poetry run black
+      - run:
+          name: Running type checking
+          command: poetry run pyright
       - run:
           name: Run tests
           command: |
