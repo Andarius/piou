@@ -11,9 +11,18 @@ from enum import Enum
 from inspect import iscoroutinefunction
 from pathlib import Path
 from typing import (
-    Any, Optional, get_args, get_origin, get_type_hints,
-    Literal, TypeVar, Generic, Callable, Union, Coroutine,
-    cast
+    Any,
+    Optional,
+    get_args,
+    get_origin,
+    get_type_hints,
+    Literal,
+    TypeVar,
+    Generic,
+    Callable,
+    Union,
+    Coroutine,
+    cast,
 )
 
 from typing_extensions import LiteralString
@@ -30,17 +39,19 @@ from .exceptions import (
     PosParamsCountError,
     KeywordParamNotFoundError,
     KeywordParamMissingError,
-    InvalidChoiceError
+    InvalidChoiceError,
 )
 
 
 class Password(str):
     pass
 
+
 class Secret(str):
     pass
 
-T = TypeVar('T', str, int, float, dt.date, dt.datetime, Path, dict, list, Password)
+
+T = TypeVar("T", str, int, float, dt.date, dt.datetime, Path, dict, list, Password)
 
 
 def extract_optional_type(t: Any):
@@ -74,19 +85,24 @@ def get_type_hints_derived(f):
         _value = hints.get(v.name)
         if _value is None and isinstance(v.default, CommandDerivedOption):
             try:
-                _value = get_type_hints(v.default.processor)['return']
+                _value = get_type_hints(v.default.processor)["return"]
             except KeyError:
-                raise ValueError(f'Could not find a return type for attribute {v.name!r}.'
-                                 f'Did you forget to specify the return type of the function?')
+                raise ValueError(
+                    f"Could not find a return type for attribute {v.name!r}."
+                    f"Did you forget to specify the return type of the function?"
+                )
         _all_hints[v.name] = _value
 
     return _all_hints
 
 
-def validate_value(data_type: Any, value: str,
-                   *,
-                   case_sensitive: bool = True,
-                   choices: Optional[list[Any]] = None):
+def validate_value(
+    data_type: Any,
+    value: str,
+    *,
+    case_sensitive: bool = True,
+    choices: Optional[list[Any]] = None,
+):
     """
     Converts `value` to `data_type`, if not possible raises the appropriate error
     """
@@ -125,24 +141,28 @@ def validate_value(data_type: Any, value: str,
         return _data_type[value].value
     elif _data_type is list or get_origin(_data_type) is list:
         list_type = get_args(_data_type)
-        return [validate_value(list_type[0] if list_type else str,
-                               x) for x in value.split(' ')]
+        return [
+            validate_value(list_type[0] if list_type else str, x)
+            for x in value.split(" ")
+        ]
     elif get_origin(_data_type) is Literal:
         return value
     elif _data_type is list or get_origin(_data_type) is list:
         list_type = get_args(_data_type)
-        return [validate_value(list_type[0] if list_type else str,
-                               x) for x in value.split(' ')]
+        return [
+            validate_value(list_type[0] if list_type else str, x)
+            for x in value.split(" ")
+        ]
     else:
         raise NotImplementedError(f'No parser implemented for data type "{data_type}"')
 
 
-_KEYWORD_TO_NAME_REG = re.compile(r'^-+')
+_KEYWORD_TO_NAME_REG = re.compile(r"^-+")
 
 
 def keyword_arg_to_name(keyword_arg: str) -> str:
-    """ Formats a string from '--quiet-v2' to 'quiet_v2' """
-    return _KEYWORD_TO_NAME_REG.sub('', keyword_arg).replace('-', '_')
+    """Formats a string from '--quiet-v2' to 'quiet_v2'"""
+    return _KEYWORD_TO_NAME_REG.sub("", keyword_arg).replace("-", "_")
 
 
 @dataclass
@@ -174,7 +194,7 @@ class CommandOption(Generic[T]):
     @data_type.setter
     def data_type(self, v: type[T]):
         if self.choices and get_literals_union_args(v):
-            raise ValueError('Pick either a Literal type or choices')
+            raise ValueError("Pick either a Literal type or choices")
         self._data_type = v
 
     @property
@@ -210,20 +230,23 @@ class CommandOption(Generic[T]):
         return self.literal_values or self.choices
 
     def validate(self, value: str) -> T:
-        _value = validate_value(self.data_type, value,
-                                case_sensitive=self.case_sensitive,
-                                choices=self.get_choices())
+        _value = validate_value(
+            self.data_type,
+            value,
+            case_sensitive=self.case_sensitive,
+            choices=self.get_choices(),
+        )
         return _value  # type: ignore
 
 
 def Option(
-        default: Any,
-        *keyword_args: str,
-        help: Optional[str] = None,
-        # Only for type Literal
-        case_sensitive: bool = True,
-        arg_name: Optional[str] = None,
-        choices: Optional[Any] = None
+    default: Any,
+    *keyword_args: str,
+    help: Optional[str] = None,
+    # Only for type Literal
+    case_sensitive: bool = True,
+    arg_name: Optional[str] = None,
+    choices: Optional[Any] = None,
 ) -> Any:
     return CommandOption(
         default=default,
@@ -231,7 +254,7 @@ def Option(
         keyword_args=keyword_args,
         case_sensitive=case_sensitive,
         arg_name=arg_name,
-        choices=choices
+        choices=choices,
     )
 
 
@@ -243,14 +266,14 @@ def _split_cmd(cmd: str) -> list[str]:
 
     def reset_buff():
         nonlocal buff, cmd_split
-        cmd_split.append(' '.join(buff))
+        cmd_split.append(" ".join(buff))
         buff = []
 
     is_pos_arg = True
     buff = []
     cmd_split = []
     for arg in shlex.split(cmd):
-        if arg.startswith('-'):
+        if arg.startswith("-"):
             if buff:
                 reset_buff()
             is_pos_arg = False
@@ -281,7 +304,7 @@ def get_cmd_args(cmd: str, types: dict[str, Any]) -> tuple[list[str], dict[str, 
         if skip_position is not None and i <= skip_position:
             continue
 
-        if _arg.startswith('-'):
+        if _arg.startswith("-"):
             is_positional_arg = False
 
         if is_positional_arg:
@@ -291,13 +314,13 @@ def get_cmd_args(cmd: str, types: dict[str, Any]) -> tuple[list[str], dict[str, 
         try:
             curr_type = types[keyword_arg_to_name(_arg)]
         except KeyError:
-            raise KeywordParamNotFoundError(f'Could not find parameter {_arg!r}',
-                                            _arg)
+            raise KeywordParamNotFoundError(f"Could not find parameter {_arg!r}", _arg)
         if curr_type is bool:
             keyword_params[_arg] = True
         else:
             keyword_params[_arg] = (
-                cmd_split[i + 1] if i + 1 < len(cmd_split)
+                cmd_split[i + 1]
+                if i + 1 < len(cmd_split)
                 # In case of "store_true"
                 else True
             )
@@ -308,14 +331,16 @@ def get_cmd_args(cmd: str, types: dict[str, Any]) -> tuple[list[str], dict[str, 
 
 def get_default_args(func) -> list[CommandOption]:
     signature = inspect.signature(func)
-    return [v.default
-            for v in signature.parameters.values()
-            if v is not inspect.Parameter.empty]
+    return [
+        v.default
+        for v in signature.parameters.values()
+        if v is not inspect.Parameter.empty
+    ]
 
 
-def parse_input_args(args: tuple[Any, ...], commands: set[str]) -> tuple[
-    Optional[str], list[str], list[str]
-]:
+def parse_input_args(
+    args: tuple[Any, ...], commands: set[str]
+) -> tuple[Optional[str], list[str], list[str]]:
     """
     Extracts the:
      - global options
@@ -336,28 +361,29 @@ def parse_input_args(args: tuple[Any, ...], commands: set[str]) -> tuple[
     return cmd, global_options, cmd_options
 
 
-KeywordParam = namedtuple('KeywordParam', ['name', 'validate'])
+KeywordParam = namedtuple("KeywordParam", ["name", "validate"])
 
 
-def convert_args_to_dict(input_args: list[str],
-                         options: list[CommandOption]) -> dict:
-    _input_pos_args, _input_keyword_args = get_cmd_args(' '.join(f"'{x}'" for x in input_args),
-                                                        {name: opt.data_type
-                                                         for opt in options
-                                                         for name in opt.names})
+def convert_args_to_dict(input_args: list[str], options: list[CommandOption]) -> dict:
+    _input_pos_args, _input_keyword_args = get_cmd_args(
+        " ".join(f"'{x}'" for x in input_args),
+        {name: opt.data_type for opt in options for name in opt.names},
+    )
     positional_args, keyword_args = [], {}
     for _arg in options:
         if _arg.is_positional_arg:
             positional_args.append(_arg)
         for _keyword_arg in _arg.keyword_args:
-            keyword_args[_keyword_arg] = KeywordParam(_arg.arg_name or _arg.name, _arg.validate)
+            keyword_args[_keyword_arg] = KeywordParam(
+                _arg.arg_name or _arg.name, _arg.validate
+            )
 
     # Positional arguments
     if len(_input_pos_args) != len(positional_args):
         raise PosParamsCountError(
-            f'Expected {len(positional_args)} positional values but got {len(_input_pos_args)}',
+            f"Expected {len(positional_args)} positional values but got {len(_input_pos_args)}",
             expected_count=len(positional_args),
-            count=len(_input_pos_args)
+            count=len(_input_pos_args),
         )
 
     fn_args = {
@@ -368,8 +394,10 @@ def convert_args_to_dict(input_args: list[str],
     for _keyword_arg_key, _keyword_arg_value in _input_keyword_args.items():
         _keyword_param = keyword_args.get(_keyword_arg_key)
         if not _keyword_param:
-            raise KeywordParamMissingError(f'Missing value for required keyword parameter {_keyword_arg_key!r}',
-                                           _keyword_arg_key)
+            raise KeywordParamMissingError(
+                f"Missing value for required keyword parameter {_keyword_arg_key!r}",
+                _keyword_arg_key,
+            )
         fn_args[_keyword_param.name] = _keyword_param.validate(_keyword_arg_value)
 
     # We fill optional fields with None and check for missing ones
@@ -377,9 +405,12 @@ def convert_args_to_dict(input_args: list[str],
         if (_arg.arg_name or _arg.name) not in fn_args:
             if _arg.is_required:
                 raise KeywordParamMissingError(
-                    f'Missing value for required keyword parameter {_arg.arg_name or _arg.name!r}',
-                    _arg.arg_name or _arg.name)
-            fn_args[_arg.arg_name or _arg.name] = None if _arg.default is ... else _arg.default
+                    f"Missing value for required keyword parameter {_arg.arg_name or _arg.name!r}",
+                    _arg.arg_name or _arg.name,
+                )
+            fn_args[_arg.arg_name or _arg.name] = (
+                None if _arg.default is ... else _arg.default
+            )
 
     return fn_args
 
@@ -402,13 +433,16 @@ def run_function(fn: Callable, *args, **kwargs):
         return fn(*args, **kwargs)
 
 
-def extract_function_info(f) -> tuple[list[CommandOption], list['CommandDerivedOption']]:
+def extract_function_info(
+    f,
+) -> tuple[list[CommandOption], list["CommandDerivedOption"]]:
     """Extracts the options from a function arguments"""
     options: list[CommandOption] = []
     derived_opts: list[CommandDerivedOption] = []
 
-    for (param_name, param_type), option in zip(get_type_hints_derived(f).items(),
-                                                get_default_args(f)):
+    for (param_name, param_type), option in zip(
+        get_type_hints_derived(f).items(), get_default_args(f)
+    ):
         if isinstance(option, CommandOption):
             # Making a copy in case of reuse
             _option = dataclasses.replace(option)
@@ -435,12 +469,14 @@ class CommandDerivedOption:
 
     def update_args(self, args: dict) -> dict:
         if self.param_name is None:
-            raise ValueError('param_name not set. Did you forget to set it?')
+            raise ValueError("param_name not set. Did you forget to set it?")
         _args = args.copy()
         fn_args = {}
         _options, _derived = extract_function_info(self.processor)
         for _opt in _options:
-            fn_args[_opt.name] = _args.pop(_opt.arg_name, None) or _args.pop(_opt.name, None)
+            fn_args[_opt.name] = _args.pop(_opt.arg_name, None) or _args.pop(
+                _opt.name, None
+            )
 
         for _der in _derived:
             fn_args = _der.update_args(fn_args)
@@ -449,16 +485,14 @@ class CommandDerivedOption:
         return _args
 
     def __repr__(self):
-        if hasattr(self, 'param_name'):
-            return f'<CommandDerivedOption param_name={self.param_name} processor={self.processor}/>'
+        if hasattr(self, "param_name"):
+            return f"<CommandDerivedOption param_name={self.param_name} processor={self.processor}/>"
         else:
-            return f'<CommandDerivedOption processor={self.processor}/>'
+            return f"<CommandDerivedOption processor={self.processor}/>"
 
 
-R = TypeVar('R')
+R = TypeVar("R")
 
 
-def Derived(
-        processor: Callable[..., Union[Coroutine[Any, Any, R], R]]
-) -> R:
+def Derived(processor: Callable[..., Union[Coroutine[Any, Any, R], R]]) -> R:
     return CommandDerivedOption(processor=processor)  # type: ignore

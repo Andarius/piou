@@ -1,9 +1,10 @@
 import pytest
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def sys_exit_counter(monkeypatch):
     import sys
+
     exit_counter = 0
 
     def mock_exit(*args, **kwargs):
@@ -13,13 +14,14 @@ def sys_exit_counter(monkeypatch):
     def get_count():
         return exit_counter
 
-    monkeypatch.setattr(sys, 'exit', mock_exit)
+    monkeypatch.setattr(sys, "exit", mock_exit)
     return get_count
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def monkeysession():
     from _pytest.monkeypatch import MonkeyPatch
+
     mpatch = MonkeyPatch()
     yield mpatch
     mpatch.undo()
