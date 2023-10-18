@@ -30,6 +30,12 @@ commands:
           name: Running type checking
           command: poetry run pyright
       - run:
+          name: Running lint check
+          command: poetry run ruff check .
+      - run:
+          name: Running black
+          command: poetry run black
+      - run:
           name: Run tests
           command: |
             poetry run pytest -vv --junitxml=tests/junit.xml
