@@ -31,7 +31,7 @@ commands:
           command: poetry run ruff check .
       - run:
           name: Running black
-          command: poetry run black
+          command: poetry run black .
       - run:
           name: Running type checking
           command: poetry run pyright
