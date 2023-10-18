@@ -42,7 +42,7 @@ commands:
             poetry run coverage run -a -m piou.test foo 1 --foo2 foo --foo12 '{"foo": 1, "bar": "baz"}'
             poetry run coverage run -a -m piou.test sub -h
             poetry run coverage run -a -m piou.test foo -h
-            poetry run coverage run -a -m piou.test error
+            poetry run coverage run -a -m piou.test error || true
             poetry run coverage run -a -m piou.test sub foo 1 --foo2 foo
             poetry run coverage run -a -m piou.test.derived -h
             poetry run coverage run -a -m piou.test.derived bar
