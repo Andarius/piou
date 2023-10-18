@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "piou"
-version = "0.13.4"
+version = "0.14.0"
 description = "A CLI toolkit"
 authors = ["Julien Brayere <julien.brayere@gmail.com>"]
 license = "MIT"
@@ -33,7 +33,7 @@ black = "^23.10.0"
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-version = "0.13.4"
+version = "0.14.0"
 tag_format = "$version"
 version_files = [
     "pyproject.toml:version"
