@@ -18,9 +18,7 @@ class PosParamsCountError(CommandException):
     Raised when a positional argument is not passed
     """
 
-    def __init__(
-        self, msg: str, expected_count: int, count: int, cmd: Optional[str] = None
-    ):
+    def __init__(self, msg: str, expected_count: int, count: int, cmd: Optional[str] = None):
         super().__init__(msg, cmd)
         self.expected_count = expected_count
         self.count = count
@@ -48,13 +46,9 @@ class KeywordParamNotFoundError(CommandException):
 
 
 class CommandNotFoundError(Exception):
-    def __init__(
-        self, valid_commands: list[str], input_args: Optional[tuple[Any, ...]] = None
-    ):
+    def __init__(self, valid_commands: list[str], input_args: Optional[tuple[Any, ...]] = None):
         _available_cmds = ", ".join(valid_commands)
-        super().__init__(
-            f"Unknown command given. Possible commands are {_available_cmds!r}"
-        )
+        super().__init__(f"Unknown command given. Possible commands are {_available_cmds!r}")
         self.valid_commands = sorted(valid_commands)
         self.input_args = input_args
 

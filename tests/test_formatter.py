@@ -308,9 +308,7 @@ DESCRIPTION
 
 _PARAMS = [
     pytest.param(get_simple_cli, ["-h"], _SIMPLE_CLI_OUTPUT_RICH, id="Simple CLI"),
-    pytest.param(
-        get_simple_cli, ["foo", "-h"], _SIMPLE_CLI_COMMAND_RICH, id="Simple CLI cmd"
-    ),
+    pytest.param(get_simple_cli, ["foo", "-h"], _SIMPLE_CLI_COMMAND_RICH, id="Simple CLI cmd"),
     pytest.param(
         get_simple_cli_with_global_opt,
         ["-h"],

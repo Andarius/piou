@@ -6,15 +6,11 @@ repos:
       - id: commitizen
   #      - id: commitizen-branch
   #        stages: [ push ]
-  - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: 'v0.1.0'
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.5
     hooks:
       - id: ruff
         language_version: python3.10
         args:
           - --fix
-  - repo: https://github.com/psf/black
-    rev: '23.10.0'
-    hooks:
-      - id: black
-        language_version: python3.10
+      - id: ruff-format
