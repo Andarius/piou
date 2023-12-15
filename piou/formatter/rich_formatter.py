@@ -15,9 +15,7 @@ def pad(s: RenderableType, padding_left: int = 1):
     return Padding(s, (0, padding_left))
 
 
-def fmt_option(
-    option: CommandOption, show_full: bool = False, color: str = "white"
-) -> str:
+def fmt_option(option: CommandOption, show_full: bool = False, color: str = "white") -> str:
     if option.is_positional_arg:
         return f"[{color}]<{option.name}>[/{color}]"
     elif show_full:
@@ -34,9 +32,7 @@ def fmt_option(
 
 def fmt_cmd_options(options: list[CommandOption]) -> str:
     return (
-        " ".join([fmt_option(x) for x in options])
-        if options
-        else ""  # '[<arg1>] ... [<argN>]'
+        " ".join([fmt_option(x) for x in options]) if options else ""  # '[<arg1>] ... [<argN>]'
     )
 
 
@@ -57,17 +53,11 @@ def fmt_help(
     elif _choices is not None and not option.hide_choices:
         if len(_choices) <= 3:
             possible_choices = ", ".join(str(_choice) for _choice in _choices)
-            choices_help = (
-                f"{_markdown_open}(choices are: {possible_choices}){_markdown_close}"
-            )
+            choices_help = f"{_markdown_open}(choices are: {possible_choices}){_markdown_close}"
         else:
             sep = " \n - "
             possible_choices = sep + sep.join(str(_choice) for _choice in _choices)
-            choices_help = (
-                f"\n{_markdown_open}Possible choices are:"
-                + possible_choices
-                + _markdown_close
-            )
+            choices_help = f"\n{_markdown_open}Possible choices are:" + possible_choices + _markdown_close
         return option.help + f" {choices_help}" if option.help else choices_help
     else:
         return option.help
@@ -80,9 +70,7 @@ def get_usage(
     parent_args: Optional[ParentArgs] = None,
 ):
     parent_args = parent_args or []
-    _global_options = " ".join(
-        ["[" + sorted(x.keyword_args)[-1] + "]" for x in global_options]
-    )
+    _global_options = " ".join(["[" + sorted(x.keyword_args)[-1] + "]" for x in global_options])
     command = f"[underline]{command}[/underline]" if command else "<command>"
     cmds = [sys.argv[0].split("/")[-1]] + [x.cmd for x in parent_args]
     cmds = " ".join(f"[underline]{x}[/underline]" for x in cmds)
@@ -114,9 +102,7 @@ MIN_MARKDOWN_SIZE: int = 75
 
 @dataclass
 class RichFormatter(Formatter):
-    _console: Console = field(
-        init=False, default_factory=lambda: Console(markup=True, highlight=False)
-    )
+    _console: Console = field(init=False, default_factory=lambda: Console(markup=True, highlight=False))
     cmd_color: str = "cyan"
     option_color: str = "cyan"
     default_color: str = "white"
@@ -193,10 +179,7 @@ class RichFormatter(Formatter):
 
         self.print_fn(RichTitles.AVAILABLE_CMDS)
         self.print_rows(
-            [
-                (f' {self._color_cmd(_command.name or "")}', _command.help)
-                for _command in group.commands.values()
-            ]
+            [(f' {self._color_cmd(_command.name or "")}', _command.help) for _command in group.commands.values()]
         )
         self._print_description(group)
 
@@ -232,9 +215,7 @@ class RichFormatter(Formatter):
             self._print_options(command.keyword_args)
 
         global_options = options + [
-            parent_option
-            for parent_arg in (parent_args or [])
-            for parent_option in parent_arg.options
+            parent_option for parent_arg in (parent_args or []) for parent_option in parent_arg.options
         ]
         if global_options:
             self.print_fn("\n" + RichTitles.GLOBAL_OPTIONS)
@@ -284,11 +265,7 @@ class RichFormatter(Formatter):
             self._print_options(group.options)
             self.print_fn()
 
-        global_options = [
-            parent_option
-            for parent_arg in (parent_args or [])
-            for parent_option in parent_arg.options
-        ]
+        global_options = [parent_option for parent_arg in (parent_args or []) for parent_option in parent_arg.options]
         if global_options:
             self.print_fn(RichTitles.GLOBAL_OPTIONS)
             self._print_options(global_options)
@@ -300,19 +277,13 @@ class RichFormatter(Formatter):
 
     def print_invalid_command(self, available_commands: list[str]):
         _available_cmds = ", ".join(available_commands)
-        self.print_error(
-            f'Unknown command given. Possible commands are "[bold]{_available_cmds}[/bold]"'
-        )
+        self.print_error(f'Unknown command given. Possible commands are "[bold]{_available_cmds}[/bold]"')
 
     def print_keyword_param_error(self, cmd: str, param: str) -> None:
-        self.print_error(
-            f"Could not find keyword parameter [bold]{param!r}[/bold] for command [bold]{cmd!r}[/bold]"
-        )
+        self.print_error(f"Could not find keyword parameter [bold]{param!r}[/bold] for command [bold]{cmd!r}[/bold]")
 
     def print_param_error(self, key: str, cmd: str) -> None:
-        self.print_error(
-            f"Could not find value for [bold]{key!r}[/bold] in [bold]{cmd}[/bold]"
-        )
+        self.print_error(f"Could not find value for [bold]{key!r}[/bold] in [bold]{cmd}[/bold]")
 
     def print_count_error(self, expected_count: int, count: int, cmd: str):
         self.print_error(

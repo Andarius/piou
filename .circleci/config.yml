@@ -30,8 +30,8 @@ commands:
           name: Running lint check
           command: poetry run ruff check .
       - run:
-          name: Running black
-          command: poetry run black .
+          name: Check format
+          command: poetry run ruff format --check .
       - run:
           name: Running type checking
           command: poetry run pyright
@@ -93,6 +93,15 @@ jobs:
       - run-tests:
           python-version: "3.11"
 
+  run-tests-3-12:
+    docker:
+      - image: cimg/python:3.12-node
+        environment:
+          PYRIGHT_PYTHON_GLOBAL_NODE: true
+    steps:
+      - run-tests:
+          python-version: "3.12"
+
   bump-version:
     executor: test-build
     steps:
@@ -145,9 +154,17 @@ workflows:
           filters:
             tags:
               ignore: /.*/
+      - run-tests-3-12:
+          filters:
+            tags:
+              ignore: /.*/
       - bump-version:
           context: piou-deploy
-          requires: [ run-tests-3-9, run-tests-3-10, run-tests-3-11 ]
+          requires: [
+            run-tests-3-9,
+            run-tests-3-10,
+            run-tests-3-11,
+            run-tests-3-12]
           filters:
             tags:
               only: /.*/

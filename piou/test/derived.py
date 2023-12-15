@@ -58,9 +58,7 @@ def get_pg_url_dynamic(source: Literal["db1", "db2"]):
             _host_arg,
             arg_name=_host_arg,
         ),
-        pg_db: str = Option(
-            os.getenv(f"PG_DB_{_source_upper}", source), _db_arg, arg_name=_db_arg
-        ),
+        pg_db: str = Option(os.getenv(f"PG_DB_{_source_upper}", source), _db_arg, arg_name=_db_arg),
     ):
         return f"postgresql://postgres:postgres@{pg_host}:5432/{pg_db}"
 

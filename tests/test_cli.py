@@ -19,9 +19,7 @@ class MyEnum(Enum):
     baz = "foo"
 
 
-@pytest.mark.parametrize(
-    "arg, expected", [("-q", "q"), ("--quiet", "quiet"), ("--quiet-v2", "quiet_v2")]
-)
+@pytest.mark.parametrize("arg, expected", [("-q", "q"), ("--quiet", "quiet"), ("--quiet-v2", "quiet_v2")])
 def test_keyword_arg_to_name(arg, expected):
     from piou.utils import keyword_arg_to_name
 
@@ -88,12 +86,8 @@ def test_extract_function_info():
         ...
 
     expected_options = [
-        _get_cmd_opt(
-            default=1, help=None, keyword_args=("-a",), name="a", data_type=int
-        ),
-        _get_cmd_opt(
-            default=2, help=None, keyword_args=("-b",), name="b", data_type=int
-        ),
+        _get_cmd_opt(default=1, help=None, keyword_args=("-a",), name="a", data_type=int),
+        _get_cmd_opt(default=2, help=None, keyword_args=("-b",), name="b", data_type=int),
         _get_cmd_opt(
             default="foo",
             help=None,
@@ -107,47 +101,43 @@ def test_extract_function_info():
 
 
 @pytest.mark.parametrize(
-    "data_type, value, expected",
+    "data_type, value, expected, options",
     [
-        (str, "123", "123"),
-        (str, "foo bar", "foo bar"),
-        (int, "123", 123),
-        (int, "123", 123),
-        (float, "123", 123),
-        (float, "0.123", 0.123),
+        (str, "123", "123", None),
+        (str, "foo bar", "foo bar", None),
+        (int, "123", 123, None),
+        (int, "123", 123, None),
+        (float, "123", 123, None),
+        (float, "0.123", 0.123, None),
         # (bytes, 'foo'.encode('utf-8'), b'foo'),
+        (Path, str(Path(__file__).parent / "conftest.py"), Path(__file__).parent / "conftest.py", None),
         (
             Path,
-            str(Path(__file__).parent / "conftest.py"),
-            Path(__file__).parent / "conftest.py",
+            str(Path(__file__).parent / "foobarbaz.py"),
+            Path(__file__).parent / "foobarbaz.py",
+            {"raise_path_does_not_exist": False},
         ),
-        (list, "1 2 3", ["1", "2", "3"]),
-        (list[str], "1 2 3", ["1", "2", "3"]),
-        (list[int], "1 2 3", [1, 2, 3]),
-        (
-            dict,
-            '{"a": 1, "b": "foo", "c": {"foo": "bar"}}',
-            {"a": 1, "b": "foo", "c": {"foo": "bar"}},
-        ),
-        (dt.date, "2019-01-01", dt.date(2019, 1, 1)),
-        (dt.datetime, "2019-01-01T01:01:01", dt.datetime(2019, 1, 1, 1, 1, 1)),
-        (Literal["foo", "bar"], "bar", "bar"),
-        (
-            UUID,
-            "00000000-0000-0000-0000-000000000000",
-            UUID("00000000-0000-0000-0000-000000000000"),
-        ),
-        (MyEnum, "foo", "bar"),
-        (LiteralString, "foo", "foo"),
+        (list, "1 2 3", ["1", "2", "3"], None),
+        (list[str], "1 2 3", ["1", "2", "3"], None),
+        (list[int], "1 2 3", [1, 2, 3], None),
+        (dict, '{"a": 1, "b": "foo", "c": {"foo": "bar"}}', {"a": 1, "b": "foo", "c": {"foo": "bar"}}, None),
+        (dt.date, "2019-01-01", dt.date(2019, 1, 1), None),
+        (dt.datetime, "2019-01-01T01:01:01", dt.datetime(2019, 1, 1, 1, 1, 1), None),
+        (Literal["foo", "bar"], "bar", "bar", None),
+        (UUID, "00000000-0000-0000-0000-000000000000", UUID("00000000-0000-0000-0000-000000000000"), None),
+        (MyEnum, "foo", "bar", None),
+        (LiteralString, "foo", "foo", None),
     ],
 )
-def test_validate_value(data_type, value, expected):
+def test_validate_value(data_type, value, expected, options):
     from piou.utils import validate_value
 
-    assert validate_value(data_type, value) == expected
-    assert validate_value(Optional[data_type], value) == expected
+    _options = options or {}
+
+    assert validate_value(data_type, value, **_options) == expected
+    assert validate_value(Optional[data_type], value, **_options) == expected
     if _IS_GE_PY310:
-        assert validate_value(data_type | None, value) == expected
+        assert validate_value(data_type | None, value, **_options) == expected
 
 
 @pytest.mark.parametrize(
@@ -187,9 +177,7 @@ def testing_choices(input_type, value, options, expected, error):
 
 @pytest.mark.parametrize(
     "data_type, value, expected, expected_str",
-    [
-        (Path, "a-file.py", FileNotFoundError, 'File not found: "a-file.py"'),
-    ],
+    [(Path, "a-file.py", FileNotFoundError, 'File not found: "a-file.py"')],
 )
 def test_invalid_validate_value(data_type, value, expected, expected_str):
     from piou.utils import validate_value
@@ -437,22 +425,16 @@ def test_run_command():
         assert foo3 is None
         assert foo4 == [1, 2, 3]
 
-    with pytest.raises(
-        CommandNotFoundError, match="Unknown command given. Possible commands are 'foo'"
-    ):
+    with pytest.raises(CommandNotFoundError, match="Unknown command given. Possible commands are 'foo'"):
         cli._group.run_with_args("toto")
 
-    with pytest.raises(
-        PosParamsCountError, match="Expected 1 positional values but got 0"
-    ):
+    with pytest.raises(PosParamsCountError, match="Expected 1 positional values but got 0"):
         cli._group.run_with_args("foo")
 
     assert not called
     assert not processor_called
 
-    with pytest.raises(
-        KeywordParamNotFoundError, match="Could not find parameter '-vvv'"
-    ):
+    with pytest.raises(KeywordParamNotFoundError, match="Could not find parameter '-vvv'"):
         cli._group.run_with_args("foo", "1", "-vvv")
 
     assert not called
@@ -647,9 +629,7 @@ def test_run_group_command_pass_global_args():
 
     cli.set_options_processor(processor)
 
-    foo_sub_cmd = cli.add_sub_parser(
-        cmd="foo", description="A sub command", propagate_options=True
-    )
+    foo_sub_cmd = cli.add_sub_parser(cmd="foo", description="A sub command", propagate_options=True)
     foo_sub_cmd.add_option("--test", help="Test mode")
 
     sub_processor_called = False
@@ -712,14 +692,10 @@ def test_derived():
 
     cli = Cli(description="A CLI tool")
 
-    def processor(
-        a: int = Option(1, "--first-val"), b: int = Option(2, "--second-val")
-    ):
+    def processor(a: int = Option(1, "--first-val"), b: int = Option(2, "--second-val")):
         return a + b
 
-    def processor2(
-        a: int = Option(1, "--first-val"), b: int = Option(2, "--second-val")
-    ) -> int:
+    def processor2(a: int = Option(1, "--first-val"), b: int = Option(2, "--second-val")) -> int:
         return a + b
 
     called = False
@@ -853,9 +829,7 @@ def test_on_cmd_run():
                 cmd_args={"a": 3, "b": 2, "bar": "bar"},
             )
         else:
-            assert meta == CommandMeta(
-                cmd_name="sub.test", fn_args={"baz": "baz"}, cmd_args={"baz": "baz"}
-            )
+            assert meta == CommandMeta(cmd_name="sub.test", fn_args={"baz": "baz"}, cmd_args={"baz": "baz"})
 
     cli = Cli(description="A CLI tool", on_cmd_run=on_cmd_run)
 

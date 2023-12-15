@@ -63,9 +63,7 @@ class Command:
         run_function(self.fn, *args, **kwargs)
 
     def __post_init__(self):
-        self.description = (
-            clean_multiline(self.description) if self.description else None
-        )
+        self.description = clean_multiline(self.description) if self.description else None
 
         keyword_params = [x for x in self.options if not x.is_positional_arg]
         if not keyword_params:
@@ -111,24 +109,17 @@ class CommandGroup:
     #
 
     def __post_init__(self):
-        self.description = (
-            clean_multiline(self.description) if self.description else None
-        )
+        self.description = clean_multiline(self.description) if self.description else None
 
     @property
     def commands(self) -> dict:
-        return {
-            k: self._commands.get(k) or self._command_groups[k]
-            for k in sorted(self.command_names)
-        }
+        return {k: self._commands.get(k) or self._command_groups[k] for k in sorted(self.command_names)}
 
     @property
     def options(self):
         return sorted(self._options, key=lambda x: x.is_required, reverse=True)
 
-    def add_sub_parser(
-        self, help: Optional[str] = None, description: Optional[str] = None
-    ):
+    def add_sub_parser(self, help: Optional[str] = None, description: Optional[str] = None):
         cls = type(self)
         return cls(help=help, description=description)  # noqa
 
@@ -156,9 +147,7 @@ class CommandGroup:
             raise NotImplementedError("A group must have a name")
 
         if group.name in self.command_names:
-            raise DuplicatedCommandError(
-                f"Duplicated command found for {group.name!r}", group.name
-            )
+            raise DuplicatedCommandError(f"Duplicated command found for {group.name!r}", group.name)
         group.on_cmd_run = self.on_cmd_run
         self._command_groups[group.name] = group
 
@@ -171,9 +160,7 @@ class CommandGroup:
     ):
         cmd_name = cmd or f.__name__
         if cmd_name in self.commands:
-            raise DuplicatedCommandError(
-                f"Duplicated command found for {cmd_name!r}", cmd_name
-            )
+            raise DuplicatedCommandError(f"Duplicated command found for {cmd_name!r}", cmd_name)
 
         _options, _derived_options = extract_function_info(f)
         self._commands[cmd_name] = Command(
@@ -236,9 +223,7 @@ class CommandGroup:
             return command_group.run_with_args(*cmd_options, parent_args=parent_args)
 
         if set(global_options + cmd_options) & {"-h", "--help"}:
-            raise ShowHelpError(
-                group=command_group or self, parent_args=parent_args, command=command
-            )
+            raise ShowHelpError(group=command_group or self, parent_args=parent_args, command=command)
 
         if not command:
             raise CommandNotFoundError(list(self.command_names))
@@ -258,9 +243,7 @@ class CommandGroup:
             processors.append(parent_arg.options_processor)
             propagate_args.append(parent_arg.propagate_args)
 
-        for _opts, _input_opts, _processor, _propagate in zip(
-            options, input_options, processors, propagate_args
-        ):
+        for _opts, _input_opts, _processor, _propagate in zip(options, input_options, processors, propagate_args):
             try:
                 _arg_dict = convert_args_to_dict(_input_opts, _opts)
             except CommandException as e:
@@ -277,9 +260,7 @@ class CommandGroup:
 
         if self.on_cmd_run:
             full_command_name = ".".join([x.cmd for x in parent_args] + [command.name])
-            self.on_cmd_run(
-                CommandMeta(full_command_name, fn_args=args_dict, cmd_args=cmd_args)
-            )
+            self.on_cmd_run(CommandMeta(full_command_name, fn_args=args_dict, cmd_args=cmd_args))
 
         return command.run(**args_dict)
 

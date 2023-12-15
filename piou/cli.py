@@ -34,9 +34,7 @@ class Cli:
     _group: CommandGroup = field(init=False, default_factory=CommandGroup)
 
     def __post_init__(self):
-        self._group.description = (
-            clean_multiline(self.description) if self.description else None
-        )
+        self._group.description = clean_multiline(self.description) if self.description else None
         self._group.propagate_options = self.propagate_options
         self._group.on_cmd_run = self.on_cmd_run
 
@@ -59,9 +57,7 @@ class Cli:
             self.formatter.print_invalid_command(e.valid_commands)
             sys.exit(1)
         except ShowHelpError as e:
-            self.formatter.print_help(
-                group=e.group, command=e.command, parent_args=e.parent_args
-            )
+            self.formatter.print_help(group=e.group, command=e.command, parent_args=e.parent_args)
         except KeywordParamNotFoundError as e:
             if not e.cmd:
                 raise NotImplementedError("Got empty command")
@@ -95,22 +91,14 @@ class Cli:
     def processor(self):
         return self._group.processor()
 
-    def add_option(
-        self,
-        *args,
-        help: Optional[str] = None,
-        data_type: Any = bool,
-        default: Any = False
-    ):
+    def add_option(self, *args, help: Optional[str] = None, data_type: Any = bool, default: Any = False):
         self._group.add_option(*args, help=help, data_type=data_type, default=default)
 
     def set_options_processor(self, fn: Callable):
         """Function to call with all the options before running `run` or `run_with_args`"""
         self._group.set_options_processor(fn)
 
-    def add_command(
-        self, cmd: str, f, help: Optional[str] = None, description: Optional[str] = None
-    ):
+    def add_command(self, cmd: str, f, help: Optional[str] = None, description: Optional[str] = None):
         self._group.add_command(cmd=cmd, f=f, help=help, description=description)
 
     def add_command_group(self, group: CommandGroup):

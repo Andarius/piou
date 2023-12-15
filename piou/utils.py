@@ -102,9 +102,14 @@ def validate_value(
     *,
     case_sensitive: bool = True,
     choices: Optional[list[Any]] = None,
+    raise_path_does_not_exist: bool = True,
 ):
     """
     Converts `value` to `data_type`, if not possible raises the appropriate error
+    Options:
+     - case_sensitive: If True, will not lowercase the value before checking if it's in the choices
+     - choices: If set, will check if the value is in the choices
+     - raise_path_does_not_exist: If True, will raise a FileNotFoundError if the path does not exist
     """
     _data_type = extract_optional_type(data_type)
 
@@ -132,7 +137,7 @@ def validate_value(
         return dt.datetime.fromisoformat(value)
     elif _data_type is Path:
         p = Path(value)
-        if not p.exists():
+        if raise_path_does_not_exist and not p.exists():
             raise FileNotFoundError(f'File not found: "{value}"')
         return p
     elif _data_type is dict:
@@ -141,18 +146,12 @@ def validate_value(
         return _data_type[value].value
     elif _data_type is list or get_origin(_data_type) is list:
         list_type = get_args(_data_type)
-        return [
-            validate_value(list_type[0] if list_type else str, x)
-            for x in value.split(" ")
-        ]
+        return [validate_value(list_type[0] if list_type else str, x) for x in value.split(" ")]
     elif get_origin(_data_type) is Literal:
         return value
     elif _data_type is list or get_origin(_data_type) is list:
         list_type = get_args(_data_type)
-        return [
-            validate_value(list_type[0] if list_type else str, x)
-            for x in value.split(" ")
-        ]
+        return [validate_value(list_type[0] if list_type else str, x) for x in value.split(" ")]
     else:
         raise NotImplementedError(f'No parser implemented for data type "{data_type}"')
 
@@ -182,6 +181,9 @@ class CommandOption(Generic[T]):
 
     # For dynamic derived
     arg_name: Optional[str] = None
+
+    # Only for Path
+    raise_path_does_not_exist: bool = True
 
     @property
     def data_type(self):
@@ -235,6 +237,7 @@ class CommandOption(Generic[T]):
             value,
             case_sensitive=self.case_sensitive,
             choices=self.get_choices(),
+            raise_path_does_not_exist=self.raise_path_does_not_exist,
         )
         return _value  # type: ignore
 
@@ -247,6 +250,8 @@ def Option(
     case_sensitive: bool = True,
     arg_name: Optional[str] = None,
     choices: Optional[Any] = None,
+    # Only for Path
+    raise_path_does_not_exist: bool = True,
 ) -> Any:
     return CommandOption(
         default=default,
@@ -255,6 +260,7 @@ def Option(
         case_sensitive=case_sensitive,
         arg_name=arg_name,
         choices=choices,
+        raise_path_does_not_exist=raise_path_does_not_exist,
     )
 
 
@@ -331,16 +337,10 @@ def get_cmd_args(cmd: str, types: dict[str, Any]) -> tuple[list[str], dict[str, 
 
 def get_default_args(func) -> list[CommandOption]:
     signature = inspect.signature(func)
-    return [
-        v.default
-        for v in signature.parameters.values()
-        if v is not inspect.Parameter.empty
-    ]
+    return [v.default for v in signature.parameters.values() if v is not inspect.Parameter.empty]
 
 
-def parse_input_args(
-    args: tuple[Any, ...], commands: set[str]
-) -> tuple[Optional[str], list[str], list[str]]:
+def parse_input_args(args: tuple[Any, ...], commands: set[str]) -> tuple[Optional[str], list[str], list[str]]:
     """
     Extracts the:
      - global options
@@ -374,9 +374,7 @@ def convert_args_to_dict(input_args: list[str], options: list[CommandOption]) ->
         if _arg.is_positional_arg:
             positional_args.append(_arg)
         for _keyword_arg in _arg.keyword_args:
-            keyword_args[_keyword_arg] = KeywordParam(
-                _arg.arg_name or _arg.name, _arg.validate
-            )
+            keyword_args[_keyword_arg] = KeywordParam(_arg.arg_name or _arg.name, _arg.validate)
 
     # Positional arguments
     if len(_input_pos_args) != len(positional_args):
@@ -408,9 +406,7 @@ def convert_args_to_dict(input_args: list[str], options: list[CommandOption]) ->
                     f"Missing value for required keyword parameter {_arg.arg_name or _arg.name!r}",
                     _arg.arg_name or _arg.name,
                 )
-            fn_args[_arg.arg_name or _arg.name] = (
-                None if _arg.default is ... else _arg.default
-            )
+            fn_args[_arg.arg_name or _arg.name] = None if _arg.default is ... else _arg.default
 
     return fn_args
 
@@ -440,9 +436,7 @@ def extract_function_info(
     options: list[CommandOption] = []
     derived_opts: list[CommandDerivedOption] = []
 
-    for (param_name, param_type), option in zip(
-        get_type_hints_derived(f).items(), get_default_args(f)
-    ):
+    for (param_name, param_type), option in zip(get_type_hints_derived(f).items(), get_default_args(f)):
         if isinstance(option, CommandOption):
             # Making a copy in case of reuse
             _option = dataclasses.replace(option)
@@ -474,9 +468,7 @@ class CommandDerivedOption:
         fn_args = {}
         _options, _derived = extract_function_info(self.processor)
         for _opt in _options:
-            fn_args[_opt.name] = _args.pop(_opt.arg_name, None) or _args.pop(
-                _opt.name, None
-            )
+            fn_args[_opt.name] = _args.pop(_opt.arg_name, None) or _args.pop(_opt.name, None)
 
         for _der in _derived:
             fn_args = _der.update_args(fn_args)

@@ -26,9 +26,7 @@ def print_size_by_size(
         else:
             _args = [arg] if isinstance(arg, tuple) else arg
             for x in _args:
-                for line in get_str_side_by_side(
-                    *x, col_1_size=col_1_size, col_2_size=col_2_size, space=space
-                ):
+                for line in get_str_side_by_side(*x, col_1_size=col_1_size, col_2_size=col_2_size, space=space):
                     print_fn(line)
 
 
@@ -97,9 +95,7 @@ class Formatter(abc.ABC):
         ...
 
     @abc.abstractmethod
-    def print_cmd_group_help(
-        self, group: CommandGroup, parent_args: ParentArgs
-    ) -> None:
+    def print_cmd_group_help(self, group: CommandGroup, parent_args: ParentArgs) -> None:
         ...
 
     @abc.abstractmethod
@@ -113,9 +109,7 @@ class Formatter(abc.ABC):
 
     def print_invalid_command(self, available_commands: list[str]) -> None:
         _available_cmds = ", ".join(available_commands)
-        self.print_fn(
-            f'Unknown command given. Possible commands are "{_available_cmds}"'
-        )
+        self.print_fn(f'Unknown command given. Possible commands are "{_available_cmds}"')
 
     def print_param_error(self, key: str, cmd: str) -> None:
         self.print_fn(f"Could not find value for {key!r} in command {cmd!r}")
@@ -124,15 +118,11 @@ class Formatter(abc.ABC):
         self.print_fn(f"Could not find keyword parameter {param!r} for command {cmd!r}")
 
     def print_count_error(self, expected_count: int, count: int, cmd: str) -> None:
-        self.print_fn(
-            f"Expected {expected_count} positional arguments but got {count} for command {cmd!r}"
-        )
+        self.print_fn(f"Expected {expected_count} positional arguments but got {count} for command {cmd!r}")
 
     def print_invalid_value_error(self, value: str, choices: list[str]) -> None:
         possible_fields = "\n" + "\n - ".join(_choice for _choice in choices)
-        self.print_fn(
-            f"Invalid value {value!r} found. Possible values are: {possible_fields}"
-        )
+        self.print_fn(f"Invalid value {value!r} found. Possible values are: {possible_fields}")
 
     def print_error(self, message: str) -> None:
         self.print_fn(message)
