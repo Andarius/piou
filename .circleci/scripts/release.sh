@@ -7,6 +7,7 @@ cd "$(dirname "$0")/../.." || exit
 git config --global user.email "$CI_EMAIL"
 git config --global user.name "$CI_USER"
 
+poetry install --with bump
 poetry run cz bump --yes
 
 if [ $? -eq 0 ]; then
