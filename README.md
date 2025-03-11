@@ -158,7 +158,7 @@ def foo_main():
 
 
 sub_cmd = cli.add_sub_parser(cmd='sub', help='A sub command')
-sub_cmd.add_option('--example', help='Test mode')
+sub_cmd.add_option('--test', help='Test mode')
 
 
 @sub_cmd.command(cmd='bar', help='Run bar command')
@@ -337,7 +337,7 @@ def test(
 In this case, `meta` will be equal to:
 
 ```python
-CommandMeta(cmd_name='example',
+CommandMeta(cmd_name='test',
             fn_args={'bar': 'bar', 'value': 5},
             cmd_args={'a': 3, 'b': 2, 'bar': 'bar'})
 ```
