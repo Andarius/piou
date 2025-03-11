@@ -46,7 +46,7 @@ def foo_main(
     foo_bar: int = Option(..., "--foo-bar", help="Foo bar  argument"),
 ):
     """
-    A example command
+    Example command
     """
     print("Running foo")
     for name, value in [
@@ -79,7 +79,7 @@ def error_main():
 
 
 sub_cmd = cli.add_sub_parser(cmd="sub", help="A sub command")
-sub_cmd.add_option("--example", help="Test mode")
+sub_cmd.add_option("--test", help="Test mode")
 
 
 @sub_cmd.command(cmd="bar", help="Run bar command")
@@ -95,7 +95,7 @@ def sub_foo_main(
     foo2: str = Option(..., "-f", "--foo2", help="Foo2 argument"),
     foo3: str = Option(None, "--foo3", help="Foo3 argument"),
 ):
-    for name, value in [("example", test), ("foo1", foo1), ("foo2", foo2), ("foo3", foo3)]:
+    for name, value in [("test", test), ("foo1", foo1), ("foo2", foo2), ("foo3", foo3)]:
         print(f"{name} = {value} ({type(value)})")
 
 
