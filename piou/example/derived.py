@@ -27,7 +27,7 @@ async def bar(
     fut=Derived(async_processor),
 ):
     """
-    Function to test that the future passed does not belong to another loop
+    Function to example that the future passed does not belong to another loop
     """
     try:
         await asyncio.wait_for(fut, timeout=0.1)

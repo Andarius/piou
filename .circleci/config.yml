@@ -6,7 +6,7 @@ orbs:
 executors:
   test-build:
     docker:
-      - image: cimg/python:3.9.15
+      - image: cimg/python:3.10.15
 
 commands:
   run-tests:
@@ -42,18 +42,18 @@ commands:
       - run:
           name: Test Example
           command: |
-            poetry run coverage run -a -m piou.test.simple -h
-            poetry run coverage run -a -m piou.test.simple foo 1 --baz 2
-            poetry run coverage run -a -m piou.test -h
-            poetry run coverage run -a -m piou.test foo 1 --foo2 foo --foo12 '{"foo": 1, "bar": "baz"}'
-            poetry run coverage run -a -m piou.test sub -h
-            poetry run coverage run -a -m piou.test foo -h
-            poetry run coverage run -a -m piou.test error || true
-            poetry run coverage run -a -m piou.test sub foo 1 --foo2 foo
-            poetry run coverage run -a -m piou.test.derived -h
-            poetry run coverage run -a -m piou.test.derived bar
-            poetry run coverage run -a -m piou.test.derived foo --host postgres
-            poetry run coverage run -a -m piou.test.derived dynamic --db1 test
+            poetry run coverage run -a -m piou.example.simple -h
+            poetry run coverage run -a -m piou.example.simple foo 1 --baz 2
+            poetry run coverage run -a -m piou.example -h
+            poetry run coverage run -a -m piou.example foo 1 --foo2 foo --foo12 '{"foo": 1, "bar": "baz"}'
+            poetry run coverage run -a -m piou.example sub -h
+            poetry run coverage run -a -m piou.example foo -h
+            poetry run coverage run -a -m piou.example error || true
+            poetry run coverage run -a -m piou.example sub foo 1 --foo2 foo
+            poetry run coverage run -a -m piou.example.derived -h
+            poetry run coverage run -a -m piou.example.derived bar
+            poetry run coverage run -a -m piou.example.derived foo --host postgres
+            poetry run coverage run -a -m piou.example.derived dynamic --db1 test
       - run:
           name: Generating coverage
           command: |
@@ -65,15 +65,6 @@ commands:
           path: htmlcov
 
 jobs:
-
-  run-tests-3-9:
-    docker:
-      - image: cimg/python:3.9.15-node
-        environment:
-          PYRIGHT_PYTHON_GLOBAL_NODE: true
-    steps:
-      - run-tests:
-          python-version: "3.9"
 
   run-tests-3-10:
     docker:
@@ -102,8 +93,17 @@ jobs:
       - run-tests:
           python-version: "3.12"
 
+  run-tests-3-13:
+    docker:
+      - image: cimg/python:3.13-node
+        environment:
+          PYRIGHT_PYTHON_GLOBAL_NODE: true
+    steps:
+      - run-tests:
+          python-version: "3.13"
+
   bump-version:
-    executor: test-build
+    executor: example-build
     steps:
       - gh/setup
       - checkout
@@ -127,7 +127,7 @@ jobs:
             - dist/
 
   publish:
-    executor: test-build
+    executor: example-build
     steps:
       - checkout
       - restore_cache:
@@ -142,10 +142,6 @@ workflows:
 
   run-tests:
     jobs:
-      - run-tests-3-9:
-          filters:
-            tags:
-              ignore: /.*/
       - run-tests-3-10:
           filters:
             tags:
@@ -158,13 +154,18 @@ workflows:
           filters:
             tags:
               ignore: /.*/
+      - run-tests-3-13:
+          filters:
+            tags:
+              ignore: /.*/
       - bump-version:
           context: piou-deploy
           requires: [
-            run-tests-3-9,
             run-tests-3-10,
             run-tests-3-11,
-            run-tests-3-12]
+            run-tests-3-12,
+            run-tests-3-13,
+          ]
           filters:
             tags:
               only: /.*/

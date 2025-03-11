@@ -170,10 +170,10 @@ class CommandOption(Generic[T]):
     help: Optional[str] = None
     keyword_args: tuple[str, ...] = field(default_factory=tuple)
 
-    choices: Optional[list[T]] = None
+    choices: Optional[Union[list[T], Callable[[], list[T]]]] = None
 
     _name: Optional[str] = field(init=False, default=None)
-    _data_type: type[T] = field(init=False, default=Any)  # noqa
+    _data_type: type[T] = field(init=False, default=Any)  # pyright: ignore[reportAssignmentType]
 
     # Only for literal types
     case_sensitive: bool = True
@@ -228,8 +228,9 @@ class CommandOption(Generic[T]):
     def is_positional_arg(self):
         return len(self.keyword_args) == 0
 
-    def get_choices(self):
-        return self.literal_values or self.choices
+    def get_choices(self) -> Optional[list[T]]:
+        _choices = self.choices() if callable(self.choices) else self.choices
+        return self.literal_values or _choices
 
     def validate(self, value: str) -> T:
         _value = validate_value(

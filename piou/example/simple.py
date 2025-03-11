@@ -13,7 +13,7 @@ def foo_main(
     A longer description on what the function is doing.
     You can run it with:
     ```bash
-     poetry run python -m piou.test.simple foo 1 -b baz
+     poetry run python -m piou.example.simple foo 1 -b baz
     ```
     And you are good to go!
     """

@@ -42,9 +42,11 @@ def foo_main(
     foo10: AnEnum = Option(AnEnum.value_1, "--foo10", help="Foo10 argument"),
     foo11: LiteralString = Option(None, "--foo11", help="Foo11 argument"),
     foo12: dict = Option(None, "--foo12", help="Foo12 argument"),
+    foo13: int = Option(None, "--foo13", help="Foo13 argument", choices=lambda: list(range(10))),
+    foo_bar: int = Option(..., "--foo-bar", help="Foo bar  argument"),
 ):
     """
-    A test command
+    A example command
     """
     print("Running foo")
     for name, value in [
@@ -60,6 +62,8 @@ def foo_main(
         ("foo10", foo10),
         ("foo11", foo11),
         ("foo12", foo12),
+        ("foo_bar", foo_bar),
+        ("foo13", foo13),
     ]:
         print(f"{name} = {value} ({type(value)})")
 
@@ -75,7 +79,7 @@ def error_main():
 
 
 sub_cmd = cli.add_sub_parser(cmd="sub", help="A sub command")
-sub_cmd.add_option("--test", help="Test mode")
+sub_cmd.add_option("--example", help="Test mode")
 
 
 @sub_cmd.command(cmd="bar", help="Run bar command")
@@ -91,7 +95,7 @@ def sub_foo_main(
     foo2: str = Option(..., "-f", "--foo2", help="Foo2 argument"),
     foo3: str = Option(None, "--foo3", help="Foo3 argument"),
 ):
-    for name, value in [("test", test), ("foo1", foo1), ("foo2", foo2), ("foo3", foo3)]:
+    for name, value in [("example", test), ("foo1", foo1), ("foo2", foo2), ("foo3", foo3)]:
         print(f"{name} = {value} ({type(value)})")
 
 

@@ -33,7 +33,7 @@ def foo_main(
     A longer description on what the function is doing.
     You can run it with:
     ```bash
-     poetry run python -m piou.test.simple foo 1 -b baz
+     poetry run python -m piou.example.simple foo 1 -b baz
     ```
     And you are good to go!
     """
@@ -46,11 +46,11 @@ if __name__ == '__main__':
 
 The output will look like this:
 
-- `python -m piou.test.simple -h`
+- `python -m piou.example.simple -h`
 
 ![example](https://github.com/Andarius/piou/raw/master/docs/simple-output.png)
 
-- `python -m piou.test.simple foo -h`
+- `python -m piou.example.simple foo -h`
 
 ![example](https://github.com/Andarius/piou/raw/master/docs/simple-output-foo.png)
 
@@ -158,7 +158,7 @@ def foo_main():
 
 
 sub_cmd = cli.add_sub_parser(cmd='sub', help='A sub command')
-sub_cmd.add_option('--test', help='Test mode')
+sub_cmd.add_option('--example', help='Test mode')
 
 
 @sub_cmd.command(cmd='bar', help='Run bar command')
@@ -337,7 +337,7 @@ def test(
 In this case, `meta` will be equal to:
 
 ```python
-CommandMeta(cmd_name='test',
+CommandMeta(cmd_name='example',
             fn_args={'bar': 'bar', 'value': 5},
             cmd_args={'a': 3, 'b': 2, 'bar': 'bar'})
 ```
@@ -369,7 +369,7 @@ def test(pg_pwd: Password = Option('postgres', '--pg-pwd')):
 
 ## Complete example
 
-You can try a more complete example by running `python -m piou.test -h`
+You can try a more complete example by running `python -m piou.example -h`
 
 ## Moving from `argparse`
 

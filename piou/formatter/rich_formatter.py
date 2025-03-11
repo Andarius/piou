@@ -159,7 +159,7 @@ class RichFormatter(Formatter):
             ]
         )
 
-    def print_rows(self, rows: list[tuple[str, Optional[str]]]):
+    def print_rows(self, rows: list[tuple[str, Optional[str]]]):  # pyright: ignore[reportIncompatibleMethodOverride]
         table = Table(show_header=False, box=None, padding=(0, self.col_space))
         table.add_column(width=self.col_size)
         table.add_column()
