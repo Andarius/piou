@@ -103,7 +103,7 @@ jobs:
           python-version: "3.13"
 
   bump-version:
-    executor: example-build
+    executor: test-build
     steps:
       - gh/setup
       - checkout
@@ -127,7 +127,7 @@ jobs:
             - dist/
 
   publish:
-    executor: example-build
+    executor: test-build
     steps:
       - checkout
       - restore_cache:
