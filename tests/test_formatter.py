@@ -8,14 +8,14 @@ from piou.utils import Password
 @pytest.mark.parametrize(
     "options, input, expected",
     [
-        ({"use_markdown": True}, "**example**", "\nDESCRIPTION\n example"),
+        ({"use_markdown": True}, "**test**", "\nDESCRIPTION\n test"),
         (
             {"use_markdown": True},
-            "[bold]example[/bold]",
-            "\nDESCRIPTION\n [bold]example[/bold]",
+            "[bold]test[/bold]",
+            "\nDESCRIPTION\n [bold]test[/bold]",
         ),
-        ({"use_markdown": False}, "**example**", "\nDESCRIPTION\n **example**"),
-        ({"use_markdown": False}, "[bold]example[/bold]", "\nDESCRIPTION\n example"),
+        ({"use_markdown": False}, "**test**", "\nDESCRIPTION\n **test**"),
+        ({"use_markdown": False}, "[bold]test[/bold]", "\nDESCRIPTION\n example"),
     ],
 )
 def test_rich_formatting_options(options, input, expected, capsys):
@@ -101,7 +101,7 @@ def get_cmd_group_cli_with_global_opt(formatter):
 
     sub_cmd = cli.add_sub_parser("sub-cmd", help="A sub command")
 
-    sub_cmd.add_option("-t", "--example", help="Test mode")
+    sub_cmd.add_option("-t", "--test", help="Test mode")
 
     @sub_cmd.command(cmd="foo", help="Run foo command")
     def foo_main(
@@ -147,7 +147,7 @@ def get_cli_full(formatter):
         pass
 
     baz_cmd = cli.add_sub_parser(cmd="baz", help="A sub command")
-    baz_cmd.add_option("--example", help="Test mode")
+    baz_cmd.add_option("--test", help="Test mode")
 
     @baz_cmd.command(cmd="bar", help="Run baz command")
     def baz_bar_main(**kwargs):
@@ -260,7 +260,7 @@ COMMANDS
     -g (--foo3)                 Foo3 arguments    
 
 OPTIONS
-    -t (--example)                 Test mode    
+    -t (--test)                 Test mode    
 
 GLOBAL OPTIONS
     -q (--quiet)                Do not output any message    
@@ -298,7 +298,7 @@ OPTIONS
     -g (--foo3)                 Foo3 arguments    
 
 GLOBAL OPTIONS
-    -t (--example)                 Test mode                    
+    -t (--test)                 Test mode                    
     -q (--quiet)                Do not output any message    
     --verbose                   Increase verbosity           
 
@@ -415,7 +415,7 @@ COMMANDS
     -g (--foo3)                 Foo3 arguments (default: a sub value)
 
 OPTIONS
-    -t (--example)                 Test mode (default: False)
+    -t (--test)                 Test mode (default: False)
 
 GLOBAL OPTIONS
     -q (--quiet)                Do not output any message (default: False)
@@ -437,7 +437,7 @@ OPTIONS
     -g (--foo3)                 Foo3 arguments (default: a sub value) 
 
 GLOBAL OPTIONS
-    -t (--example)                 Test mode (default: False)                    
+    -t (--test)                 Test mode (default: False)                    
     -q (--quiet)                Do not output any message (default: False)
     --verbose                   Increase verbosity (default: False)    
 

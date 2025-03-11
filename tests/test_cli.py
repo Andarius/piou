@@ -203,10 +203,10 @@ def test_invalid_validate_value(data_type, value, expected, expected_str):
             {"--foo": "1 2 3", "--bar": True},
         ),
         (
-            "foo bar --foo1 1 2 3 --foo2 --foo3 example",
+            "foo bar --foo1 1 2 3 --foo2 --foo3 test",
             {"foo1": list[int], "foo2": bool, "foo3": str},
             ["foo", "bar"],
-            {"--foo1": "1 2 3", "--foo2": True, "--foo3": "example"},
+            {"--foo1": "1 2 3", "--foo2": True, "--foo3": "test"},
         ),
         ("--foo /tmp", {"foo": Path}, [], {"--foo": "/tmp"}),
         ("--foo-bar /tmp", {"foo_bar": Path}, [], {"--foo-bar": "/tmp"}),
@@ -486,7 +486,7 @@ def test_reuse_option():
 
     cli = Cli(description="A CLI tool", propagate_options=True)
 
-    Test = Option(1, "--example")
+    Test = Option(1, "--test")
 
     @cli.command()
     def foo(test1: int = Test):
@@ -559,7 +559,7 @@ def test_run_group_command():
     cli.set_options_processor(processor)
 
     foo_sub_cmd = cli.add_sub_parser(cmd="foo", description="A sub command")
-    foo_sub_cmd.add_option("--example", help="Test mode")
+    foo_sub_cmd.add_option("--test", help="Test mode")
 
     sub_processor_called = False
 
@@ -576,7 +576,7 @@ def test_run_group_command():
 
     @foo_sub_cmd.command(cmd="baz", help="Run toto command")
     def baz_main(
-        # example: bool = False,
+        # test: bool = False,
         # quiet: bool = False,
         # verbose: bool = False,
         foo1: int = Option(..., help="Foo arguments"),
@@ -585,14 +585,14 @@ def test_run_group_command():
     ):
         nonlocal called
         called = True
-        # assert example is True
+        # assert test is True
         # assert quiet is True
         # assert verbose is False
         assert foo1 == 1
         assert foo2 == "toto"
         assert foo3 == "a value"
 
-    cli._group.run_with_args("-q", "foo", "--example", "baz", "1", "-f", "toto")
+    cli._group.run_with_args("-q", "foo", "--test", "baz", "1", "-f", "toto")
     assert called
     assert processor_called
     assert sub_processor_called
@@ -663,7 +663,7 @@ def test_run_group_command_pass_global_args():
         assert verbose is False
         assert foo1 == 1
 
-    cli._group.run_with_args("-q", "foo", "--example", "baz", "1")
+    cli._group.run_with_args("-q", "foo", "--test", "baz", "1")
     assert called
     assert processor_called
     assert sub_processor_called
@@ -691,7 +691,7 @@ def test_option_processor():
     def test(**kwargs):
         assert kwargs["quiet"]
 
-    cli._group.run_with_args("--quiet", "example")
+    cli._group.run_with_args("--quiet", "test")
     assert processor_called
 
 
@@ -720,7 +720,7 @@ def test_derived():
         called = True
         assert value == 5
 
-    cli.run_with_args("example", "--first-val", "3", "--second-val", "2")
+    cli.run_with_args("test", "--first-val", "3", "--second-val", "2")
     assert called
     called = False
 
@@ -750,7 +750,7 @@ def test_chained_derived():
         called = True
         assert value == 10
 
-    cli.run_with_args("example")  # , '-a', '3', '-b', '2')
+    cli.run_with_args("test")  # , '-a', '3', '-b', '2')
     assert called
 
 
@@ -781,7 +781,7 @@ def test_async_derived():
     #     assert value == 5
     #     assert isinstance(value, int)
 
-    cli.run_with_args("example", "-a", "3", "-b", "2")
+    cli.run_with_args("test", "-a", "3", "-b", "2")
     assert called
     called = False
     # cli.run_with_args('test2', '-a', '3', '-b', '2')
@@ -817,7 +817,7 @@ def test_dynamic_derived():
         called = True
         assert foo + bar + baz == 6
 
-    cli.run_with_args("example", "1", "--foo", "3", "--bar", "2")
+    cli.run_with_args("test", "1", "--foo", "3", "--bar", "2")
     assert called
 
 
@@ -832,12 +832,12 @@ def test_on_cmd_run():
         cmd_run_called = True
         if not is_sub_command:
             assert meta == CommandMeta(
-                cmd_name="example",
+                cmd_name="test",
                 fn_args={"bar": "bar", "value": 5},
                 cmd_args={"a": 3, "b": 2, "bar": "bar"},
             )
         else:
-            assert meta == CommandMeta(cmd_name="sub.example", fn_args={"baz": "baz"}, cmd_args={"baz": "baz"})
+            assert meta == CommandMeta(cmd_name="sub.test", fn_args={"baz": "baz"}, cmd_args={"baz": "baz"})
 
     cli = Cli(description="A CLI tool", on_cmd_run=on_cmd_run)
 
@@ -854,17 +854,17 @@ def test_on_cmd_run():
     def sub_processor(verbose: bool = Option(False, "--verbose")):
         pass
 
-    @sub_cmd.command("example")
+    @sub_cmd.command("test")
     def test_sub(baz: str = Option(None, "--baz")):
         pass
 
-    cli._group.run_with_args("example", "-a", "3", "-b", "2", "--bar", "bar")
+    cli._group.run_with_args("test", "-a", "3", "-b", "2", "--bar", "bar")
     assert cmd_run_called
 
     # Testing sub command
     cmd_run_called = False
     is_sub_command = True
-    cli._group.run_with_args("sub", "--verbose", "example", "--baz", "baz")
+    cli._group.run_with_args("sub", "--verbose", "test", "--baz", "baz")
     assert cmd_run_called
 
 
