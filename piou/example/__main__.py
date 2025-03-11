@@ -1,6 +1,6 @@
 from enum import Enum
 from pathlib import Path
-from typing import Literal, Union
+from typing import Literal, Union, Optional
 
 from typing_extensions import LiteralString
 
@@ -32,19 +32,21 @@ class AnEnum(Enum):
 def foo_main(
     foo1: int = Option(..., help="Foo argument"),
     foo2: str = Option(..., "-f", "--foo2", help="Foo2 argument"),
-    foo3: str = Option(None, "-g", "--foo3", help="Foo3 argument"),
-    foo4: Literal["foo", "bar"] = Option(None, "--foo4", help="Foo4 argument", case_sensitive=False),
-    foo5: list[int] = Option(None, "--foo5", help="Foo5 arguments"),
+    foo3: Optional[str] = Option(None, "-g", "--foo3", help="Foo3 argument"),
+    foo4: Optional[Literal["foo", "bar"]] = Option(None, "--foo4", help="Foo4 argument", case_sensitive=False),
+    foo5: Optional[list[int]] = Option(None, "--foo5", help="Foo5 arguments"),
     foo6: LongLiteral = Option("foo1", "--foo6", help="Foo6 argument"),
-    foo7: LongLiteral = Option(None, "--foo7", help="Foo7 argument"),
-    foo8: UnionLiteral = Option(None, "--foo8", help="Foo8 argument"),
-    foo9: str = Option(None, "--foo9", help="Foo9 argument", choices=[f"item{i}" for i in range(4)]),
+    foo7: Optional[LongLiteral] = Option(None, "--foo7", help="Foo7 argument"),
+    foo8: Optional[UnionLiteral] = Option(None, "--foo8", help="Foo8 argument"),
+    foo9: Optional[str] = Option(None, "--foo9", help="Foo9 argument", choices=[f"item{i}" for i in range(4)]),
     foo10: AnEnum = Option(AnEnum.value_1, "--foo10", help="Foo10 argument"),
-    foo11: LiteralString = Option(None, "--foo11", help="Foo11 argument"),
-    foo12: dict = Option(None, "--foo12", help="Foo12 argument"),
+    foo11: Optional[LiteralString] = Option(None, "--foo11", help="Foo11 argument"),
+    foo12: Optional[dict] = Option(None, "--foo12", help="Foo12 argument"),
+    foo13: Optional[int] = Option(None, "--foo13", help="Foo13 argument", choices=lambda: list(range(10))),
+    foo_bar: int = Option(..., "--foo-bar", help="Foo bar argument"),
 ):
     """
-    A test command
+    Example command
     """
     print("Running foo")
     for name, value in [
@@ -60,6 +62,8 @@ def foo_main(
         ("foo10", foo10),
         ("foo11", foo11),
         ("foo12", foo12),
+        ("foo_bar", foo_bar),
+        ("foo13", foo13),
     ]:
         print(f"{name} = {value} ({type(value)})")
 
@@ -89,7 +93,7 @@ def sub_foo_main(
     test: bool,
     foo1: int = Option(..., help="Foo argument"),
     foo2: str = Option(..., "-f", "--foo2", help="Foo2 argument"),
-    foo3: str = Option(None, "--foo3", help="Foo3 argument"),
+    foo3: Optional[str] = Option(None, "--foo3", help="Foo3 argument"),
 ):
     for name, value in [("test", test), ("foo1", foo1), ("foo2", foo2), ("foo3", foo3)]:
         print(f"{name} = {value} ({type(value)})")

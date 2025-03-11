@@ -209,6 +209,7 @@ def test_invalid_validate_value(data_type, value, expected, expected_str):
             {"--foo1": "1 2 3", "--foo2": True, "--foo3": "test"},
         ),
         ("--foo /tmp", {"foo": Path}, [], {"--foo": "/tmp"}),
+        ("--foo-bar /tmp", {"foo_bar": Path}, [], {"--foo-bar": "/tmp"}),
     ],
 )
 def test_get_cmd_args(input_str, types, expected_pos_args, expected_key_args):
@@ -298,10 +299,17 @@ def test_command_options():
     assert [x.name for x in cmd.options_sorted] == ["z", "a", "b", "c", "d"]
 
 
-def test_invalid_command_options_choices():
+@pytest.mark.parametrize(
+    "choices",
+    [
+        [1, 2, 3],
+        lambda: [1, 2, 3],
+    ],
+)
+def test_invalid_command_options_choices(choices):
     from piou.command import CommandOption
 
-    opt = CommandOption(None, choices=[1, 2])
+    opt = CommandOption(None, choices=choices)
     with pytest.raises(ValueError, match="Pick either a Literal type or choices"):
         opt.data_type = Literal["foo"]
 
