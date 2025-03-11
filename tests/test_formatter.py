@@ -15,7 +15,7 @@ from piou.utils import Password
             "\nDESCRIPTION\n [bold]test[/bold]",
         ),
         ({"use_markdown": False}, "**test**", "\nDESCRIPTION\n **test**"),
-        ({"use_markdown": False}, "[bold]test[/bold]", "\nDESCRIPTION\n example"),
+        ({"use_markdown": False}, "[bold]test[/bold]", "\nDESCRIPTION\n test"),
     ],
 )
 def test_rich_formatting_options(options, input, expected, capsys):

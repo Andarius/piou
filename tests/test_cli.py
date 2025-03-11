@@ -638,7 +638,7 @@ def test_run_group_command_pass_global_args():
     cli.set_options_processor(processor)
 
     foo_sub_cmd = cli.add_sub_parser(cmd="foo", description="A sub command", propagate_options=True)
-    foo_sub_cmd.add_option("--example", help="Test mode")
+    foo_sub_cmd.add_option("--test", help="Test mode")
 
     sub_processor_called = False
 
