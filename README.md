@@ -15,6 +15,21 @@
 
 A CLI tool to build beautiful command-line interfaces with type validation.
 
+
+
+- [Why Piou](#why-)
+- [Installation](#installation)
+- [Features](#features)
+  - [Commands](#commands)
+  - [Without Command](#running-main)
+  - [Command Groups / Sub-commands](#command-groups--sub-commands)
+  - [Options processor](#options-processor)
+  - [Derived Options](#derived-options)
+  - [On Command Run](#on-command-run)
+  - [Help / Errors Formatter](#help--errors-formatter)
+  - [Complete example](#complete-example)
+- [Moving from argparse](#moving-from-argparse)
+
 It is as simple as
 
 ```python
@@ -67,7 +82,7 @@ to format the output is a custom way using external libraries (like [Rich](https
 
 **Piou** provides all these possibilities and lets you define your own [Formatter](#custom-formatter).
 
-# Install
+# Installation
 
 You can install `piou` with either:
 
@@ -141,6 +156,34 @@ A command can also be asynchronous, it will be run automatically using `asyncio.
 async def bar_main():
     pass
 ```
+
+## Running Main
+
+If you want to run a function without specifying a command, you can use the `main` decorator
+or the `is_main` parameter to the `command` decorator:
+
+```python
+@cli.command(help='Run without command', is_main=True)
+def run_main():
+    pass
+```
+or even simpler:
+
+```python
+@cli.main()
+def run_main():
+    pass
+```
+
+This will allow you to run the function without specifying a command:
+
+```bash
+python -m piou.example.simple_main -h
+```
+
+**Note**: You can only have one `main` function in the CLI.
+
+
 
 ## Command Groups / Sub-commands
 

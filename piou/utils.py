@@ -359,6 +359,11 @@ def parse_input_args(args: tuple[Any, ...], commands: set[str]) -> tuple[Optiona
             global_options.append(arg)
         else:
             cmd_options.append(arg)
+
+    if cmd is None and "__main__" in commands:
+        cmd = "__main__"
+        cmd_options, global_options = global_options, cmd_options
+
     return cmd, global_options, cmd_options
 
 

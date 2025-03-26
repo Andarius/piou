@@ -4,6 +4,7 @@ import re
 import sys
 from contextlib import contextmanager
 from enum import Enum
+from functools import partial
 from pathlib import Path
 from typing import Literal, Optional
 from uuid import UUID
@@ -889,4 +890,43 @@ def test_cmd_args(arg_type, arg_value, expected):
         assert bar == expected
 
     cli._group.run_with_args("foo", arg_value)
+    assert called
+
+
+@pytest.mark.parametrize("decorator", ["command", "main"])
+def test_main_command(decorator):
+    from piou import Cli, Option
+    from piou.exceptions import DuplicatedCommandError, CommandException
+
+    cli = Cli(description="A CLI tool")
+
+    called = False
+
+    with pytest.raises(ValueError, match="Main command should not have a command name"):
+
+        @cli.command(cmd="bar", is_main=True)
+        def bar():
+            pass
+
+    _decorator = partial(cli.command, is_main=True) if decorator == "command" else cli.main
+
+    @_decorator()
+    def foo_main(bar: int = Option(...)):
+        nonlocal called
+        called = True
+        assert bar == 1
+
+    with pytest.raises(CommandException, match="Command 'bar' cannot be added with main command"):
+
+        @cli.command("bar")
+        def _bar():
+            pass
+
+    with pytest.raises(DuplicatedCommandError):
+
+        @cli.command(is_main=True)
+        def _bar():
+            pass
+
+    cli.run_with_args("1")
     assert called
