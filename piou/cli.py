@@ -85,8 +85,23 @@ class Cli:
         cmd: Optional[str] = None,
         help: Optional[str] = None,
         description: Optional[str] = None,
+        is_main: bool = False,
     ):
-        return self._group.command(cmd=cmd, help=help, description=description)
+        """
+        Decorator to mark a function as a command
+        If `is_main` is set to True, the command will be the main command and no command name should be passed.
+        """
+        if is_main and cmd is not None:
+            raise ValueError("Main command should not have a command name")
+        return self._group.command(cmd=cmd, help=help, description=description, is_main=is_main)
+
+    def main(
+        self,
+        help: Optional[str] = None,
+        description: Optional[str] = None,
+    ):
+        """Decorator to mark a function as the main command"""
+        return self.command(cmd=None, help=help, description=description, is_main=True)
 
     def processor(self):
         return self._group.processor()

@@ -157,10 +157,16 @@ class CommandGroup:
         cmd: Optional[str] = None,
         help: Optional[str] = None,
         description: Optional[str] = None,
+        is_main: bool = False,
     ):
-        cmd_name = cmd or f.__name__
+        cmd_name = "__main__" if is_main else cmd or f.__name__
         if cmd_name in self.commands:
             raise DuplicatedCommandError(f"Duplicated command found for {cmd_name!r}", cmd_name)
+
+        if cmd_name == "__main__" and self.commands:
+            raise CommandException("Main command cannot be added with other commands")
+        if cmd_name != "__main__" and "__main__" in self.commands:
+            raise CommandException(f"Command {cmd_name!r} cannot be added with main command")
 
         _options, _derived_options = extract_function_info(f)
         self._commands[cmd_name] = Command(
@@ -177,13 +183,14 @@ class CommandGroup:
         cmd: Optional[str] = None,
         help: Optional[str] = None,
         description: Optional[str] = None,
+        is_main: bool = False,
     ):
         def _command(f):
             @wraps(f)
             def wrapper(*args, **kwargs):
                 return f(*args, **kwargs)
 
-            self.add_command(f, cmd=cmd, help=help, description=description)
+            self.add_command(f, cmd=cmd, help=help, description=description, is_main=is_main)
             return wrapper
 
         return _command

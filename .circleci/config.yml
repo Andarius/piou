@@ -44,6 +44,7 @@ commands:
           command: |
             poetry run coverage run -a -m piou.example.simple -h
             poetry run coverage run -a -m piou.example.simple foo 1 --baz 2
+            poetry run coverage run -a -m piou.example.simple_main 1 --baz 2
             poetry run coverage run -a -m piou.example -h
             poetry run coverage run -a -m piou.example foo 1 --foo2 foo --foo12 '{"foo": 1, "bar": "baz"}' --foo-bar 1
             poetry run coverage run -a -m piou.example sub -h

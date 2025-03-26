@@ -71,7 +71,9 @@ def get_usage(
 ):
     parent_args = parent_args or []
     _global_options = " ".join(["[" + sorted(x.keyword_args)[-1] + "]" for x in global_options])
-    command = f"[underline]{command}[/underline]" if command else "<command>"
+    _command = None
+    if command != "__main__":
+        _command = f"[underline]{command}[/underline]" if command else "<command>"
     cmds = [sys.argv[0].split("/")[-1]] + [x.cmd for x in parent_args]
     cmds = " ".join(f"[underline]{x}[/underline]" for x in cmds)
 
@@ -79,7 +81,7 @@ def get_usage(
 
     if _global_options:
         usage = f"{usage} {_global_options}"
-    usage = f"{usage} {command}"
+    usage = f"{usage} {_command}" if _command is not None else usage
     if command_options:
         usage = f"{usage} {fmt_cmd_options(command_options)}"
 
