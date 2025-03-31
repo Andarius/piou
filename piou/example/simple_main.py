@@ -3,7 +3,7 @@ from piou import Cli, Option
 cli = Cli(description="A CLI tool")
 
 
-@cli.command(help="Run command", is_main=True)
+@cli.main(help="Run command")
 def foo_main(
     bar: int = Option(..., help="Bar positional argument (required)"),
     baz: str = Option(..., "-b", "--baz", help="Baz keyword argument (required)"),
