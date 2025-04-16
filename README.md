@@ -42,7 +42,7 @@ cli = Cli(description='A CLI tool')
 def foo_main(
         bar: int = Option(..., help='Bar positional argument (required)'),
         baz: str = Option(..., '-b', '--baz', help='Baz keyword argument (required)'),
-        foo: str = Option(None, '--foo', help='Foo keyword argument'),
+        foo: str | None = Option(None, '--foo', help='Foo keyword argument'),
 ):
     """
     A longer description on what the function is doing.
@@ -104,7 +104,7 @@ cli = Cli(description='A CLI tool')
 def foo_main(
         foo1: int = Option(..., help='Foo arguments'),
         foo2: str = Option(..., '-f', '--foo2', help='Foo2 arguments'),
-        foo3: str = Option(None, '-g', '--foo3', help='Foo3 arguments'),
+        foo3: str | None = Option(None, '-g', '--foo3', help='Foo3 arguments'),
 ):
     pass
 
@@ -114,7 +114,7 @@ def foo_main(
 def bar_main(
         foo1: int = Option(..., help='Foo arguments'),
         foo2: str = Option(..., '-f', '--foo2', help='Foo2 arguments'),
-        foo3: str = Option(None, '-g', '--foo3', help='Foo3 arguments'),
+        foo3: str | None = Option(None, '-g', '--foo3', help='Foo3 arguments'),
 ):
     pass
 
