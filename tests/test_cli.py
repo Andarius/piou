@@ -707,6 +707,9 @@ def test_derived():
     def processor2(a: int = Option(1, "--first-val"), b: int = Option(2, "--second-val")) -> int:
         return a + b
 
+    def processor3(a: int = Option(1, "--third-val"), b: int = Option(2, "--fourth-val")) -> int:
+        return a + b
+
     called = False
 
     @cli.command()
@@ -721,11 +724,22 @@ def test_derived():
         called = True
         assert value == 5
 
+    @cli.command()
+    def test3(value1: int = Derived(processor), value2=Derived(processor3)):
+        nonlocal called
+        called = True
+        assert value1 == 5
+        assert value2 == 2
+
     cli.run_with_args("test", "--first-val", "3", "--second-val", "2")
     assert called
     called = False
 
     cli.run_with_args("test2", "--first-val", "3", "--second-val", "2")
+    assert called
+    called = False
+
+    cli.run_with_args("test3", "--first-val", "3", "--second-val", "2", "--third-val", "1", "--fourth-val", "1")
     assert called
 
 
