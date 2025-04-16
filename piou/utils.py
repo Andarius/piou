@@ -322,6 +322,7 @@ def get_cmd_args(cmd: str, types: dict[str, Any]) -> tuple[list[str], dict[str, 
             curr_type = types[keyword_arg_to_name(_arg)]
         except KeyError:
             raise KeywordParamNotFoundError(f"Could not find parameter {_arg!r}", _arg)
+
         if curr_type is bool:
             keyword_params[_arg] = True
         else:
@@ -430,29 +431,32 @@ def run_function(fn: Callable, *args, **kwargs):
             except RuntimeError:
                 _LOOP = asyncio.new_event_loop()
         return _LOOP.run_until_complete(fn(*args, **kwargs))
-        # return asyncio.run(fn(*args, **kwargs))
     else:
         return fn(*args, **kwargs)
 
 
 def extract_function_info(
     f,
+    from_derived: bool = False,
 ) -> tuple[list[CommandOption], list["CommandDerivedOption"]]:
     """Extracts the options from a function arguments"""
     options: list[CommandOption] = []
     derived_opts: list[CommandDerivedOption] = []
-
     for (param_name, param_type), option in zip(get_type_hints_derived(f).items(), get_default_args(f)):
         if isinstance(option, CommandOption):
             # Making a copy in case of reuse
             _option = dataclasses.replace(option)
+            if from_derived and _option.arg_name is None:
+                # This is to avoid errors when reusing the same parameter name
+                # for different derived functions
+                _option.arg_name = f"__{f.__name__}.{param_name}"
             _option.name = param_name
             _option.data_type = param_type
             options.append(_option)
         elif isinstance(option, CommandDerivedOption):
             _option = option  # dataclasses.replace(option)
             _option.param_name = param_name
-            _options, _ = extract_function_info(_option.processor)
+            _options, _ = extract_function_info(_option.processor, from_derived=True)
             options += _options
             derived_opts.append(_option)
         else:
@@ -472,7 +476,7 @@ class CommandDerivedOption:
             raise ValueError("param_name not set. Did you forget to set it?")
         _args = args.copy()
         fn_args = {}
-        _options, _derived = extract_function_info(self.processor)
+        _options, _derived = extract_function_info(self.processor, from_derived=True)
         for _opt in _options:
             fn_args[_opt.name] = _args.pop(_opt.arg_name, None) or _args.pop(_opt.name, None)
 

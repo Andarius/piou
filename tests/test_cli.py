@@ -68,10 +68,10 @@ def test_get_type_hints_derived():
     assert hints == {"a": int, "bar": str}
 
 
-def _get_cmd_opt(default, help, keyword_args, name, data_type):
+def _get_cmd_opt(default, help, keyword_args, name: str, data_type, arg_name: str | None = None):
     from piou.utils import CommandOption
 
-    opt = CommandOption(default=default, help=help, keyword_args=keyword_args)
+    opt = CommandOption(default=default, help=help, keyword_args=keyword_args, arg_name=arg_name)
     opt.name = name
     opt.data_type = data_type
     return opt
@@ -87,8 +87,8 @@ def test_extract_function_info():
         ...
 
     expected_options = [
-        _get_cmd_opt(default=1, help=None, keyword_args=("-a",), name="a", data_type=int),
-        _get_cmd_opt(default=2, help=None, keyword_args=("-b",), name="b", data_type=int),
+        _get_cmd_opt(default=1, help=None, keyword_args=("-a",), name="a", data_type=int, arg_name="__processor.a"),
+        _get_cmd_opt(default=2, help=None, keyword_args=("-b",), name="b", data_type=int, arg_name="__processor.b"),
         _get_cmd_opt(
             default="foo",
             help=None,
@@ -707,7 +707,7 @@ def test_derived():
     def processor2(a: int = Option(1, "--first-val"), b: int = Option(2, "--second-val")) -> int:
         return a + b
 
-    def processor3(a: int = Option(1, "--third-val"), b: int = Option(2, "--fourth-val")) -> int:
+    def processor3(a: int = Option(3, "--third-val"), b: int = Option(4, "--fourth-val")) -> int:
         return a + b
 
     called = False
@@ -849,7 +849,7 @@ def test_on_cmd_run():
             assert meta == CommandMeta(
                 cmd_name="test",
                 fn_args={"bar": "bar", "value": 5},
-                cmd_args={"a": 3, "b": 2, "bar": "bar"},
+                cmd_args={"__processor.a": 3, "__processor.b": 2, "bar": "bar"},
             )
         else:
             assert meta == CommandMeta(cmd_name="sub.test", fn_args={"baz": "baz"}, cmd_args={"baz": "baz"})
