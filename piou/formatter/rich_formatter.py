@@ -12,10 +12,12 @@ from ..command import Command, CommandOption, ParentArgs, CommandGroup
 
 
 def pad(s: RenderableType, padding_left: int = 1):
+    """Pad the given renderable with a specified left padding."""
     return Padding(s, (0, padding_left))
 
 
 def fmt_option(option: CommandOption, show_full: bool = False, color: str = "white") -> str:
+    """Format a command option for display."""
     if option.is_positional_arg:
         return f"[{color}]<{option.name}>[/{color}]"
     elif show_full:
@@ -31,6 +33,7 @@ def fmt_option(option: CommandOption, show_full: bool = False, color: str = "whi
 
 
 def fmt_cmd_options(options: list[CommandOption]) -> str:
+    """Format command options for display in the usage section."""
     return (
         " ".join([fmt_option(x) for x in options]) if options else ""  # '[<arg1>] ... [<argN>]'
     )
@@ -43,6 +46,7 @@ def fmt_help(
     markdown_open: Optional[str] = "[bold]",
     markdown_close: Optional[str] = "[/bold]",
 ):
+    """Format the help text for a command option."""
     _choices = option.get_choices()
     _markdown_open, _markdown_close = markdown_open or "", markdown_close or ""
 
@@ -69,6 +73,7 @@ def get_usage(
     command_options: Optional[list[CommandOption]] = None,
     parent_args: Optional[ParentArgs] = None,
 ):
+    """Generate the usage string for a command or command group."""
     parent_args = parent_args or []
     _global_options = " ".join(["[" + sorted(x.keyword_args)[-1] + "]" for x in global_options])
     _command = None
@@ -90,6 +95,8 @@ def get_usage(
 
 @dataclass(frozen=True)
 class RichTitles(Titles):
+    """Titles for the rich formatter."""
+
     GLOBAL_OPTIONS = f"[bold]{Titles.GLOBAL_OPTIONS}[/bold]"
     AVAILABLE_CMDS = f"[bold]{Titles.AVAILABLE_CMDS}[/bold]"
     COMMANDS = f"[bold]{Titles.COMMANDS}[/bold]"

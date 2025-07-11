@@ -1,3 +1,4 @@
+from __future__ import annotations
 import textwrap
 from dataclasses import dataclass, field
 from functools import wraps
@@ -89,23 +90,27 @@ OnCommandRun = Callable[[CommandMeta], None]
 
 @dataclass
 class CommandGroup:
+    """A group of commands that can be used to organize commands and options"""
+
     name: Optional[str] = None
+    """ Name of the command group, used to identify it in the CLI"""
     help: Optional[str] = None
     """ Short line to explain the command group"""
     description: Optional[str] = None
     """ Description of the command group"""
-
     options_processor: Optional[Callable] = None
-
+    """ Function to process the options before running the command."""
     propagate_options: Optional[bool] = None
-
+    """ If set to True, the options will be propagated to the sub-commands."""
     on_cmd_run: Optional[OnCommandRun] = None
-
+    """ Function to call when a command is run, with the command name and arguments."""
     # _formatter: Formatter = field(init=False, default=None)
     _options: list[CommandOption] = field(init=False, default_factory=list)
+    """ List of options for the command group, can be used to add global options."""
     _commands: dict[str, Command] = field(init=False, default_factory=dict)
-    _command_groups: dict[str, "CommandGroup"] = field(init=False, default_factory=dict)
-
+    """ Dictionary of commands for the command group, can be used to add commands."""
+    _command_groups: dict[str, CommandGroup] = field(init=False, default_factory=dict)
+    """ Dictionary of sub-command groups for the command group, can be used to add sub-groups."""
     #
 
     def __post_init__(self):
@@ -113,13 +118,16 @@ class CommandGroup:
 
     @property
     def commands(self) -> dict:
+        """Returns a dictionary of commands and command groups, sorted by command name."""
         return {k: self._commands.get(k) or self._command_groups[k] for k in sorted(self.command_names)}
 
     @property
     def options(self):
+        """Returns a list of options, sorted by whether they are required or not."""
         return sorted(self._options, key=lambda x: x.is_required, reverse=True)
 
     def add_sub_parser(self, help: Optional[str] = None, description: Optional[str] = None):
+        """Adds a sub-parser to the command group, which can be used to add sub-commands."""
         cls = type(self)
         return cls(help=help, description=description)  # noqa
 
@@ -130,6 +138,7 @@ class CommandGroup:
         data_type: Any = bool,
         default: Any = False,
     ):
+        """Adds an option to the command group."""
         opt = CommandOption(
             default=default,
             help=help,
@@ -140,9 +149,11 @@ class CommandGroup:
 
     @property
     def command_names(self) -> set[str]:
+        """Returns a set of command names, including both commands and command groups."""
         return set(self._commands.keys()) | (self._command_groups.keys())
 
-    def add_group(self, group: "CommandGroup"):
+    def add_group(self, group: CommandGroup):
+        """Adds a sub-command group to the command group."""
         if group.name is None:
             raise NotImplementedError("A group must have a name")
 
@@ -159,6 +170,8 @@ class CommandGroup:
         description: Optional[str] = None,
         is_main: bool = False,
     ):
+        """Adds a command to the command group."""
+
         cmd_name = "__main__" if is_main else cmd or f.__name__
         if cmd_name in self.commands:
             raise DuplicatedCommandError(f"Duplicated command found for {cmd_name!r}", cmd_name)
@@ -185,6 +198,8 @@ class CommandGroup:
         description: Optional[str] = None,
         is_main: bool = False,
     ):
+        """Decorator to mark a function as a command."""
+
         def _command(f):
             @wraps(f)
             def wrapper(*args, **kwargs):
@@ -196,6 +211,8 @@ class CommandGroup:
         return _command
 
     def processor(self):
+        """Decorator to mark a function as an options processor."""
+
         def _processor(f):
             @wraps(f)
             def wrapper(*args, **kwargs):
@@ -210,6 +227,7 @@ class CommandGroup:
         return _processor
 
     def run_with_args(self, *args, parent_args: Optional[ParentArgs] = None):
+        """Runs the command with the given arguments."""
         cmd, global_options, cmd_options = parse_input_args(args, self.command_names)
         command_group = self._command_groups.get(cmd) if cmd else None
         command = (command_group or self)._commands.get(cmd) if cmd else None
@@ -272,6 +290,7 @@ class CommandGroup:
         return command.run(**args_dict)
 
     def set_options_processor(self, fn: Callable):
+        """Sets the options processor function for the command group."""
         self.options_processor = fn
         # We don't propagate if not specified otherwise when processor is set
         if self.propagate_options is None:
@@ -279,6 +298,8 @@ class CommandGroup:
 
 
 class ShowHelpError(Exception):
+    """Exception raised to show help for a command or command group."""
+
     def __init__(
         self,
         group: CommandGroup,
