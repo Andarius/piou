@@ -91,12 +91,10 @@ class Formatter(abc.ABC):
             self.print_cli_help(group)
 
     @abc.abstractmethod
-    def print_cli_help(self, group: CommandGroup) -> None:
-        ...
+    def print_cli_help(self, group: CommandGroup) -> None: ...
 
     @abc.abstractmethod
-    def print_cmd_group_help(self, group: CommandGroup, parent_args: ParentArgs) -> None:
-        ...
+    def print_cmd_group_help(self, group: CommandGroup, parent_args: ParentArgs) -> None: ...
 
     @abc.abstractmethod
     def print_cmd_help(
@@ -104,8 +102,7 @@ class Formatter(abc.ABC):
         command: Command,
         options: list[CommandOption],
         parent_args: Optional[ParentArgs] = None,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     def print_invalid_command(self, available_commands: list[str]) -> None:
         _available_cmds = ", ".join(available_commands)

@@ -1,16 +1,20 @@
 ---
 repos:
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: v3.12.0
+    rev: v4.8.3
     hooks:
       - id: commitizen
   #      - id: commitizen-branch
   #        stages: [ push ]
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.1.5
+    rev: v0.12.1
     hooks:
       - id: ruff
-        language_version: python3.10
-        args:
-          - --fix
+        language_version: python3.12
+        args: [ --fix ]
       - id: ruff-format
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    # uv version.
+    rev: 0.7.19
+    hooks:
+      - id: uv-lock
