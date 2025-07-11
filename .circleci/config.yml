@@ -29,8 +29,11 @@ commands:
           paths:
             - /home/circleci/.uv-cache
       - run:
-          name: Running checks
-          command: uv run pre-commit
+          name: Running lint check
+          command: uv run ruff check .
+      - run:
+          name: Check format
+          command: uv run ruff format --check .
       - run:
           name: Running type checking
           command: uv run pyright

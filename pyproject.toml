@@ -30,7 +30,6 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "pre-commit>=4.2.0",
     "pyright>=1.1.403",
     "pytest>=8.4.1",
     "pytest-cov>=6.2.1",
@@ -69,7 +68,7 @@ pythonPlatform = "Linux"
 line-length = 120
 target-version = "py312"
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "__init__.py" = [
     # imported but unused
     "F401",
