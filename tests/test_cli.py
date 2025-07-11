@@ -61,8 +61,7 @@ def test_get_type_hints_derived():
     def _derived() -> str:
         return "hello"
 
-    def foo(a: int, bar=Derived(_derived)):
-        ...
+    def foo(a: int, bar=Derived(_derived)): ...
 
     hints = get_type_hints_derived(foo)
     assert hints == {"a": int, "bar": str}
@@ -83,8 +82,7 @@ def test_extract_function_info():
     def processor(a: int = Option(1, "-a"), b: int = Option(2, "-b")) -> int:
         return a + b
 
-    def test(value=Derived(processor), value2: str = Option("foo", "--value2")):
-        ...
+    def test(value=Derived(processor), value2: str = Option("foo", "--value2")): ...
 
     expected_options = [
         _get_cmd_opt(default=1, help=None, keyword_args=("-a",), name="a", data_type=int, arg_name="__processor.a"),
@@ -392,7 +390,7 @@ def raises_exit(code: int = 1):
     with pytest.raises(SystemExit) as exit_error:
         fn = yield
         print(fn)
-    assert exit_error.type == SystemExit
+    assert isinstance(exit_error.type, SystemExit)
     assert exit_error.value.code == code
 
 

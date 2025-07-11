@@ -181,7 +181,7 @@ class RichFormatter(Formatter):
 
         self.print_fn(RichTitles.AVAILABLE_CMDS)
         self.print_rows(
-            [(f' {self._color_cmd(_command.name or "")}', _command.help) for _command in group.commands.values()]
+            [(f" {self._color_cmd(_command.name or '')}", _command.help) for _command in group.commands.values()]
         )
         self._print_description(group)
 
@@ -235,7 +235,7 @@ class RichFormatter(Formatter):
                 if group.options and cmd_lvl == len(parent_commands) - 1:
                     _cmds.append(fmt_cmd_options(group.options))
             _cmds_str = " ".join(_cmds)
-            _line = f'{"" if i == 0 else "or: ":>5}{_cmds_str} {fmt_cmd_options(cmd.options_sorted)}'.rstrip()
+            _line = f"{'' if i == 0 else 'or: ':>5}{_cmds_str} {fmt_cmd_options(cmd.options_sorted)}".rstrip()
             commands_str.append(_line)
         commands_str = "\n".join(commands_str)
 

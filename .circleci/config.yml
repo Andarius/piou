@@ -6,7 +6,9 @@ orbs:
 executors:
   test-build:
     docker:
-      - image: cimg/python:3.10.17
+      - image: cimg/python:3.12
+        environment:
+          PYRIGHT_PYTHON_GLOBAL_NODE: true
 
 commands:
   run-tests:
@@ -18,48 +20,48 @@ commands:
       - checkout
       - restore_cache:
           keys:
-            - deps-<< parameters.python-version >>-{{ checksum "poetry.lock" }}
+            - deps-<< parameters.python-version >>-{{ checksum "uv.lock" }}
       - run:
           name: Install python dependencies
-          command: poetry install --all-extras
+          command: uv sync --all-extras
       - save_cache:
-          key: deps-<< parameters.python-version >>-{{ checksum "poetry.lock" }}
+          key: deps-<< parameters.python-version >>-{{ checksum "uv.lock" }}
           paths:
-            - /home/circleci/.cache/pypoetry/virtualenvs
+            - /home/circleci/.uv-cache
       - run:
           name: Running lint check
-          command: poetry run ruff check .
+          command: uv run ruff check .
       - run:
           name: Check format
-          command: poetry run ruff format --check .
+          command: uv run ruff format --check .
       - run:
           name: Running type checking
-          command: poetry run pyright
+          command: uv run pyright
       - run:
           name: Run tests
           command: |
-            poetry run pytest -vv --junitxml=tests/junit.xml
+            uv run pytest -vv --junitxml=tests/junit.xml
       - run:
           name: Test Example
           command: |
-            poetry run coverage run -a -m piou.example.simple -h
-            poetry run coverage run -a -m piou.example.simple foo 1 --baz 2
-            poetry run coverage run -a -m piou.example.simple_main 1 --baz 2
-            poetry run coverage run -a -m piou.example -h
-            poetry run coverage run -a -m piou.example foo 1 --foo2 foo --foo12 '{"foo": 1, "bar": "baz"}' --foo-bar 1
-            poetry run coverage run -a -m piou.example sub -h
-            poetry run coverage run -a -m piou.example foo -h
-            poetry run coverage run -a -m piou.example error || true
-            poetry run coverage run -a -m piou.example sub foo 1 --foo2 foo
-            poetry run coverage run -a -m piou.example.derived -h
-            poetry run coverage run -a -m piou.example.derived bar
-            poetry run coverage run -a -m piou.example.derived foo --host postgres
-            poetry run coverage run -a -m piou.example.derived dynamic --db1 test
+            uv run coverage run -a -m piou.example.simple -h
+            uv run coverage run -a -m piou.example.simple foo 1 --baz 2
+            uv run coverage run -a -m piou.example.simple_main 1 --baz 2
+            uv run coverage run -a -m piou.example -h
+            uv run coverage run -a -m piou.example foo 1 --foo2 foo --foo12 '{"foo": 1, "bar": "baz"}' --foo-bar 1
+            uv run coverage run -a -m piou.example sub -h
+            uv run coverage run -a -m piou.example foo -h
+            uv run coverage run -a -m piou.example error || true
+            uv run coverage run -a -m piou.example sub foo 1 --foo2 foo
+            uv run coverage run -a -m piou.example.derived -h
+            uv run coverage run -a -m piou.example.derived bar
+            uv run coverage run -a -m piou.example.derived foo --host postgres
+            uv run coverage run -a -m piou.example.derived dynamic --db1 test
       - run:
           name: Generating coverage
           command: |
-            poetry run coverage xml -o tests/coverage.xml
-            poetry run coverage html
+            uv run coverage xml -o tests/coverage.xml
+            uv run coverage html
       - store_test_results:
           path: tests/junit.xml
       - store_artifacts:
@@ -110,7 +112,7 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - deps-3.9-{{ checksum "poetry.lock" }}
+            - deps-3.9-{{ checksum "uv.lock" }}
       - run:
           name: Create release
           command: bash .circleci/scripts/release.sh
@@ -132,7 +134,7 @@ jobs:
             - piou-{{ checksum "pyproject.toml" }}
       - run:
           name: Publishing
-          command: poetry publish -u __token__ -p $PYPI_TOKEN
+          command: uv publish -u __token__ -p $PYPI_TOKEN
 
 workflows:
 
