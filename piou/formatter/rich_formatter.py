@@ -1,5 +1,6 @@
 import sys
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Optional, Union
 
 from rich.console import Console, RenderableType
@@ -67,6 +68,33 @@ def fmt_help(
         return option.help
 
 
+def get_program_name() -> str:
+    """
+    Get the program name for display in usage messages.
+
+    Handles both direct script execution and module execution (python -m module_name).
+    When run as a module, returns the module name instead of __main__.py.
+    """
+
+    program_name = sys.argv[0].split("/")[-1]
+    # If running as a module (python -m module_name), extract the module name
+    if program_name == "__main__.py":
+        import __main__
+
+        if hasattr(__main__, "__file__") and __main__.__file__:
+            # Get the parent directory name which should be the module name
+            module_path = Path(__main__.__file__).parent
+            program_name = module_path.name
+        else:
+            # Fallback: try to get from sys.modules
+            main_module = sys.modules.get("__main__")
+            if main_module and hasattr(main_module, "__package__") and main_module.__package__:
+                program_name = main_module.__package__
+            # If all else fails, keep __main__.py as fallback
+
+    return program_name
+
+
 def get_usage(
     global_options: list[CommandOption],
     command: Optional[str] = None,
@@ -79,7 +107,8 @@ def get_usage(
     _command = None
     if command != "__main__":
         _command = f"[underline]{command}[/underline]" if command else "<command>"
-    cmds = [sys.argv[0].split("/")[-1]] + [x.cmd for x in parent_args]
+
+    cmds = [get_program_name()] + [x.cmd for x in parent_args]
     cmds = " ".join(f"[underline]{x}[/underline]" for x in cmds)
 
     usage = cmds
