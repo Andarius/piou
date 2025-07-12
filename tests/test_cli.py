@@ -527,11 +527,18 @@ def test_run_command_pass_global_args():
     ):
         nonlocal called
         called = True
-        assert foo1 == 1
-        assert quiet is True
-        assert verbose is False
+        assert foo1 == 1, "Foo1 should be 1"
+        assert quiet is True, "Quiet should be True"
+        assert verbose is False, "Verbose should be False"
 
+    #
     cli._group.run_with_args("-q", "foo", "1")
+    assert called
+    assert processor_called
+
+    called, processor_called = False, False
+    # Also works when passing the global option to the command
+    cli._group.run_with_args("foo", "1", "-q")
     assert called
     assert processor_called
 
@@ -674,6 +681,7 @@ def test_option_processor():
     cli = Cli(description="A CLI tool", propagate_options=True)
 
     processor_called = False
+    test_called = False
 
     @cli.processor()
     def processor(
@@ -688,10 +696,13 @@ def test_option_processor():
 
     @cli.command()
     def test(**kwargs):
+        nonlocal test_called
         assert kwargs["quiet"]
+        test_called = True
 
     cli._group.run_with_args("--quiet", "test")
     assert processor_called
+    assert test_called
 
 
 def test_derived():

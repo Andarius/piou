@@ -21,7 +21,7 @@ class ParentArg(NamedTuple):
     options: list[CommandOption]
     input_options: list[str]
     options_processor: Optional[Callable] = None
-    propagate_args: Optional[bool] = False
+    propagate_args: bool = False
 
 
 ParentArgs = list[ParentArg]
@@ -100,7 +100,7 @@ class CommandGroup:
     """ Description of the command group"""
     options_processor: Optional[Callable] = None
     """ Function to process the options before running the command."""
-    propagate_options: Optional[bool] = None
+    propagate_options: bool = False
     """ If set to True, the options will be propagated to the sub-commands."""
     on_cmd_run: Optional[OnCommandRun] = None
     """ Function to call when a command is run, with the command name and arguments."""
@@ -211,7 +211,7 @@ class CommandGroup:
         return _command
 
     def processor(self):
-        """Decorator to mark a function as an options processor."""
+        """Decorator to mark a function as an option processor."""
 
         def _processor(f):
             @wraps(f)
@@ -228,12 +228,31 @@ class CommandGroup:
 
     def run_with_args(self, *args, parent_args: Optional[ParentArgs] = None):
         """Runs the command with the given arguments."""
-        cmd, global_options, cmd_options = parse_input_args(args, self.command_names)
+
+        # Collect all global option names from current group and parent args
+        global_option_names = set()
+        for option in self.options:
+            global_option_names.update(option.keyword_args)
+
+        # Add parent global options
+        if parent_args:
+            for parent_arg in parent_args:
+                for option in parent_arg.options:
+                    global_option_names.update(option.keyword_args)
+        # Splits the input arguments into:
+        # - cmd: The command name to execute
+        # - global_options: Options that apply to the current command group
+        # - cmd_options: Options specific to the sub-command
+        cmd, global_options, cmd_options = parse_input_args(args, self.command_names, global_option_names)
+        # Determines if cmd refers to a sub-command group or a direct command
         command_group = self._command_groups.get(cmd) if cmd else None
         command = (command_group or self)._commands.get(cmd) if cmd else None
 
         parent_args = parent_args or []
+        # If we have a command group, we need to run it with the given command
         if command_group:
+            # Maintains a chain of parent command contexts for nested command structures
+            # If it's a command group, recursively calls run_with_args on the sub-group
             if cmd is None:
                 raise NotImplementedError('"cmd" cannot be empty')
             parent_args.append(
@@ -247,6 +266,7 @@ class CommandGroup:
             )
             return command_group.run_with_args(*cmd_options, parent_args=parent_args)
 
+        # Checks if help was requested and raises a special exception to display help
         if set(global_options + cmd_options) & {"-h", "--help"}:
             raise ShowHelpError(group=command_group or self, parent_args=parent_args, command=command)
 
@@ -254,8 +274,13 @@ class CommandGroup:
             raise CommandNotFoundError(list(self.command_names))
 
         args_dict = {}
+        # Creates parallel lists that include:
+        # - Command options + current group options + all parent options (if in sub-command)
+        # - Command input + global input + all parent inputs (if in sub-command)
+        # - Processors from each level
+        # - Propagation settings for each level
         options, input_options, processors, propagate_args = (
-            # Parent / current
+            # Command options / current group options / parent options (optional)
             [command.options, self._options],
             [cmd_options, global_options],
             [None, self.options_processor],
@@ -268,6 +293,10 @@ class CommandGroup:
             processors.append(parent_arg.options_processor)
             propagate_args.append(parent_arg.propagate_args)
 
+        # For each level (command → group → parents):
+        # - Converts raw input arguments to a dictionary using option definitions
+        # - Runs any processor function with the arguments
+        # - If propagation is enabled, merges arguments into the final args dictionary
         for _opts, _input_opts, _processor, _propagate in zip(options, input_options, processors, propagate_args):
             try:
                 _arg_dict = convert_args_to_dict(_input_opts, _opts)
@@ -283,6 +312,7 @@ class CommandGroup:
         for _derived in command.derived_options:
             args_dict = _derived.update_args(args_dict)
 
+        # Optionally calls a monitoring/logging hook
         if self.on_cmd_run:
             full_command_name = ".".join([x.cmd for x in parent_args] + [command.name])
             self.on_cmd_run(CommandMeta(full_command_name, fn_args=args_dict, cmd_args=cmd_args))
@@ -292,9 +322,6 @@ class CommandGroup:
     def set_options_processor(self, fn: Callable):
         """Sets the options processor function for the command group."""
         self.options_processor = fn
-        # We don't propagate if not specified otherwise when processor is set
-        if self.propagate_options is None:
-            self.propagate_options = False
 
 
 class ShowHelpError(Exception):

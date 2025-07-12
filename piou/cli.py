@@ -22,7 +22,7 @@ class Cli:
     """Description of the CLI that will be displayed when displaying the help"""
     formatter: Formatter = field(default_factory=RichFormatter)
     """Formatter to use to display help and errors"""
-    propagate_options: Optional[bool] = None
+    propagate_options: bool = False
     """
     Propagate the options to sub-command functions or not. 
     When set to None, it depends if a processor is passed or not otherwise it 
@@ -84,6 +84,7 @@ class Cli:
         except CommandError as e:
             self.formatter.print_error(e.message)
             sys.exit(1)
+        return None
 
     def command(
         self,
@@ -133,7 +134,7 @@ class Cli:
         cmd: str,
         help: Optional[str] = None,
         description: Optional[str] = None,
-        propagate_options: Optional[bool] = None,
+        propagate_options: bool = False,
     ) -> CommandGroup:
         """Add a sub-command group to the CLI application."""
         group = CommandGroup(
