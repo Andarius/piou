@@ -13,24 +13,23 @@
 [![CircleCI](https://circleci.com/gh/Andarius/piou/tree/master.svg?style=shield)](https://app.circleci.com/pipelines/github/Andarius/piou?branch=master)
 [![Latest conda-forge version](https://img.shields.io/conda/vn/conda-forge/piou?logo=conda-forge)](https://anaconda.org/conda-forge/piou)
 
+
 A CLI tool to build beautiful command-line interfaces with type validation.
 
-
-
-- [Why Piou](#why-)
+- [Why Piou](#why-piou)
 - [Installation](#installation)
 - [Features](#features)
   - [Commands](#commands)
-  - [Without Command](#running-main)
+  - [Without Command](#without-command)
   - [Command Groups / Sub-commands](#command-groups--sub-commands)
   - [Options processor](#options-processor)
   - [Derived Options](#derived-options)
   - [On Command Run](#on-command-run)
   - [Help / Errors Formatter](#help--errors-formatter)
-  - [Complete example](#complete-example)
 - [Moving from argparse](#moving-from-argparse)
 
 It is as simple as
+
 
 ```python
 from piou import Cli, Option
@@ -48,7 +47,7 @@ def foo_main(
     A longer description on what the function is doing.
     You can run it with:
     ```bash
-     poetry run python -m piou.example.simple foo 1 -b baz
+     python -m piou.example.simple foo 1 -b baz
     ```
     And you are good to go!
     """
@@ -61,37 +60,38 @@ if __name__ == '__main__':
 
 The output will look like this:
 
-- `python -m piou.example.simple -h`
+- `python -m examples.simple -h`
 
 ![example](https://github.com/Andarius/piou/raw/master/docs/simple-output.png)
 
-- `python -m piou.example.simple foo -h`
+- `python -m examples.simple foo -h`
 
 ![example](https://github.com/Andarius/piou/raw/master/docs/simple-output-foo.png)
 
-# Why ?
+
+## Why Piou?
 
 I could not find a library that provided:
 
-- the same developer experience than [FastAPI](https://fastapi.tiangolo.com/)
+- the same developer experience as [FastAPI](https://fastapi.tiangolo.com/)
 - customization of the interface (to build a CLI similar to the one of [Poetry](https://python-poetry.org/))
 - type validation / casting
 
 [Typer](https://github.com/tiangolo/typer) is the closest alternative in terms of experience but lacks the possibility
-to format the output is a custom way using external libraries (like [Rich](https://github.com/Textualize/rich)).
+to format the output in a custom way using external libraries (like [Rich](https://github.com/Textualize/rich)).
 
-**Piou** provides all these possibilities and lets you define your own [Formatter](#custom-formatter).
+**Piou** provides all these possibilities and lets you define your own [Formatter](#help--errors-formatter).
 
-# Installation
+## Installation
 
 You can install `piou` with either:
 
 - `pip install piou`
 - `conda install piou -c conda-forge`
 
-# Features
+## Features
 
-## Commands
+### Commands
 
 ```python
 from piou import Cli, Option
@@ -99,8 +99,7 @@ from piou import Cli, Option
 cli = Cli(description='A CLI tool')
 
 
-@cli.command(cmd='foo',
-             help='Run foo command')
+@cli.command(cmd='foo', help='Run foo command')
 def foo_main(
         foo1: int = Option(..., help='Foo arguments'),
         foo2: str = Option(..., '-f', '--foo2', help='Foo2 arguments'),
@@ -109,8 +108,7 @@ def foo_main(
     pass
 
 
-@cli.command(cmd='bar',
-             help='Run bar command')
+@cli.command(cmd='bar', help='Run bar command')
 def bar_main(
         foo1: int = Option(..., help='Foo arguments'),
         foo2: str = Option(..., '-f', '--foo2', help='Foo2 arguments'),
@@ -157,7 +155,7 @@ async def bar_main():
     pass
 ```
 
-## Running Main
+### Without Command
 
 If you want to run a function without specifying a command, you can use the `main` decorator
 or the `is_main` parameter to the `command` decorator:
@@ -178,14 +176,12 @@ def run_main():
 This will allow you to run the function without specifying a command:
 
 ```bash
-python -m piou.example.simple_main -h
+python -m examples.simple_main -h
 ```
 
 **Note**: You can only have one `main` function in the CLI.
 
-
-
-## Command Groups / Sub-commands
+### Command Groups / Sub-commands
 
 You can group commands into sub-commands:
 
@@ -226,7 +222,9 @@ So when running `python run.py sub -h` it will output the following:
 
 ![example](https://github.com/Andarius/piou/raw/master/docs/sub-cmd-output.png)
 
-## Options processor
+
+
+### Options processor
 
 Sometimes, you want to run a function using the global arguments before running the actual command (for instance
 initialize a logger based on the `verbose` level).
@@ -262,22 +260,22 @@ def processor(verbose: bool = Option(False, '--verbose', help='Increase verbosit
 ```
 
 By default, when a processor is set, the global arguments will not be passed downstream.
-If you still want them to be passed to the functions by setting
+If you still want them to be passed to the functions, set:
 
 ```python
 cli = Cli(description='A CLI tool', propagate_options=True)
 ```
 
-or in the case of a **sub-command**
+or in the case of a **sub-command**:
 
 ```python
 cli.add_sub_parser(cmd='sub', help='A sub command', propagate_options=True)
 ```
 
-## Derived Options
+### Derived Options
 
-Sometimes, you want to reuse the options in multiple command and group them into a single output to pass to
-the command. For instance, you might want to group a connection string parameter to connect to a database. Here is a
+Sometimes, you want to reuse the options in multiple commands and group them into a single output to pass to
+the command. For instance, you might want to group connection string parameters to connect to a database. Here is a
 full example:
 
 ```python
@@ -293,7 +291,6 @@ def get_pg_conn(
         pg_host: str = Option('localhost', '--pg-host'),
         pg_port: int = Option(5432, '--pg-port'),
         pg_db: str = Option('postgres', '--pg-db')
-
 ):
     conn = psycopg2.connect(dbname=pg_db, user=pg_user, password=pg_pwd,
                             host=pg_host, port=pg_port)
@@ -347,9 +344,10 @@ So that the output will look like this:
 
 ![dynamic-derived](https://github.com/Andarius/piou/raw/master/docs/dynamic-derived.png)
 
-## On Command Run
 
-If you want to get the command name and arguments information that are passed to it (in case of general purpose
+### On Command Run
+
+If you want to get the command name and arguments information that are passed to it (for general purpose
 debugging for instance), you can pass `on_cmd_run` to the CLI.
 
 ```python
@@ -385,7 +383,7 @@ CommandMeta(cmd_name='test',
             cmd_args={'a': 3, 'b': 2, 'bar': 'bar'})
 ```
 
-## Help / Errors Formatter
+### Help / Errors Formatter
 
 You can customize the help and the different errors displayed by the CLI by passing a Formatter.
 The default one is the **Rich formatter** based on the [Rich](https://github.com/Textualize/rich) package:
@@ -393,7 +391,7 @@ The default one is the **Rich formatter** based on the [Rich](https://github.com
 - `cmd_color`: set the color of the command in the help
 - `option_color`: set the color of the positional / keyword arguments in the help
 - `default_color`: set the color of the default values in the help
-- `show_default`: show the default values if the keyword arguments (if available)
+- `show_default`: show the default values of the keyword arguments (if available)
 
 You can create your own Formatter by subclassing the `Formatter` class (see
 the [Rich formatter](https://github.com/Andarius/piou/blob/master/piou/formatter/rich_formatter.py)
@@ -410,10 +408,6 @@ def test(pg_pwd: Password = Option('postgres', '--pg-pwd')):
     ...
 ```
 
-## Complete example
-
-You can try a more complete example by running `python -m piou.example -h`
-
 ## Moving from `argparse`
 
 If you are migrating code from `argparse` to `piou` here are some differences:
@@ -429,7 +423,7 @@ can be replaced with the following:
 
 **Notes**:
 
-- You can disable the case sensitivity by passing `Option(None, '--pick', case_sentitive=False)`
+- You can disable the case sensitivity by passing `Option(None, '--pick', case_sensitive=False)`
 - Specifying both a `Literal` type and `choices` will raise an error.
 
 ### 2. action=store_true:

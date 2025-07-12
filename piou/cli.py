@@ -16,11 +16,13 @@ from .formatter import Formatter, RichFormatter
 
 @dataclass
 class Cli:
+    """Main class to create a CLI application."""
+
     description: Optional[str] = None
     """Description of the CLI that will be displayed when displaying the help"""
     formatter: Formatter = field(default_factory=RichFormatter)
     """Formatter to use to display help and errors"""
-    propagate_options: Optional[bool] = None
+    propagate_options: bool = False
     """
     Propagate the options to sub-command functions or not. 
     When set to None, it depends if a processor is passed or not otherwise it 
@@ -32,6 +34,7 @@ class Cli:
     for monitoring
     """
     _group: CommandGroup = field(init=False, default_factory=CommandGroup)
+    """The main command group that will contain all the commands and options"""
 
     def __post_init__(self):
         self._group.description = clean_multiline(self.description) if self.description else None
@@ -43,6 +46,7 @@ class Cli:
         return self._group.commands
 
     def run(self):
+        """Run the CLI application, parsing the command line arguments."""
         try:
             _, *args = sys.argv
         except ValueError:
@@ -50,6 +54,7 @@ class Cli:
         self.run_with_args(*args)
 
     def run_with_args(self, *args):
+        """Run the CLI application with the given arguments."""
         try:
             return self._group.run_with_args(*args)
         except CommandNotFoundError as e:
@@ -79,6 +84,7 @@ class Cli:
         except CommandError as e:
             self.formatter.print_error(e.message)
             sys.exit(1)
+        return None
 
     def command(
         self,
@@ -104,9 +110,11 @@ class Cli:
         return self.command(cmd=None, help=help, description=description, is_main=True)
 
     def processor(self):
+        """Decorator to mark a function as a processor for options"""
         return self._group.processor()
 
     def add_option(self, *args, help: Optional[str] = None, data_type: Any = bool, default: Any = False):
+        """Add an option to the CLI application."""
         self._group.add_option(*args, help=help, data_type=data_type, default=default)
 
     def set_options_processor(self, fn: Callable):
@@ -114,9 +122,11 @@ class Cli:
         self._group.set_options_processor(fn)
 
     def add_command(self, cmd: str, f, help: Optional[str] = None, description: Optional[str] = None):
+        """Add a command to the CLI application."""
         self._group.add_command(cmd=cmd, f=f, help=help, description=description)
 
     def add_command_group(self, group: CommandGroup):
+        """Add a command group to the CLI application."""
         self._group.add_group(group)
 
     def add_sub_parser(
@@ -124,8 +134,9 @@ class Cli:
         cmd: str,
         help: Optional[str] = None,
         description: Optional[str] = None,
-        propagate_options: Optional[bool] = None,
+        propagate_options: bool = False,
     ) -> CommandGroup:
+        """Add a sub-command group to the CLI application."""
         group = CommandGroup(
             name=cmd,
             help=help,

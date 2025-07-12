@@ -7,6 +7,7 @@ from ..command import Command, CommandOption, ParentArgs, CommandGroup
 
 
 def get_str_side_by_side(a: str, b: str, col_1_size: int, col_2_size: int, space: int):
+    """Yield lines of two strings side by side, formatted to fit in specified column sizes."""
     while a or b:
         yield f"{a[:col_1_size].ljust(col_1_size):<{col_1_size + space}}{b[:col_2_size]}"
         a = a[col_1_size:]
@@ -20,6 +21,7 @@ def print_size_by_size(
     col_2_size: int = 100,
     space: int = 4,
 ):
+    """Prints the given arguments side by side, formatted to fit in specified column sizes."""
     for arg in args:
         if isinstance(arg, str):
             print_fn(arg)
@@ -33,6 +35,7 @@ def print_size_by_size(
 def get_options_str(
     options: list[CommandOption],
 ) -> list[tuple[Optional[str], str, CommandOption]]:
+    """Returns a list of tuples containing the name, other arguments, and the option itself."""
     lines = []
     for _option in options:
         if len(_option.keyword_args) == 0:
@@ -48,6 +51,8 @@ def get_options_str(
 
 @dataclass(frozen=True)
 class Titles:
+    """Titles used in the formatter for different sections of the help output."""
+
     GLOBAL_OPTIONS = "GLOBAL OPTIONS"
     AVAILABLE_CMDS = "AVAILABLE COMMANDS"
     COMMANDS = "COMMANDS"
@@ -59,6 +64,8 @@ class Titles:
 
 @dataclass
 class Formatter(abc.ABC):
+    """Base class for formatting command line interface (CLI) help output."""
+
     print_fn: Callable = print
     col_size: int = 20
     col_space: int = 4

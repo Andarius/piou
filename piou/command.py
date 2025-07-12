@@ -1,3 +1,4 @@
+from __future__ import annotations
 import textwrap
 from dataclasses import dataclass, field
 from functools import wraps
@@ -20,7 +21,7 @@ class ParentArg(NamedTuple):
     options: list[CommandOption]
     input_options: list[str]
     options_processor: Optional[Callable] = None
-    propagate_args: Optional[bool] = False
+    propagate_args: bool = False
 
 
 ParentArgs = list[ParentArg]
@@ -89,23 +90,27 @@ OnCommandRun = Callable[[CommandMeta], None]
 
 @dataclass
 class CommandGroup:
+    """A group of commands that can be used to organize commands and options"""
+
     name: Optional[str] = None
+    """ Name of the command group, used to identify it in the CLI"""
     help: Optional[str] = None
     """ Short line to explain the command group"""
     description: Optional[str] = None
     """ Description of the command group"""
-
     options_processor: Optional[Callable] = None
-
-    propagate_options: Optional[bool] = None
-
+    """ Function to process the options before running the command."""
+    propagate_options: bool = False
+    """ If set to True, the options will be propagated to the sub-commands."""
     on_cmd_run: Optional[OnCommandRun] = None
-
+    """ Function to call when a command is run, with the command name and arguments."""
     # _formatter: Formatter = field(init=False, default=None)
     _options: list[CommandOption] = field(init=False, default_factory=list)
+    """ List of options for the command group, can be used to add global options."""
     _commands: dict[str, Command] = field(init=False, default_factory=dict)
-    _command_groups: dict[str, "CommandGroup"] = field(init=False, default_factory=dict)
-
+    """ Dictionary of commands for the command group, can be used to add commands."""
+    _command_groups: dict[str, CommandGroup] = field(init=False, default_factory=dict)
+    """ Dictionary of sub-command groups for the command group, can be used to add sub-groups."""
     #
 
     def __post_init__(self):
@@ -113,13 +118,16 @@ class CommandGroup:
 
     @property
     def commands(self) -> dict:
+        """Returns a dictionary of commands and command groups, sorted by command name."""
         return {k: self._commands.get(k) or self._command_groups[k] for k in sorted(self.command_names)}
 
     @property
     def options(self):
+        """Returns a list of options, sorted by whether they are required or not."""
         return sorted(self._options, key=lambda x: x.is_required, reverse=True)
 
     def add_sub_parser(self, help: Optional[str] = None, description: Optional[str] = None):
+        """Adds a sub-parser to the command group, which can be used to add sub-commands."""
         cls = type(self)
         return cls(help=help, description=description)  # noqa
 
@@ -130,6 +138,7 @@ class CommandGroup:
         data_type: Any = bool,
         default: Any = False,
     ):
+        """Adds an option to the command group."""
         opt = CommandOption(
             default=default,
             help=help,
@@ -140,9 +149,11 @@ class CommandGroup:
 
     @property
     def command_names(self) -> set[str]:
+        """Returns a set of command names, including both commands and command groups."""
         return set(self._commands.keys()) | (self._command_groups.keys())
 
-    def add_group(self, group: "CommandGroup"):
+    def add_group(self, group: CommandGroup):
+        """Adds a sub-command group to the command group."""
         if group.name is None:
             raise NotImplementedError("A group must have a name")
 
@@ -159,6 +170,8 @@ class CommandGroup:
         description: Optional[str] = None,
         is_main: bool = False,
     ):
+        """Adds a command to the command group."""
+
         cmd_name = "__main__" if is_main else cmd or f.__name__
         if cmd_name in self.commands:
             raise DuplicatedCommandError(f"Duplicated command found for {cmd_name!r}", cmd_name)
@@ -185,6 +198,8 @@ class CommandGroup:
         description: Optional[str] = None,
         is_main: bool = False,
     ):
+        """Decorator to mark a function as a command."""
+
         def _command(f):
             @wraps(f)
             def wrapper(*args, **kwargs):
@@ -196,6 +211,8 @@ class CommandGroup:
         return _command
 
     def processor(self):
+        """Decorator to mark a function as an option processor."""
+
         def _processor(f):
             @wraps(f)
             def wrapper(*args, **kwargs):
@@ -210,12 +227,32 @@ class CommandGroup:
         return _processor
 
     def run_with_args(self, *args, parent_args: Optional[ParentArgs] = None):
-        cmd, global_options, cmd_options = parse_input_args(args, self.command_names)
+        """Runs the command with the given arguments."""
+
+        # Collect all global option names from current group and parent args
+        global_option_names = set()
+        for option in self.options:
+            global_option_names.update(option.keyword_args)
+
+        # Add parent global options
+        if parent_args:
+            for parent_arg in parent_args:
+                for option in parent_arg.options:
+                    global_option_names.update(option.keyword_args)
+        # Splits the input arguments into:
+        # - cmd: The command name to execute
+        # - global_options: Options that apply to the current command group
+        # - cmd_options: Options specific to the sub-command
+        cmd, global_options, cmd_options = parse_input_args(args, self.command_names, global_option_names)
+        # Determines if cmd refers to a sub-command group or a direct command
         command_group = self._command_groups.get(cmd) if cmd else None
         command = (command_group or self)._commands.get(cmd) if cmd else None
 
         parent_args = parent_args or []
+        # If we have a command group, we need to run it with the given command
         if command_group:
+            # Maintains a chain of parent command contexts for nested command structures
+            # If it's a command group, recursively calls run_with_args on the sub-group
             if cmd is None:
                 raise NotImplementedError('"cmd" cannot be empty')
             parent_args.append(
@@ -229,6 +266,7 @@ class CommandGroup:
             )
             return command_group.run_with_args(*cmd_options, parent_args=parent_args)
 
+        # Checks if help was requested and raises a special exception to display help
         if set(global_options + cmd_options) & {"-h", "--help"}:
             raise ShowHelpError(group=command_group or self, parent_args=parent_args, command=command)
 
@@ -236,8 +274,13 @@ class CommandGroup:
             raise CommandNotFoundError(list(self.command_names))
 
         args_dict = {}
+        # Creates parallel lists that include:
+        # - Command options + current group options + all parent options (if in sub-command)
+        # - Command input + global input + all parent inputs (if in sub-command)
+        # - Processors from each level
+        # - Propagation settings for each level
         options, input_options, processors, propagate_args = (
-            # Parent / current
+            # Command options / current group options / parent options (optional)
             [command.options, self._options],
             [cmd_options, global_options],
             [None, self.options_processor],
@@ -250,6 +293,10 @@ class CommandGroup:
             processors.append(parent_arg.options_processor)
             propagate_args.append(parent_arg.propagate_args)
 
+        # For each level (command → group → parents):
+        # - Converts raw input arguments to a dictionary using option definitions
+        # - Runs any processor function with the arguments
+        # - If propagation is enabled, merges arguments into the final args dictionary
         for _opts, _input_opts, _processor, _propagate in zip(options, input_options, processors, propagate_args):
             try:
                 _arg_dict = convert_args_to_dict(_input_opts, _opts)
@@ -265,6 +312,7 @@ class CommandGroup:
         for _derived in command.derived_options:
             args_dict = _derived.update_args(args_dict)
 
+        # Optionally calls a monitoring/logging hook
         if self.on_cmd_run:
             full_command_name = ".".join([x.cmd for x in parent_args] + [command.name])
             self.on_cmd_run(CommandMeta(full_command_name, fn_args=args_dict, cmd_args=cmd_args))
@@ -272,13 +320,13 @@ class CommandGroup:
         return command.run(**args_dict)
 
     def set_options_processor(self, fn: Callable):
+        """Sets the options processor function for the command group."""
         self.options_processor = fn
-        # We don't propagate if not specified otherwise when processor is set
-        if self.propagate_options is None:
-            self.propagate_options = False
 
 
 class ShowHelpError(Exception):
+    """Exception raised to show help for a command or command group."""
+
     def __init__(
         self,
         group: CommandGroup,

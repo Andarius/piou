@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import dataclasses
 import datetime as dt
@@ -149,9 +151,6 @@ def validate_value(
         return [validate_value(list_type[0] if list_type else str, x) for x in value.split(" ")]
     elif get_origin(_data_type) is Literal:
         return value
-    elif _data_type is list or get_origin(_data_type) is list:
-        list_type = get_args(_data_type)
-        return [validate_value(list_type[0] if list_type else str, x) for x in value.split(" ")]
     else:
         raise NotImplementedError(f'No parser implemented for data type "{data_type}"')
 
@@ -299,6 +298,30 @@ def _split_cmd(cmd: str) -> list[str]:
 
 
 def get_cmd_args(cmd: str, types: dict[str, Any]) -> tuple[list[str], dict[str, str]]:
+    """
+    Parse a command string into positional arguments and keyword parameters.
+
+    This function takes a shell-like command string and separates it into:
+    1. Positional arguments (everything before the first flag)
+    2. Keyword parameters (flags and their values)
+
+    The parsing follows these rules:
+    - Arguments before the first "-" or "--" flag are treated as positional
+    - Boolean-typed flags are set to True when present (no value expected)
+    - Non-boolean flags consume the next argument as their value
+    - Multi-value arguments are grouped together as space-separated strings
+    - Unknown flags raise KeywordParamNotFoundError
+
+    Examples:
+        >>> get_cmd_args("file1 --verbose --count 5", {"verbose": bool, "count": int})
+        (["file1"], {"--verbose": True, "--count": "5"})
+
+        >>> get_cmd_args("--files a.txt b.txt --output result", {"files": list, "output": str})
+        ([], {"--files": "a.txt b.txt", "--output": "result"})
+
+        >>> get_cmd_args("input.txt output.txt", {})
+        (["input.txt", "output.txt"], {})
+    """
     positional_args = []
     keyword_params = {}
 
@@ -311,6 +334,9 @@ def get_cmd_args(cmd: str, types: dict[str, Any]) -> tuple[list[str], dict[str, 
         if skip_position is not None and i <= skip_position:
             continue
 
+        # Once we encounter the first argument starting with -,
+        # all subsequent arguments are treated as keyword arguments
+        # All arguments before the first - argument are positional
         if _arg.startswith("-"):
             is_positional_arg = False
 
@@ -318,14 +344,18 @@ def get_cmd_args(cmd: str, types: dict[str, Any]) -> tuple[list[str], dict[str, 
             positional_args.append(_arg)
             continue
 
+        # Converts keyword argument format (--my-param) to parameter name (my_param)
+        # Looks up the expected type for validation
         try:
             curr_type = types[keyword_arg_to_name(_arg)]
         except KeyError:
             raise KeywordParamNotFoundError(f"Could not find parameter {_arg!r}", _arg)
 
+        # Boolean parameters: Simply set to True when present (flags like --verbose)
         if curr_type is bool:
             keyword_params[_arg] = True
         else:
+            # Value parameters: Take the next argument as their value and mark that position to be skipped
             keyword_params[_arg] = (
                 cmd_split[i + 1]
                 if i + 1 < len(cmd_split)
@@ -342,28 +372,102 @@ def get_default_args(func) -> list[CommandOption]:
     return [v.default for v in signature.parameters.values() if v is not inspect.Parameter.empty]
 
 
-def parse_input_args(args: tuple[Any, ...], commands: set[str]) -> tuple[Optional[str], list[str], list[str]]:
+def parse_input_args(
+    args: tuple[Any, ...], commands: set[str], global_option_names: Optional[set[str]] = None
+) -> tuple[Optional[str], list[str], list[str]]:
     """
-    Extracts the:
-     - global options
-     - command
-     - command options
-     from the passed list or arguments
+    Split command-line arguments into global options, command name, and command options.
+
+    Args:
+        args: Command-line arguments (typically from sys.argv[1:])
+        commands: Valid command names (may include "__main__" for single-command CLIs)
+        global_option_names: Global option names (e.g., {'-q', '--quiet'}). When provided,
+                           these options are treated as global regardless of position.
+
+    Returns:
+        (command_name, global_options, command_options)
+        - command_name: Command to execute or None if not found ("__main__" for single-command CLIs)
+        - global_options: Arguments that are global options (includes values)
+        - command_options: Arguments that are command-specific options
+
+    Rules:
+        - Global options can appear before or after the command
+        - Unknown args before command are treated as global (backward compatibility)
+        - Args after command are command-specific unless they match global option names
+        - If no command found but "__main__" exists, all args become command options
+        - Without global_option_names, uses simple positional parsing
+
+    Examples:
+        >>> parse_input_args(("--verbose", "deploy", "--env", "prod"),
+        ...                  {"deploy"}, {"--verbose"})
+        ("deploy", ["--verbose"], ["--env", "prod"])
+
+        >>> parse_input_args(("deploy", "--env", "prod", "--verbose"),
+        ...                  {"deploy"}, {"--verbose"})
+        ("deploy", ["--verbose"], ["--env", "prod"])
     """
-    global_options, cmd_options, cmd = [], [], None
-    for arg in args:
-        if cmd is None and arg in commands:
+    # Handle main-only CLI
+    if "__main__" in commands and len(commands) == 1:
+        return "__main__", [], list(args)
+
+    # Find the command
+    cmd = None
+    cmd_index = None
+    for i, arg in enumerate(args):
+        if arg in commands:
             cmd = arg
-            continue
+            cmd_index = i
+            break
 
-        if cmd is None:
-            global_options.append(arg)
-        else:
-            cmd_options.append(arg)
-
+    # If no command found but __main__ exists, use __main__
     if cmd is None and "__main__" in commands:
-        cmd = "__main__"
-        cmd_options, global_options = global_options, cmd_options
+        return "__main__", [], list(args)
+
+    # If no command found at all
+    if cmd is None:
+        return None, list(args), []
+
+    if cmd_index is None:
+        raise ValueError(f"Command {cmd!r} not found in arguments: {args}")
+    # Split args around the command
+    before_cmd = list(args[:cmd_index])
+    after_cmd = list(args[cmd_index + 1 :])
+
+    # If no global option names provided, use simple positional logic
+    if not global_option_names:
+        return cmd, before_cmd, after_cmd
+
+    # Separate global options from command options
+    global_options = []
+    cmd_options = []
+
+    # Process args before command
+    i = 0
+    while i < len(before_cmd):
+        arg = before_cmd[i]
+        if arg in global_option_names:
+            global_options.append(arg)
+            # Check if next arg is a value for this option
+            if i + 1 < len(before_cmd) and not before_cmd[i + 1].startswith("-"):
+                i += 1
+                global_options.append(before_cmd[i])
+        else:
+            global_options.append(arg)  # Unknown args before command are global
+        i += 1
+
+    # Process args after command
+    i = 0
+    while i < len(after_cmd):
+        arg = after_cmd[i]
+        if arg in global_option_names:
+            global_options.append(arg)
+            # Check if next arg is a value for this option
+            if i + 1 < len(after_cmd) and not after_cmd[i + 1].startswith("-") and after_cmd[i + 1] not in commands:
+                i += 1
+                global_options.append(after_cmd[i])
+        else:
+            cmd_options.append(arg)  # Everything else after command is command-specific
+        i += 1
 
     return cmd, global_options, cmd_options
 
@@ -372,6 +476,44 @@ KeywordParam = namedtuple("KeywordParam", ["name", "validate"])
 
 
 def convert_args_to_dict(input_args: list[str], options: list[CommandOption]) -> dict:
+    """
+    Convert raw command-line arguments into a validated dictionary ready for function execution.
+
+    Takes parsed command arguments and validates them against defined options,
+    performing type conversion, validation, and filling in default values.
+
+    The conversion process:
+    1. Parses input_args into positional and keyword arguments using option definitions
+    2. Validates positional argument count matches expected parameters
+    3. Validates and converts each argument value according to its CommandOption type
+    4. Fills in default values for optional parameters not provided
+    5. Raises specific errors for missing required parameters or invalid values
+
+
+    Examples:
+        >>> # Define options for a command
+        >>> options = [
+        ...     CommandOption(default=..., help="Input file"),  # positional, required
+        ...     CommandOption(default=False, keyword_args=("--verbose",), data_type=bool),
+        ...     CommandOption(default=1, keyword_args=("--count",), data_type=int)
+        ... ]
+
+        >>> # Convert arguments
+        >>> convert_args_to_dict(["input.txt", "--verbose", "--count", "5"], options)
+        {"input_file": "input.txt", "verbose": True, "count": 5}
+
+        >>> # Missing required positional argument
+        >>> convert_args_to_dict(["--verbose"], options)
+        PosParamsCountError: Expected 1 positional values but got 0
+
+        >>> # Unknown keyword argument
+        >>> convert_args_to_dict(["input.txt", "--unknown"], options)
+        KeywordParamNotFoundError: Could not find parameter '--unknown'
+
+        >>> # Using defaults for optional parameters
+        >>> convert_args_to_dict(["input.txt"], options)
+        {"input_file": "input.txt", "verbose": False, "count": 1}
+    """
     _input_pos_args, _input_keyword_args = get_cmd_args(
         " ".join(f"'{x}'" for x in input_args),
         {name: opt.data_type for opt in options for name in opt.names},
@@ -438,7 +580,7 @@ def run_function(fn: Callable, *args, **kwargs):
 def extract_function_info(
     f,
     from_derived: bool = False,
-) -> tuple[list[CommandOption], list["CommandDerivedOption"]]:
+) -> tuple[list[CommandOption], list[CommandDerivedOption]]:
     """Extracts the options from a function arguments"""
     options: list[CommandOption] = []
     derived_opts: list[CommandDerivedOption] = []
