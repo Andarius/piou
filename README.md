@@ -47,7 +47,7 @@ def foo_main(
     A longer description on what the function is doing.
     You can run it with:
     ```bash
-     uv run python -m piou.example.simple foo 1 -b baz
+     python -m piou.example.simple foo 1 -b baz
     ```
     And you are good to go!
     """
@@ -60,7 +60,13 @@ if __name__ == '__main__':
 
 The output will look like this:
 
+- `python -m examples.simple -h`
+
 ![example](https://github.com/Andarius/piou/raw/master/docs/simple-output.png)
+
+- `python -m examples.simple foo -h`
+
+![example](https://github.com/Andarius/piou/raw/master/docs/simple-output-foo.png)
 
 
 ## Why Piou?
@@ -170,7 +176,7 @@ def run_main():
 This will allow you to run the function without specifying a command:
 
 ```bash
-uv run python -m piou.example.simple_main -h
+python -m examples.simple_main -h
 ```
 
 **Note**: You can only have one `main` function in the CLI.
