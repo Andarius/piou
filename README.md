@@ -47,7 +47,7 @@ def foo_main(
     A longer description on what the function is doing.
     You can run it with:
     ```bash
-     python my_cli.py foo 1 -b baz
+     uv run python -m piou.example.simple foo 1 -b baz
     ```
     And you are good to go!
     """
@@ -170,7 +170,7 @@ def run_main():
 This will allow you to run the function without specifying a command:
 
 ```bash
-python my_cli.py -h
+uv run python -m piou.example.simple_main -h
 ```
 
 **Note**: You can only have one `main` function in the CLI.
@@ -211,6 +211,12 @@ def sub_foo_main(
 if __name__ == '__main__':
     cli.run()
 ```
+
+So when running `python run.py sub -h` it will output the following:
+
+![example](https://github.com/Andarius/piou/raw/master/docs/sub-cmd-output.png)
+
+
 
 ### Options processor
 
@@ -327,6 +333,11 @@ def dynamic(url_1: str = Derived(get_pg_url_dynamic('db1')),
             url_2: str = Derived(get_pg_url_dynamic('db2'))):
     ...
 ```
+
+So that the output will look like this:
+
+![dynamic-derived](https://github.com/Andarius/piou/raw/master/docs/dynamic-derived.png)
+
 
 ### On Command Run
 

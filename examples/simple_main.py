@@ -14,7 +14,7 @@ def foo_main(
     A longer description on what the function is doing.
     You can run it with:
     ```bash
-     poetry run python -m piou.example.simple_main 1 -b baz
+     uv run python -m examples.simple_main 1 -b baz
     ```
     And you are good to go!
     """

@@ -78,7 +78,7 @@ def error_main():
     raise CommandError("An error occurred")
 
 
-sub_cmd = cli.add_sub_parser(cmd="sub", help="A sub command")
+sub_cmd = cli.add_sub_parser(cmd="sub", help="A sub command", propagate_options=True)
 sub_cmd.add_option("--test", help="Test mode")
 
 

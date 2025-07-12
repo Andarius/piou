@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import asyncio
 import dataclasses
 import datetime as dt
@@ -375,116 +376,97 @@ def parse_input_args(
     args: tuple[Any, ...], commands: set[str], global_option_names: Optional[set[str]] = None
 ) -> tuple[Optional[str], list[str], list[str]]:
     """
-    Split command-line arguments into global options, command name, and command-specific options.
-
-    This function analyzes the argument sequence to identify:
-    1. Global options that apply to the CLI tool itself (can appear anywhere)
-    2. The specific command to execute
-    3. Options that are specific to that command
-
-    The parsing follows these rules:
-    - Global options are identified by matching against global_option_names and can appear
-      anywhere in the argument list (before or after the command)
-    - The first argument matching a known command becomes the target command
-    - Arguments that don't match global options and appear after the command are treated
-      as command-specific options
-    - Arguments that don't match global options and appear before the command are also
-      treated as global options (for backward compatibility)
-    - If no command is found but "__main__" exists in commands, treat all args as command options
-    - Special handling for main-only CLIs (when only "__main__" command exists)
+    Split command-line arguments into global options, command name, and command options.
 
     Args:
-        args: Tuple of command-line arguments (typically from sys.argv[1:])
-        commands: Set of valid command names that this CLI recognizes.
-                 May include "__main__" for CLIs with a single main command.
-        global_option_names: Optional set of global option names (e.g., {'-q', '--quiet', '--verbose'}).
-                           When provided, these options are treated as global regardless of position.
-                           When None, uses positional-based parsing for backward compatibility.
+        args: Command-line arguments (typically from sys.argv[1:])
+        commands: Valid command names (may include "__main__" for single-command CLIs)
+        global_option_names: Global option names (e.g., {'-q', '--quiet'}). When provided,
+                           these options are treated as global regardless of position.
 
     Returns:
-        A tuple containing:
-        - cmd: The command name to execute, or None if no command found.
-               Returns "__main__" for main-only CLIs.
-        - global_options: List of arguments that are global options.
-                         Includes their values if the option takes a parameter.
-        - cmd_options: List of arguments that are command-specific options.
-                      These are passed to the specific command function.
+        (command_name, global_options, command_options)
+        - command_name: Command to execute or None if not found ("__main__" for single-command CLIs)
+        - global_options: Arguments that are global options (includes values)
+        - command_options: Arguments that are command-specific options
+
+    Rules:
+        - Global options can appear before or after the command
+        - Unknown args before command are treated as global (backward compatibility)
+        - Args after command are command-specific unless they match global option names
+        - If no command found but "__main__" exists, all args become command options
+        - Without global_option_names, uses simple positional parsing
 
     Examples:
-        >>> # Multi-command CLI with global options before command
         >>> parse_input_args(("--verbose", "deploy", "--env", "prod"),
-        ...                  {"deploy", "status"}, {"--verbose", "--quiet"})
+        ...                  {"deploy"}, {"--verbose"})
         ("deploy", ["--verbose"], ["--env", "prod"])
 
-        >>> # Multi-command CLI with global options after command
         >>> parse_input_args(("deploy", "--env", "prod", "--verbose"),
-        ...                  {"deploy", "status"}, {"--verbose", "--quiet"})
-        ("deploy", ["--verbose"], ["--env", "prod"])
-
-        >>> # Global option with value after command
-        >>> parse_input_args(("deploy", "--env", "prod", "--log-level", "debug"),
-        ...                  {"deploy", "status"}, {"--log-level", "--verbose"})
-        ("deploy", ["--log-level", "debug"], ["--env", "prod"])
-
-        >>> # Main-only CLI: all args are command options
-        >>> parse_input_args(("--count", "5", "input.txt"), {"__main__"})
-        ("__main__", [], ["--count", "5", "input.txt"])
-
-        >>> # No command found - all become global options
-        >>> parse_input_args(("--help",), {"deploy", "status"})
-        (None, ["--help"], [])
-
-        >>> # Backward compatibility: no global_option_names provided
-        >>> parse_input_args(("--verbose", "deploy", "--env", "prod"), {"deploy", "status"})
+        ...                  {"deploy"}, {"--verbose"})
         ("deploy", ["--verbose"], ["--env", "prod"])
     """
-    global_option_names = global_option_names or set()
-    global_options, cmd_options, cmd = [], [], None
+    # Handle main-only CLI
+    if "__main__" in commands and len(commands) == 1:
+        return "__main__", [], list(args)
 
-    # First pass: find the command
-    for arg in args:
-        if cmd is None and arg in commands:
+    # Find the command
+    cmd = None
+    cmd_index = None
+    for i, arg in enumerate(args):
+        if arg in commands:
             cmd = arg
+            cmd_index = i
             break
 
+    # If no command found but __main__ exists, use __main__
     if cmd is None and "__main__" in commands:
-        cmd = "__main__"
-        # If it's a main command, all args are command options
-        return cmd, [], list(args)
+        return "__main__", [], list(args)
 
-    # Second pass: separate global and command options
-    cmd_found = False
+    # If no command found at all
+    if cmd is None:
+        return None, list(args), []
+
+    if cmd_index is None:
+        raise ValueError(f"Command {cmd!r} not found in arguments: {args}")
+    # Split args around the command
+    before_cmd = list(args[:cmd_index])
+    after_cmd = list(args[cmd_index + 1 :])
+
+    # If no global option names provided, use simple positional logic
+    if not global_option_names:
+        return cmd, before_cmd, after_cmd
+
+    # Separate global options from command options
+    global_options = []
+    cmd_options = []
+
+    # Process args before command
     i = 0
-    while i < len(args):
-        arg = args[i]
-
-        if arg == cmd:
-            cmd_found = True
-            i += 1
-            continue
-
-        # Check if this is a global option (anywhere in the args)
+    while i < len(before_cmd):
+        arg = before_cmd[i]
         if arg in global_option_names:
             global_options.append(arg)
-            # Check if the next arg is a value for this option
-            # (not starting with - and not a command name)
-            if (
-                i + 1 < len(args)
-                and not args[i + 1].startswith("-")
-                and args[i + 1] not in commands
-                and args[i + 1] not in global_option_names
-            ):
+            # Check if next arg is a value for this option
+            if i + 1 < len(before_cmd) and not before_cmd[i + 1].startswith("-"):
                 i += 1
-                if i < len(args):
-                    global_options.append(args[i])
+                global_options.append(before_cmd[i])
         else:
-            # If we haven't found the command yet, this is a global option
-            if not cmd_found:
-                global_options.append(arg)
-            else:
-                # This is a command option
-                cmd_options.append(arg)
+            global_options.append(arg)  # Unknown args before command are global
+        i += 1
 
+    # Process args after command
+    i = 0
+    while i < len(after_cmd):
+        arg = after_cmd[i]
+        if arg in global_option_names:
+            global_options.append(arg)
+            # Check if next arg is a value for this option
+            if i + 1 < len(after_cmd) and not after_cmd[i + 1].startswith("-") and after_cmd[i + 1] not in commands:
+                i += 1
+                global_options.append(after_cmd[i])
+        else:
+            cmd_options.append(arg)  # Everything else after command is command-specific
         i += 1
 
     return cmd, global_options, cmd_options
@@ -559,7 +541,7 @@ def convert_args_to_dict(input_args: list[str], options: list[CommandOption]) ->
     for _keyword_arg_key, _keyword_arg_value in _input_keyword_args.items():
         _keyword_param = keyword_args.get(_keyword_arg_key)
         if not _keyword_param:
-            raise KeywordParamNotFoundError(
+            raise KeywordParamMissingError(
                 f"Missing value for required keyword parameter {_keyword_arg_key!r}",
                 _keyword_arg_key,
             )
@@ -578,29 +560,21 @@ def convert_args_to_dict(input_args: list[str], options: list[CommandOption]) ->
     return fn_args
 
 
+_LOOP: Optional[asyncio.AbstractEventLoop] = None
+
+
 def run_function(fn: Callable, *args, **kwargs):
-    """
-    Runs an async or sync function.
-
-    For async functions:
-    - If already in a running loop, raises RuntimeError (can't run nested loops)
-    - If no loop exists, creates a new temporary loop and runs the function
-    - Properly cleans up created loops
-
-    For sync functions:
-    - Runs directly without any event loop involvement
-    """
-    if not iscoroutinefunction(fn):
-        # Sync function - run directly
+    global _LOOP
+    """ Runs an async / non async function """
+    if iscoroutinefunction(fn):
+        if _LOOP is None:
+            try:
+                _LOOP = asyncio.get_running_loop()
+            except RuntimeError:
+                _LOOP = asyncio.new_event_loop()
+        return _LOOP.run_until_complete(fn(*args, **kwargs))
+    else:
         return fn(*args, **kwargs)
-
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
-    return loop.run_until_complete(fn(*args, **kwargs))
 
 
 def extract_function_info(
