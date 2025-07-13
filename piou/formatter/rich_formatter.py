@@ -1,3 +1,4 @@
+import os
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -76,7 +77,7 @@ def get_program_name() -> str:
     When run as a module, returns the module name instead of __main__.py.
     """
 
-    program_name = sys.argv[0].split("/")[-1]
+    program_name = os.path.basename(sys.argv[0])
     # If running as a module (python -m module_name), extract the module name
     if program_name == "__main__.py":
         import __main__
