@@ -30,14 +30,15 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "pre-commit>=4.3.0",
     "pyright>=1.1.403",
     "pytest>=8.4.1",
     "pytest-cov>=6.2.1",
-    "ruff>=0.12.3",
+    "ruff>=0.14.4",
 ]
 
 bump = [
-    "commitizen>=4.8.3",
+    "commitizen>=4.9.1",
 ]
 
 

@@ -1,3 +1,4 @@
+import asyncio
 from enum import Enum
 from pathlib import Path
 from typing import Literal, Union, Optional
@@ -99,5 +100,25 @@ def sub_foo_main(
         print(f"{name} = {value} ({type(value)})")
 
 
+async def _task(task_id: int):
+    print(f"Task {task_id} starting")
+    try:
+        await asyncio.sleep(3)
+    except asyncio.CancelledError:
+        print(f"Task {task_id} cancelled")
+    else:
+        print(f"Task {task_id} done")
+
+
+@cli.command("async-main", help="Run async main with TaskGroup")
+async def _async_main():
+    async with asyncio.TaskGroup() as tg:
+        for i in range(3):
+            tg.create_task(_task(i))
+
+
 if __name__ == "__main__":
-    cli.run()
+    try:
+        cli.run()
+    except KeyboardInterrupt:
+        print("Ctrl+C detected, exiting...")
