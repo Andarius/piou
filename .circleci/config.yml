@@ -6,7 +6,7 @@ orbs:
 executors:
   test-build:
     docker:
-      - image: cimg/python:3.12
+      - image: cimg/python:3.13
         environment:
           PYRIGHT_PYTHON_GLOBAL_NODE: true
 
@@ -92,6 +92,15 @@ jobs:
       - run-tests:
           python-version: "3.13"
 
+  run-tests-3-14:
+    docker:
+      - image: cimg/python:3.14-node
+        environment:
+          PYRIGHT_PYTHON_GLOBAL_NODE: true
+    steps:
+      - run-tests:
+          python-version: "3.14"
+
   bump-version:
     executor: test-build
     steps:
@@ -99,7 +108,7 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - deps-3.9-{{ checksum "uv.lock" }}
+            - deps-3.13-{{ checksum "uv.lock" }}
       - run:
           name: Create release
           command: bash .circleci/scripts/release.sh
@@ -143,6 +152,10 @@ workflows:
           filters:
             tags:
               ignore: /.*/
+      - run-tests-3-14:
+          filters:
+            tags:
+              ignore: /.*/
       - bump-version:
           context: piou-deploy
           requires: [
@@ -150,6 +163,7 @@ workflows:
             run-tests-3-11,
             run-tests-3-12,
             run-tests-3-13,
+            run-tests-3-14
           ]
           filters:
             tags:

@@ -572,7 +572,20 @@ def run_function(fn: Callable, *args, **kwargs):
                 _LOOP = asyncio.get_running_loop()
             except RuntimeError:
                 _LOOP = asyncio.new_event_loop()
-        return _LOOP.run_until_complete(fn(*args, **kwargs))
+
+        main_task = _LOOP.create_task(fn(*args, **kwargs))
+
+        try:
+            return _LOOP.run_until_complete(main_task)
+        except KeyboardInterrupt:
+            # Cancel the main task and all its children
+            main_task.cancel()
+            # Give tasks a chance to handle cancellation
+            try:
+                _LOOP.run_until_complete(main_task)
+            except asyncio.CancelledError:
+                pass
+            raise
     else:
         return fn(*args, **kwargs)
 
