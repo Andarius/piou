@@ -1,7 +1,7 @@
 import abc
 import shutil
 from dataclasses import dataclass
-from typing import Optional, Callable
+from typing import Callable
 
 from ..command import Command, CommandOption, ParentArgs, CommandGroup
 
@@ -34,7 +34,7 @@ def print_size_by_size(
 
 def get_options_str(
     options: list[CommandOption],
-) -> list[tuple[Optional[str], str, CommandOption]]:
+) -> list[tuple[str | None, str, CommandOption]]:
     """Returns a list of tuples containing the name, other arguments, and the option itself."""
     lines = []
     for _option in options:
@@ -84,8 +84,8 @@ class Formatter(abc.ABC):
         self,
         *,
         group: CommandGroup,
-        command: Optional[Command] = None,
-        parent_args: Optional[ParentArgs] = None,
+        command: Command | None = None,
+        parent_args: ParentArgs | None = None,
     ) -> None:
         # We are printing a command help
         if command:
@@ -108,7 +108,7 @@ class Formatter(abc.ABC):
         self,
         command: Command,
         options: list[CommandOption],
-        parent_args: Optional[ParentArgs] = None,
+        parent_args: ParentArgs | None = None,
     ) -> None: ...
 
     def print_invalid_command(self, available_commands: list[str]) -> None:

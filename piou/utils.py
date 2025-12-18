@@ -14,7 +14,6 @@ from inspect import iscoroutinefunction
 from pathlib import Path
 from typing import (
     Any,
-    Optional,
     get_args,
     get_origin,
     get_type_hints,
@@ -29,11 +28,7 @@ from typing import (
 
 from typing_extensions import LiteralString
 
-try:
-    from types import UnionType, NoneType  # type: ignore
-except ImportError:
-    UnionType = Union
-    NoneType = type(None)
+from types import UnionType, NoneType
 
 from uuid import UUID
 
@@ -104,7 +99,7 @@ def validate_value(
     value: str,
     *,
     case_sensitive: bool = True,
-    choices: Optional[list[Any]] = None,
+    choices: list[Any] | None = None,
     raise_path_does_not_exist: bool = True,
 ):
     """
@@ -189,12 +184,12 @@ def keyword_arg_to_name(keyword_arg: str) -> str:
 @dataclass
 class CommandOption(Generic[T]):
     default: T
-    help: Optional[str] = None
+    help: str | None = None
     keyword_args: tuple[str, ...] = field(default_factory=tuple)
 
-    choices: Optional[Union[list[T], Callable[[], list[T]]]] = None
+    choices: list[T] | Callable[[], list[T]] | None = None
 
-    _name: Optional[str] = field(init=False, default=None)
+    _name: str | None = field(init=False, default=None)
     _data_type: type[T] = field(init=False, default=Any)  # pyright: ignore[reportAssignmentType]
 
     # Only for literal types
@@ -202,7 +197,7 @@ class CommandOption(Generic[T]):
     hide_choices: bool = False
 
     # For dynamic derived
-    arg_name: Optional[str] = None
+    arg_name: str | None = None
 
     # Only for Path
     raise_path_does_not_exist: bool = True
@@ -230,7 +225,7 @@ class CommandOption(Generic[T]):
         return self._name or keyword_arg_to_name(sorted(self.keyword_args)[0])
 
     @name.setter
-    def name(self, name: Optional[str]):
+    def name(self, name: str | None):
         self._name = name
 
     @property
@@ -250,7 +245,7 @@ class CommandOption(Generic[T]):
     def is_positional_arg(self):
         return len(self.keyword_args) == 0
 
-    def get_choices(self) -> Optional[list[T]]:
+    def get_choices(self) -> list[T] | None:
         _choices = self.choices() if callable(self.choices) else self.choices
         return self.literal_values or _choices
 
@@ -268,11 +263,11 @@ class CommandOption(Generic[T]):
 def Option(
     default: Any,
     *keyword_args: str,
-    help: Optional[str] = None,
+    help: str | None = None,
     # Only for type Literal
     case_sensitive: bool = True,
-    arg_name: Optional[str] = None,
-    choices: Optional[Any] = None,
+    arg_name: str | None = None,
+    choices: Any | None = None,
     # Only for Path
     raise_path_does_not_exist: bool = True,
 ) -> Any:
@@ -396,8 +391,8 @@ def get_default_args(func) -> list[CommandOption]:
 
 
 def parse_input_args(
-    args: tuple[Any, ...], commands: set[str], global_option_names: Optional[set[str]] = None
-) -> tuple[Optional[str], list[str], list[str]]:
+    args: tuple[Any, ...], commands: set[str], global_option_names: set[str] | None = None
+) -> tuple[str | None, list[str], list[str]]:
     """
     Split command-line arguments into global options, command name, and command options.
 
@@ -583,7 +578,7 @@ def convert_args_to_dict(input_args: list[str], options: list[CommandOption]) ->
     return fn_args
 
 
-_LOOP: Optional[asyncio.AbstractEventLoop] = None
+_LOOP: asyncio.AbstractEventLoop | None = None
 _LOOP_CREATED: bool = False  # True if we created the loop (not from get_running_loop)
 
 
@@ -658,7 +653,7 @@ def extract_function_info(
 class CommandDerivedOption:
     processor: Callable
     """Processor function, can be async """
-    param_name: Optional[str] = field(init=False)
+    param_name: str | None = field(init=False)
 
     def update_args(self, args: dict) -> dict:
         if self.param_name is None:
@@ -687,5 +682,5 @@ class CommandDerivedOption:
 R = TypeVar("R")
 
 
-def Derived(processor: Callable[..., Union[Coroutine[Any, Any, R], R]]) -> R:
+def Derived(processor: Callable[..., Coroutine[Any, Any, R] | R]) -> R:
     return CommandDerivedOption(processor=processor)  # type: ignore
