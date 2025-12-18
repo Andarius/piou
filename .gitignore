@@ -109,3 +109,8 @@ venv.bak/
 tmp/
 *-ignore.py
 tests/junit.xml
+
+# other
+scratch/
+CLAUDE.md
+.claude/

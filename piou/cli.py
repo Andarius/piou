@@ -3,12 +3,14 @@ from dataclasses import dataclass, field
 from typing import Optional, Any, Callable
 
 from .command import CommandGroup, ShowHelpError, clean_multiline, OnCommandRun
+from .utils import cleanup_event_loop
 from .exceptions import (
     CommandNotFoundError,
     PosParamsCountError,
     KeywordParamNotFoundError,
     KeywordParamMissingError,
     InvalidChoiceError,
+    InvalidValueError,
     CommandError,
 )
 from .formatter import Formatter, RichFormatter
@@ -65,25 +67,30 @@ class Cli:
             self.formatter.print_help(group=e.group, command=e.command, parent_args=e.parent_args)
         except KeywordParamNotFoundError as e:
             if not e.cmd:
-                raise NotImplementedError("Got empty command")
+                raise
             self.formatter.print_keyword_param_error(e.cmd, e.param)
             sys.exit(1)
         except KeywordParamMissingError as e:
             if not e.cmd:
-                raise NotImplementedError("Got empty command")
+                raise
             self.formatter.print_param_error(e.param, e.cmd)
             sys.exit(1)
         except PosParamsCountError as e:
             if not e.cmd:
-                raise NotImplementedError("Got empty command")
+                raise
             self.formatter.print_count_error(e.expected_count, e.count, e.cmd)
             sys.exit(1)
         except InvalidChoiceError as e:
             self.formatter.print_invalid_value_error(e.value, e.choices)
             sys.exit(1)
+        except InvalidValueError as e:
+            self.formatter.print_error(str(e))
+            sys.exit(1)
         except CommandError as e:
             self.formatter.print_error(e.message)
             sys.exit(1)
+        finally:
+            cleanup_event_loop()
         return None
 
     def command(

@@ -263,7 +263,7 @@ class RichFormatter(Formatter):
         self._print_description(command)
 
     def print_cmd_group_help(self, group: CommandGroup, parent_args: ParentArgs):
-        parent_commands = [sys.argv[0].split("/")[-1]] + [x.cmd for x in parent_args]
+        parent_commands = [os.path.basename(sys.argv[0])] + [x.cmd for x in parent_args]
         commands_str = []
         for i, (cmd_name, cmd) in enumerate(group.commands.items()):
             _cmds = []
