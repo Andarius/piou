@@ -59,6 +59,19 @@ class InvalidChoiceError(Exception):
         self.choices = choices
 
 
+class InvalidValueError(Exception):
+    """Raised when a value cannot be converted to the expected type."""
+
+    def __init__(self, value: str, expected_type: str, reason: Optional[str] = None):
+        self.value = value
+        self.expected_type = expected_type
+        self.reason = reason
+        msg = f"Invalid value {value!r} for type {expected_type}"
+        if reason:
+            msg += f": {reason}"
+        super().__init__(msg)
+
+
 class CommandError(Exception):
     def __init__(self, message: str):
         super().__init__()

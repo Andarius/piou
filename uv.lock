@@ -363,7 +363,7 @@ wheels = [
 
 [[package]]
 name = "piou"
-version = "0.20.1"
+version = "0.21.0"
 source = { editable = "." }
 dependencies = [
     { name = "rich" },

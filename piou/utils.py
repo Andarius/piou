@@ -42,6 +42,7 @@ from .exceptions import (
     KeywordParamNotFoundError,
     KeywordParamMissingError,
     InvalidChoiceError,
+    InvalidValueError,
 )
 
 
@@ -128,24 +129,46 @@ def validate_value(
     elif _data_type is LiteralString:
         return cast(LiteralString, str(value))
     elif _data_type is int:
-        return int(value)
+        try:
+            return int(value)
+        except ValueError:
+            raise InvalidValueError(value, "int", "must be a valid integer")
     elif _data_type is float:
-        return float(value)
+        try:
+            return float(value)
+        except ValueError:
+            raise InvalidValueError(value, "float", "must be a valid number")
     elif _data_type is UUID:
-        return UUID(value)
+        try:
+            return UUID(value)
+        except ValueError:
+            raise InvalidValueError(value, "UUID", "must be a valid UUID format")
     elif _data_type is dt.date:
-        return dt.date.fromisoformat(value)
+        try:
+            return dt.date.fromisoformat(value)
+        except ValueError:
+            raise InvalidValueError(value, "date", "must be in ISO format (YYYY-MM-DD)")
     elif _data_type is dt.datetime:
-        return dt.datetime.fromisoformat(value)
+        try:
+            return dt.datetime.fromisoformat(value)
+        except ValueError:
+            raise InvalidValueError(value, "datetime", "must be in ISO format")
     elif _data_type is Path:
         p = Path(value)
         if raise_path_does_not_exist and not p.exists():
             raise FileNotFoundError(f'File not found: "{value}"')
         return p
     elif _data_type is dict:
-        return json.loads(value)
+        try:
+            return json.loads(value)
+        except json.JSONDecodeError as e:
+            raise InvalidValueError(value, "dict", f"must be valid JSON: {e.msg}")
     elif inspect.isclass(_data_type) and issubclass(_data_type, Enum):
-        return _data_type[value].value
+        try:
+            return _data_type[value].value
+        except KeyError:
+            valid_values = [e.name for e in _data_type]
+            raise InvalidChoiceError(value, valid_values)
     elif _data_type is list or get_origin(_data_type) is list:
         list_type = get_args(_data_type)
         return [validate_value(list_type[0] if list_type else str, x) for x in value.split(" ")]
@@ -561,17 +584,28 @@ def convert_args_to_dict(input_args: list[str], options: list[CommandOption]) ->
 
 
 _LOOP: Optional[asyncio.AbstractEventLoop] = None
+_LOOP_CREATED: bool = False  # True if we created the loop (not from get_running_loop)
+
+
+def cleanup_event_loop():
+    """Close the event loop if we created it. Call after CLI execution completes."""
+    global _LOOP, _LOOP_CREATED
+    if _LOOP_CREATED and _LOOP is not None and not _LOOP.is_closed():
+        _LOOP.close()
+        _LOOP = None
+        _LOOP_CREATED = False
 
 
 def run_function(fn: Callable, *args, **kwargs):
-    global _LOOP
-    """ Runs an async / non async function """
+    global _LOOP, _LOOP_CREATED
+    """Runs an async / non async function"""
     if iscoroutinefunction(fn):
         if _LOOP is None:
             try:
                 _LOOP = asyncio.get_running_loop()
             except RuntimeError:
                 _LOOP = asyncio.new_event_loop()
+                _LOOP_CREATED = True
 
         main_task = _LOOP.create_task(fn(*args, **kwargs))
 
@@ -633,7 +667,9 @@ class CommandDerivedOption:
         fn_args = {}
         _options, _derived = extract_function_info(self.processor, from_derived=True)
         for _opt in _options:
-            fn_args[_opt.name] = _args.pop(_opt.arg_name, None) or _args.pop(_opt.name, None)
+            # Use `is not None` instead of `or` to preserve falsy values like 0, False, ""
+            val = _args.pop(_opt.arg_name, None)
+            fn_args[_opt.name] = val if val is not None else _args.pop(_opt.name, None)
 
         for _der in _derived:
             fn_args = _der.update_args(fn_args)
