@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -xe
+set -xeuo pipefail
 
 cd "$(dirname "$0")/../.." || exit
 

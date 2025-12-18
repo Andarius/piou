@@ -1,7 +1,6 @@
 import os
 import sys
 from dataclasses import dataclass, field
-from typing import Optional, Union
 from pathlib import Path
 
 from rich.console import Console, RenderableType
@@ -45,8 +44,8 @@ def fmt_help(
     option: CommandOption,
     show_default: bool,
     *,
-    markdown_open: Optional[str] = "[bold]",
-    markdown_close: Optional[str] = "[/bold]",
+    markdown_open: str | None = "[bold]",
+    markdown_close: str | None = "[/bold]",
 ):
     """Format the help text for a command option."""
     _choices = option.get_choices()
@@ -98,9 +97,9 @@ def get_program_name() -> str:
 
 def get_usage(
     global_options: list[CommandOption],
-    command: Optional[str] = None,
-    command_options: Optional[list[CommandOption]] = None,
-    parent_args: Optional[ParentArgs] = None,
+    command: str | None = None,
+    command_options: list[CommandOption] | None = None,
+    parent_args: ParentArgs | None = None,
 ):
     """Generate the usage string for a command or command group."""
     parent_args = parent_args or []
@@ -160,7 +159,7 @@ class RichFormatter(Formatter):
     def __post_init__(self):
         self.print_fn = self._console.print
 
-    def _print_description(self, item: Union[CommandGroup, Command]):
+    def _print_description(self, item: CommandGroup | Command):
         description = item.description or item.help
         if description:
             self.print_fn()
@@ -198,7 +197,7 @@ class RichFormatter(Formatter):
             ]
         )
 
-    def print_rows(self, rows: list[tuple[str, Optional[str]]]):  # pyright: ignore[reportIncompatibleMethodOverride]
+    def print_rows(self, rows: list[tuple[str, str | None]]):  # pyright: ignore[reportIncompatibleMethodOverride]
         table = Table(show_header=False, box=None, padding=(0, self.col_space))
         table.add_column(width=self.col_size)
         table.add_column()
@@ -226,7 +225,7 @@ class RichFormatter(Formatter):
         self,
         command: Command,
         options: list[CommandOption],
-        parent_args: Optional[ParentArgs] = None,
+        parent_args: ParentArgs | None = None,
     ):
         usage = get_usage(
             global_options=options,

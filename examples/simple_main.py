@@ -1,5 +1,4 @@
 from piou import Cli, Option
-from typing import Optional
 
 cli = Cli(description="A CLI tool")
 
@@ -8,7 +7,7 @@ cli = Cli(description="A CLI tool")
 def foo_main(
     bar: int = Option(..., help="Bar positional argument (required)"),
     baz: str = Option(..., "-b", "--baz", help="Baz keyword argument (required)"),
-    foo: Optional[str] = Option(None, "--foo", help="Foo keyword argument"),
+    foo: str | None = Option(None, "--foo", help="Foo keyword argument"),
 ):
     """
     A longer description on what the function is doing.
