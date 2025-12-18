@@ -58,7 +58,7 @@ python_files = "*.py"
 
 
 [tool.pyright]
-include = ["piou"]
+include = ["piou", "examples", "tests"]
 exclude = []
 
 pythonVersion = "3.13"

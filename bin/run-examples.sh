@@ -18,3 +18,6 @@ uv run coverage run -a -m examples.derived -h
 uv run coverage run -a -m examples.derived bar
 uv run coverage run -a -m examples.derived foo --host postgres
 uv run coverage run -a -m examples.derived dynamic --db1 test
+uv run coverage run -a -m examples.annotated -h
+uv run coverage run -a -m examples.annotated foo 42 -b hello --foo bar
+uv run coverage run -a -m examples.annotated derived -a 3 -b 2 --mode release

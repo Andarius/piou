@@ -6,7 +6,7 @@ from contextlib import contextmanager
 from enum import Enum
 from functools import partial
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Annotated, Literal, Optional
 from uuid import UUID
 
 import pytest
@@ -310,7 +310,7 @@ def test_invalid_command_options_choices(choices):
 
     opt = CommandOption(None, choices=choices)
     with pytest.raises(ValueError, match="Pick either a Literal type or choices"):
-        opt.data_type = Literal["foo"]
+        opt.data_type = Literal["foo"]  # type: ignore[assignment]
 
 
 def test_command_async():
@@ -907,7 +907,7 @@ def test_cmd_args(arg_type, arg_value, expected):
     called = False
 
     @cli.command(cmd="foo", help="Run foo command")
-    def foo_main(bar: arg_type = Option(...)):
+    def foo_main(bar: arg_type = Option(...)):  # type: ignore[valid-type]
         nonlocal called
         called = True
         assert bar == expected
@@ -953,3 +953,197 @@ def test_main_command(decorator):
 
     cli.run_with_args("1")
     assert called
+
+
+class TestAnnotated:
+    @staticmethod
+    def _make_annotated_option(
+        type_hint: str,
+    ) -> tuple[object, type, type | None, tuple[str, ...] | None]:
+        """Helper to create Annotated types for parametrized tests."""
+        from piou.utils import Option, Derived, CommandOption, CommandDerivedOption
+
+        def processor() -> int:
+            return 42
+
+        if type_hint == "regular":
+            return int, int, None, None
+        elif type_hint == "with_option":
+            return Annotated[int, Option(..., "-f", "--foo")], int, CommandOption, ("-f", "--foo")
+        elif type_hint == "with_derived":
+            return Annotated[int, Derived(processor)], int, CommandDerivedOption, None
+        else:  # "no_option"
+            return Annotated[str, "some metadata"], str, None, None
+
+    @pytest.mark.parametrize(
+        "type_hint_key",
+        [
+            pytest.param("regular", id="regular_type"),
+            pytest.param("with_option", id="annotated_with_option"),
+            pytest.param("with_derived", id="annotated_with_derived"),
+            pytest.param("no_option", id="annotated_without_option"),
+        ],
+    )
+    def test_extract_annotated_option(self, type_hint_key):
+        """Test the helper function that extracts Option from Annotated types."""
+        from piou.utils import extract_annotated_option, CommandOption
+
+        type_hint, expected_base, expected_option_type, expected_keyword_args = self._make_annotated_option(
+            type_hint_key
+        )
+        base_type, option = extract_annotated_option(type_hint)
+
+        assert base_type is expected_base
+        if expected_option_type is None:
+            assert option is None
+        else:
+            assert isinstance(option, expected_option_type)
+            if expected_keyword_args is not None and isinstance(option, CommandOption):
+                assert option.keyword_args == expected_keyword_args
+
+    @pytest.mark.parametrize(
+        "args, expected",
+        [
+            pytest.param(["42"], {"bar": 42}, id="positional_arg"),
+            pytest.param(["-b", "hello", "--count", "5"], {"bar": "hello", "count": 5}, id="keyword_args"),
+            pytest.param([], {"name": "default_name", "count": 10}, id="optional_defaults"),
+            pytest.param(["--items", "1 2 3"], {"items": [1, 2, 3]}, id="list_type"),
+            pytest.param(["--mode", "release"], {"mode": "release"}, id="literal_type"),
+        ],
+    )
+    def test_annotated_command(self, args, expected):
+        """Test Annotated syntax with various argument types."""
+        from piou import Cli, Option
+
+        cli = Cli(description="A CLI tool")
+        result = {}
+
+        # Define command based on what we're testing
+        if "bar" in expected and isinstance(expected["bar"], int):
+
+            @cli.command(cmd="foo")
+            def foo_positional(bar: Annotated[int, Option(..., help="Bar value")]):
+                result["bar"] = bar
+
+        elif "bar" in expected and isinstance(expected["bar"], str):
+
+            @cli.command(cmd="foo")
+            def foo_keyword(
+                bar: Annotated[str, Option(..., "-b", "--bar")],
+                count: Annotated[int, Option(1, "-c", "--count")],
+            ):
+                result["bar"] = bar
+                result["count"] = count
+
+        elif "name" in expected:
+
+            @cli.command(cmd="foo")
+            def foo_optional(
+                name: Annotated[str, Option("default_name", "--name")],
+                count: Annotated[int, Option(10, "--count")],
+            ):
+                result["name"] = name
+                result["count"] = count
+
+        elif "items" in expected:
+
+            @cli.command(cmd="foo")
+            def foo_list(items: Annotated[list[int], Option(..., "--items")]):
+                result["items"] = items
+
+        elif "mode" in expected:
+
+            @cli.command(cmd="foo")
+            def foo_literal(mode: Annotated[Literal["debug", "release"], Option("debug", "--mode")]):
+                result["mode"] = mode
+
+        cli.run_with_args("foo", *args)
+        assert result == expected
+
+    def test_annotated_mixed_syntax(self):
+        """Test mixing Annotated syntax with default value syntax."""
+        from piou import Cli, Option
+
+        cli = Cli(description="A CLI tool")
+        result: dict[str, object] = {}
+
+        @cli.command()
+        def foo(
+            bar: Annotated[int, Option(..., help="Bar value")],
+            baz: str = Option(..., "-b", "--baz"),
+            count: Annotated[int, Option(1, "-c", "--count")] = 1,
+        ):
+            result.update(bar=bar, baz=baz, count=count)
+
+        cli.run_with_args("foo", "42", "-b", "hello", "-c", "5")
+        assert result == {"bar": 42, "baz": "hello", "count": 5}
+
+    def test_annotated_with_derived(self):
+        """Test Annotated syntax with Derived options."""
+        from piou import Cli, Option, Derived
+
+        cli = Cli(description="A CLI tool")
+        result = {}
+
+        def processor(a: int = Option(1, "-a"), b: int = Option(2, "-b")) -> int:
+            return a + b
+
+        @cli.command()
+        def foo(value: Annotated[int, Derived(processor)]):
+            result["value"] = value
+
+        cli.run_with_args("foo", "-a", "3", "-b", "2")
+        assert result == {"value": 5}
+
+    def test_annotated_extract_function_info(self):
+        """Test that extract_function_info correctly handles Annotated types."""
+        from piou.utils import extract_function_info, Option, Derived
+
+        def processor(a: int = Option(1, "-a"), b: int = Option(2, "-b")) -> int:
+            return a + b
+
+        def test_fn(
+            pos_arg: Annotated[int, Option(...)],
+            keyword_arg: Annotated[str, Option(..., "-k", "--keyword")],
+            derived_arg: Annotated[int, Derived(processor)],
+        ):
+            pass
+
+        options, derived = extract_function_info(test_fn)
+
+        assert len(options) == 4
+        assert options[0].name == "pos_arg"
+        assert options[0].data_type is int
+        assert options[0].is_positional_arg
+        assert options[1].name == "keyword_arg"
+        assert options[1].data_type is str
+        assert options[1].keyword_args == ("-k", "--keyword")
+        assert len(derived) == 1
+        assert derived[0].param_name == "derived_arg"
+
+    @pytest.mark.parametrize(
+        "cmd, args, expected",
+        [
+            pytest.param("foo", ["--test", "5"], 5, id="with_value"),
+            pytest.param("bar", [], 1, id="default_value"),
+        ],
+    )
+    def test_annotated_reuse_option(self, cmd, args, expected):
+        """Test reusing the same Option definition with Annotated syntax."""
+        from piou import Cli, Option
+
+        cli = Cli(description="A CLI tool")
+        result = {}
+
+        TestOption = Option(1, "--test")
+
+        @cli.command()
+        def foo(test: Annotated[int, TestOption]):
+            result["test"] = test
+
+        @cli.command()
+        def bar(test: Annotated[int, TestOption]):
+            result["test"] = test
+
+        cli.run_with_args(cmd, *args)
+        assert result["test"] == expected
