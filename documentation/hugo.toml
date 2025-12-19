@@ -1,0 +1,14 @@
+baseURL = 'http://example.org/'
+languageCode = 'en-us'
+title = 'Piou Documentation'
+theme = ''
+
+[params]
+  description = "A CLI tool to build beautiful command-line interfaces with type validation."
+  author = "Andarius"
+  github_repo = "https://github.com/Andarius/piou"
+
+[markup]
+  [markup.highlight]
+    style = "monokai"
+    lineNos = false
