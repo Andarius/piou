@@ -42,9 +42,6 @@ bump = [
 ]
 
 
-[project.scripts]
-piou = "piou:main"
-
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
