@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+      - main
+    tags-ignore:
+      - '**'
+  pull_request:
+
+jobs:
+  tests:
+    name: Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          
+      - name: Install dependencies
+        run: uv sync --all-extras
+        
+      - name: Running lint check
+        run: uv run ruff check .
+        
+      - name: Check format
+        run: uv run ruff format --check .
+        
+      - name: Running type checking
+        run: uv run pyright
+        env:
+          PYRIGHT_PYTHON_GLOBAL_NODE: true
+          
+      - name: Run tests
+        run: uv run pytest -vv --junitxml=tests/junit.xml
+        
+      - name: Test Example
+        run: bash ./bin/run-examples.sh
+        
+      - name: Generating coverage
+        run: |
+          uv run coverage xml -o tests/coverage.xml
+          uv run coverage html
+          
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-html-${{ matrix.python-version }}
+          path: htmlcov
