@@ -90,7 +90,7 @@ def sub_bar_main(**kwargs):
 
 Running `python run.py sub -h` will show the specific help for that group.
 
-![sub command output](/images/sub-cmd-output.png)
+![sub command output](./sub-cmd-output.svg)
 
 ## Options Processor
 

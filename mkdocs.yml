@@ -2,9 +2,12 @@ site_name: Piou
 site_description: A CLI tool to build beautiful command-line interfaces with type validation.
 site_author: Andarius
 site_url: https://andarius.github.io/piou
+repo_url: https://github.com/Andarius/piou
+repo_name: Andarius/piou
 
 theme:
   name: material
+  logo: piou.jpg
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
@@ -21,12 +24,15 @@ theme:
         icon: material/brightness-4
         name: Switch to light mode
   features:
-    - navigation.tabs
     - navigation.sections
     - navigation.top
     - search.suggest
     - search.highlight
     - content.code.copy
+    - toc.integrate
+
+extra_css:
+  - stylesheets/extra.css
 
 nav:
   - Introduction: index.md

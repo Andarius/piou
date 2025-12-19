@@ -4,7 +4,7 @@ date: 2023-10-27
 weight: 1
 ---
 
-<img alt="Piou logo" src="/images/piou.jpg" width="250" class="mb-8 rounded-lg shadow-md"/>
+<img alt="Piou logo" src="./piou.jpg" width="250" class="mb-8 rounded-lg shadow-md"/>
 
 **Piou** is a CLI tool to build beautiful command-line interfaces with type validation.
 
@@ -39,4 +39,4 @@ The output will look like this:
 
 `python -m examples.simple -h`
 
-![example](/images/simple-output.png)
+![example](./simple-output.svg)
