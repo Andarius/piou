@@ -3,7 +3,7 @@ import textwrap
 from dataclasses import dataclass, field
 from functools import wraps
 from inspect import getdoc
-from typing import Optional, Any, NamedTuple, Callable
+from typing import Any, NamedTuple, Callable
 
 from .exceptions import DuplicatedCommandError, CommandException, CommandNotFoundError
 from .utils import (
@@ -20,7 +20,7 @@ class ParentArg(NamedTuple):
     cmd: str
     options: list[CommandOption]
     input_options: list[str]
-    options_processor: Optional[Callable] = None
+    options_processor: Callable | None = None
     propagate_args: bool = False
 
 
@@ -35,9 +35,9 @@ def clean_multiline(s: str) -> str:
 class Command:
     name: str
     fn: Callable
-    help: Optional[str] = None
+    help: str | None = None
     options: list[CommandOption] = field(default_factory=list)
-    description: Optional[str] = None
+    description: str | None = None
     derived_options: list[CommandDerivedOption] = field(default_factory=list)
 
     @property
@@ -92,17 +92,17 @@ OnCommandRun = Callable[[CommandMeta], None]
 class CommandGroup:
     """A group of commands that can be used to organize commands and options"""
 
-    name: Optional[str] = None
+    name: str | None = None
     """ Name of the command group, used to identify it in the CLI"""
-    help: Optional[str] = None
+    help: str | None = None
     """ Short line to explain the command group"""
-    description: Optional[str] = None
+    description: str | None = None
     """ Description of the command group"""
-    options_processor: Optional[Callable] = None
+    options_processor: Callable | None = None
     """ Function to process the options before running the command."""
     propagate_options: bool = False
     """ If set to True, the options will be propagated to the sub-commands."""
-    on_cmd_run: Optional[OnCommandRun] = None
+    on_cmd_run: OnCommandRun | None = None
     """ Function to call when a command is run, with the command name and arguments."""
     # _formatter: Formatter = field(init=False, default=None)
     _options: list[CommandOption] = field(init=False, default_factory=list)
@@ -126,7 +126,7 @@ class CommandGroup:
         """Returns a list of options, sorted by whether they are required or not."""
         return sorted(self._options, key=lambda x: x.is_required, reverse=True)
 
-    def add_sub_parser(self, help: Optional[str] = None, description: Optional[str] = None):
+    def add_sub_parser(self, help: str | None = None, description: str | None = None):
         """Adds a sub-parser to the command group, which can be used to add sub-commands."""
         cls = type(self)
         return cls(help=help, description=description)  # noqa
@@ -134,7 +134,7 @@ class CommandGroup:
     def add_option(
         self,
         *args: str,
-        help: Optional[str] = None,
+        help: str | None = None,
         data_type: Any = bool,
         default: Any = False,
     ):
@@ -165,9 +165,9 @@ class CommandGroup:
     def add_command(
         self,
         f,
-        cmd: Optional[str] = None,
-        help: Optional[str] = None,
-        description: Optional[str] = None,
+        cmd: str | None = None,
+        help: str | None = None,
+        description: str | None = None,
         is_main: bool = False,
     ):
         """Adds a command to the command group."""
@@ -193,9 +193,9 @@ class CommandGroup:
 
     def command(
         self,
-        cmd: Optional[str] = None,
-        help: Optional[str] = None,
-        description: Optional[str] = None,
+        cmd: str | None = None,
+        help: str | None = None,
+        description: str | None = None,
         is_main: bool = False,
     ):
         """Decorator to mark a function as a command."""
@@ -226,7 +226,7 @@ class CommandGroup:
 
         return _processor
 
-    def run_with_args(self, *args, parent_args: Optional[ParentArgs] = None):
+    def run_with_args(self, *args, parent_args: ParentArgs | None = None):
         """Runs the command with the given arguments."""
 
         # Collect all global option names from current group and parent args
@@ -330,8 +330,8 @@ class ShowHelpError(Exception):
     def __init__(
         self,
         group: CommandGroup,
-        command: Optional[Command] = None,
-        parent_args: Optional[ParentArgs] = None,
+        command: Command | None = None,
+        parent_args: ParentArgs | None = None,
     ):
         self.command = command
         self.group = group

@@ -13,8 +13,8 @@ from enum import Enum
 from inspect import iscoroutinefunction
 from pathlib import Path
 from typing import (
+    Annotated,
     Any,
-    Optional,
     get_args,
     get_origin,
     get_type_hints,
@@ -29,11 +29,7 @@ from typing import (
 
 from typing_extensions import LiteralString
 
-try:
-    from types import UnionType, NoneType  # type: ignore
-except ImportError:
-    UnionType = Union
-    NoneType = type(None)
+from types import EllipsisType, UnionType, NoneType
 
 from uuid import UUID
 
@@ -42,6 +38,7 @@ from .exceptions import (
     KeywordParamNotFoundError,
     KeywordParamMissingError,
     InvalidChoiceError,
+    InvalidValueError,
 )
 
 
@@ -53,7 +50,7 @@ class Secret(str):
     pass
 
 
-T = TypeVar("T", str, int, float, dt.date, dt.datetime, Path, dict, list, Password)
+T = TypeVar("T", str, int, float, dt.date, dt.datetime, Path, dict, list, Password, EllipsisType, None)
 
 
 def extract_optional_type(t: Any):
@@ -79,15 +76,74 @@ def get_literals_union_args(literal: Any):
     return values
 
 
+def extract_annotated_option(type_hint: Any) -> tuple[Any, CommandOption | CommandDerivedOption | None]:
+    """
+    Extract the base type and CommandOption/CommandDerivedOption from an Annotated type hint.
+
+    Args:
+        type_hint: A type hint that may be Annotated[T, Option(...)] or a regular type
+
+    Returns:
+        A tuple of (base_type, option) where:
+        - base_type: The actual type (e.g., int, str) extracted from Annotated or the original type
+        - option: The CommandOption/CommandDerivedOption if found in annotations, None otherwise
+
+    Examples:
+        >>> extract_annotated_option(Annotated[int, Option(...)])
+        (int, CommandOption(...))
+        >>> extract_annotated_option(int)
+        (int, None)
+        >>> extract_annotated_option(Annotated[str, Option(..., "-f", "--foo")])
+        (str, CommandOption(..., keyword_args=("-f", "--foo")))
+    """
+    if get_origin(type_hint) is not Annotated:
+        return type_hint, None
+
+    args = get_args(type_hint)
+    if not args:
+        return type_hint, None
+
+    base_type = args[0]
+    option = None
+
+    # Look for CommandOption or CommandDerivedOption in the annotations
+    for arg in args[1:]:
+        if isinstance(arg, (CommandOption, CommandDerivedOption)):
+            option = arg
+            break
+
+    return base_type, option
+
+
 def get_type_hints_derived(f):
-    hints = get_type_hints(f)
+    """Get type hints for a function, handling Derived options and Annotated types.
+
+    For Derived options without explicit type annotations, infers the type
+    from the processor function's return type.
+
+    For Annotated types, returns the full Annotated type (base type extraction
+    is handled by extract_annotated_option() in extract_function_info()).
+    """
+    # Use include_extras=True to preserve Annotated metadata
+    hints = get_type_hints(f, include_extras=True)
     fn_parameters = inspect.signature(f).parameters
     _all_hints = {}
     for v in fn_parameters.values():
         _value = hints.get(v.name)
+
+        # Check for Derived in Annotated type hint (Annotated[T, Derived(...)])
+        if _value is not None and get_origin(_value) is Annotated:
+            args = get_args(_value)
+            for arg in args[1:]:
+                if isinstance(arg, CommandDerivedOption):
+                    # For Annotated[T, Derived(...)], T is the type we want
+                    # Keep the full Annotated type - extraction happens in extract_function_info
+                    break
+
+        # Handle legacy syntax: no type hint but Derived in default value
         if _value is None and isinstance(v.default, CommandDerivedOption):
             try:
-                _value = get_type_hints(v.default.processor)["return"]
+                _value = get_type_hints(v.default.processor, include_extras=True)["return"]
             except KeyError:
                 raise ValueError(
                     f"Could not find a return type for attribute {v.name!r}."
@@ -103,7 +159,7 @@ def validate_value(
     value: str,
     *,
     case_sensitive: bool = True,
-    choices: Optional[list[Any]] = None,
+    choices: list[Any] | None = None,
     raise_path_does_not_exist: bool = True,
 ):
     """
@@ -128,24 +184,46 @@ def validate_value(
     elif _data_type is LiteralString:
         return cast(LiteralString, str(value))
     elif _data_type is int:
-        return int(value)
+        try:
+            return int(value)
+        except ValueError:
+            raise InvalidValueError(value, "int", "must be a valid integer")
     elif _data_type is float:
-        return float(value)
+        try:
+            return float(value)
+        except ValueError:
+            raise InvalidValueError(value, "float", "must be a valid number")
     elif _data_type is UUID:
-        return UUID(value)
+        try:
+            return UUID(value)
+        except ValueError:
+            raise InvalidValueError(value, "UUID", "must be a valid UUID format")
     elif _data_type is dt.date:
-        return dt.date.fromisoformat(value)
+        try:
+            return dt.date.fromisoformat(value)
+        except ValueError:
+            raise InvalidValueError(value, "date", "must be in ISO format (YYYY-MM-DD)")
     elif _data_type is dt.datetime:
-        return dt.datetime.fromisoformat(value)
+        try:
+            return dt.datetime.fromisoformat(value)
+        except ValueError:
+            raise InvalidValueError(value, "datetime", "must be in ISO format")
     elif _data_type is Path:
         p = Path(value)
         if raise_path_does_not_exist and not p.exists():
             raise FileNotFoundError(f'File not found: "{value}"')
         return p
     elif _data_type is dict:
-        return json.loads(value)
+        try:
+            return json.loads(value)
+        except json.JSONDecodeError as e:
+            raise InvalidValueError(value, "dict", f"must be valid JSON: {e.msg}")
     elif inspect.isclass(_data_type) and issubclass(_data_type, Enum):
-        return _data_type[value].value
+        try:
+            return _data_type[value].value
+        except KeyError:
+            valid_values = [e.name for e in _data_type]
+            raise InvalidChoiceError(value, valid_values)
     elif _data_type is list or get_origin(_data_type) is list:
         list_type = get_args(_data_type)
         return [validate_value(list_type[0] if list_type else str, x) for x in value.split(" ")]
@@ -166,12 +244,12 @@ def keyword_arg_to_name(keyword_arg: str) -> str:
 @dataclass
 class CommandOption(Generic[T]):
     default: T
-    help: Optional[str] = None
+    help: str | None = None
     keyword_args: tuple[str, ...] = field(default_factory=tuple)
 
-    choices: Optional[Union[list[T], Callable[[], list[T]]]] = None
+    choices: list[T] | Callable[[], list[T]] | None = None
 
-    _name: Optional[str] = field(init=False, default=None)
+    _name: str | None = field(init=False, default=None)
     _data_type: type[T] = field(init=False, default=Any)  # pyright: ignore[reportAssignmentType]
 
     # Only for literal types
@@ -179,7 +257,7 @@ class CommandOption(Generic[T]):
     hide_choices: bool = False
 
     # For dynamic derived
-    arg_name: Optional[str] = None
+    arg_name: str | None = None
 
     # Only for Path
     raise_path_does_not_exist: bool = True
@@ -207,7 +285,7 @@ class CommandOption(Generic[T]):
         return self._name or keyword_arg_to_name(sorted(self.keyword_args)[0])
 
     @name.setter
-    def name(self, name: Optional[str]):
+    def name(self, name: str | None):
         self._name = name
 
     @property
@@ -227,7 +305,7 @@ class CommandOption(Generic[T]):
     def is_positional_arg(self):
         return len(self.keyword_args) == 0
 
-    def get_choices(self) -> Optional[list[T]]:
+    def get_choices(self) -> list[T] | None:
         _choices = self.choices() if callable(self.choices) else self.choices
         return self.literal_values or _choices
 
@@ -245,11 +323,11 @@ class CommandOption(Generic[T]):
 def Option(
     default: Any,
     *keyword_args: str,
-    help: Optional[str] = None,
+    help: str | None = None,
     # Only for type Literal
     case_sensitive: bool = True,
-    arg_name: Optional[str] = None,
-    choices: Optional[Any] = None,
+    arg_name: str | None = None,
+    choices: Any | None = None,
     # Only for Path
     raise_path_does_not_exist: bool = True,
 ) -> Any:
@@ -373,8 +451,8 @@ def get_default_args(func) -> list[CommandOption]:
 
 
 def parse_input_args(
-    args: tuple[Any, ...], commands: set[str], global_option_names: Optional[set[str]] = None
-) -> tuple[Optional[str], list[str], list[str]]:
+    args: tuple[Any, ...], commands: set[str], global_option_names: set[str] | None = None
+) -> tuple[str | None, list[str], list[str]]:
     """
     Split command-line arguments into global options, command name, and command options.
 
@@ -560,18 +638,29 @@ def convert_args_to_dict(input_args: list[str], options: list[CommandOption]) ->
     return fn_args
 
 
-_LOOP: Optional[asyncio.AbstractEventLoop] = None
+_LOOP: asyncio.AbstractEventLoop | None = None
+_LOOP_CREATED: bool = False  # True if we created the loop (not from get_running_loop)
+
+
+def cleanup_event_loop():
+    """Close the event loop if we created it. Call after CLI execution completes."""
+    global _LOOP, _LOOP_CREATED
+    if _LOOP_CREATED and _LOOP is not None and not _LOOP.is_closed():
+        _LOOP.close()
+        _LOOP = None
+        _LOOP_CREATED = False
 
 
 def run_function(fn: Callable, *args, **kwargs):
-    global _LOOP
-    """ Runs an async / non async function """
+    global _LOOP, _LOOP_CREATED
+    """Runs an async / non async function"""
     if iscoroutinefunction(fn):
         if _LOOP is None:
             try:
                 _LOOP = asyncio.get_running_loop()
             except RuntimeError:
                 _LOOP = asyncio.new_event_loop()
+                _LOOP_CREATED = True
 
         main_task = _LOOP.create_task(fn(*args, **kwargs))
 
@@ -594,10 +683,36 @@ def extract_function_info(
     f,
     from_derived: bool = False,
 ) -> tuple[list[CommandOption], list[CommandDerivedOption]]:
-    """Extracts the options from a function arguments"""
+    """Extracts the options from a function arguments.
+
+    Supports two syntaxes for defining options:
+
+    1. Default value syntax (original):
+        def foo(bar: int = Option(..., "-b", "--bar")):
+            pass
+
+    2. Annotated syntax (new):
+        def foo(bar: Annotated[int, Option(..., "-b", "--bar")]):
+            pass
+
+    Both syntaxes can be mixed in the same function.
+    """
     options: list[CommandOption] = []
     derived_opts: list[CommandDerivedOption] = []
-    for (param_name, param_type), option in zip(get_type_hints_derived(f).items(), get_default_args(f)):
+    type_hints = get_type_hints_derived(f)
+    default_args = get_default_args(f)
+
+    for (param_name, param_type), default_value in zip(type_hints.items(), default_args):
+        # Check if option is defined via Annotated syntax
+        base_type, annotated_option = extract_annotated_option(param_type)
+
+        # Determine the option source: Annotated takes precedence over default value
+        if annotated_option is not None:
+            option = annotated_option
+            param_type = base_type
+        else:
+            option = default_value
+
         if isinstance(option, CommandOption):
             # Making a copy in case of reuse
             _option = dataclasses.replace(option)
@@ -624,7 +739,7 @@ def extract_function_info(
 class CommandDerivedOption:
     processor: Callable
     """Processor function, can be async """
-    param_name: Optional[str] = field(init=False)
+    param_name: str | None = field(init=False)
 
     def update_args(self, args: dict) -> dict:
         if self.param_name is None:
@@ -633,7 +748,9 @@ class CommandDerivedOption:
         fn_args = {}
         _options, _derived = extract_function_info(self.processor, from_derived=True)
         for _opt in _options:
-            fn_args[_opt.name] = _args.pop(_opt.arg_name, None) or _args.pop(_opt.name, None)
+            # Use `is not None` instead of `or` to preserve falsy values like 0, False, ""
+            val = _args.pop(_opt.arg_name, None)
+            fn_args[_opt.name] = val if val is not None else _args.pop(_opt.name, None)
 
         for _der in _derived:
             fn_args = _der.update_args(fn_args)
@@ -651,5 +768,5 @@ class CommandDerivedOption:
 R = TypeVar("R")
 
 
-def Derived(processor: Callable[..., Union[Coroutine[Any, Any, R], R]]) -> R:
+def Derived(processor: Callable[..., Coroutine[Any, Any, R] | R]) -> R:
     return CommandDerivedOption(processor=processor)  # type: ignore

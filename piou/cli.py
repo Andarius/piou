@@ -1,14 +1,16 @@
 import sys
 from dataclasses import dataclass, field
-from typing import Optional, Any, Callable
+from typing import Any, Callable
 
 from .command import CommandGroup, ShowHelpError, clean_multiline, OnCommandRun
+from .utils import cleanup_event_loop
 from .exceptions import (
     CommandNotFoundError,
     PosParamsCountError,
     KeywordParamNotFoundError,
     KeywordParamMissingError,
     InvalidChoiceError,
+    InvalidValueError,
     CommandError,
 )
 from .formatter import Formatter, RichFormatter
@@ -18,17 +20,17 @@ from .formatter import Formatter, RichFormatter
 class Cli:
     """Main class to create a CLI application."""
 
-    description: Optional[str] = None
+    description: str | None = None
     """Description of the CLI that will be displayed when displaying the help"""
     formatter: Formatter = field(default_factory=RichFormatter)
     """Formatter to use to display help and errors"""
     propagate_options: bool = False
     """
-    Propagate the options to sub-command functions or not. 
-    When set to None, it depends if a processor is passed or not otherwise it 
+    Propagate the options to sub-command functions or not.
+    When set to None, it depends if a processor is passed or not otherwise it
     follows the boolean
     """
-    on_cmd_run: Optional[OnCommandRun] = None
+    on_cmd_run: OnCommandRun | None = None
     """ Function called before running the actual function.
     For instance, you can use this to get the arguments passed
     for monitoring
@@ -65,32 +67,37 @@ class Cli:
             self.formatter.print_help(group=e.group, command=e.command, parent_args=e.parent_args)
         except KeywordParamNotFoundError as e:
             if not e.cmd:
-                raise NotImplementedError("Got empty command")
+                raise
             self.formatter.print_keyword_param_error(e.cmd, e.param)
             sys.exit(1)
         except KeywordParamMissingError as e:
             if not e.cmd:
-                raise NotImplementedError("Got empty command")
+                raise
             self.formatter.print_param_error(e.param, e.cmd)
             sys.exit(1)
         except PosParamsCountError as e:
             if not e.cmd:
-                raise NotImplementedError("Got empty command")
+                raise
             self.formatter.print_count_error(e.expected_count, e.count, e.cmd)
             sys.exit(1)
         except InvalidChoiceError as e:
             self.formatter.print_invalid_value_error(e.value, e.choices)
             sys.exit(1)
+        except InvalidValueError as e:
+            self.formatter.print_error(str(e))
+            sys.exit(1)
         except CommandError as e:
             self.formatter.print_error(e.message)
             sys.exit(1)
+        finally:
+            cleanup_event_loop()
         return None
 
     def command(
         self,
-        cmd: Optional[str] = None,
-        help: Optional[str] = None,
-        description: Optional[str] = None,
+        cmd: str | None = None,
+        help: str | None = None,
+        description: str | None = None,
         is_main: bool = False,
     ):
         """
@@ -103,8 +110,8 @@ class Cli:
 
     def main(
         self,
-        help: Optional[str] = None,
-        description: Optional[str] = None,
+        help: str | None = None,
+        description: str | None = None,
     ):
         """Decorator to mark a function as the main command"""
         return self.command(cmd=None, help=help, description=description, is_main=True)
@@ -113,7 +120,7 @@ class Cli:
         """Decorator to mark a function as a processor for options"""
         return self._group.processor()
 
-    def add_option(self, *args, help: Optional[str] = None, data_type: Any = bool, default: Any = False):
+    def add_option(self, *args, help: str | None = None, data_type: Any = bool, default: Any = False):
         """Add an option to the CLI application."""
         self._group.add_option(*args, help=help, data_type=data_type, default=default)
 
@@ -121,7 +128,7 @@ class Cli:
         """Function to call with all the options before running `run` or `run_with_args`"""
         self._group.set_options_processor(fn)
 
-    def add_command(self, cmd: str, f, help: Optional[str] = None, description: Optional[str] = None):
+    def add_command(self, cmd: str, f, help: str | None = None, description: str | None = None):
         """Add a command to the CLI application."""
         self._group.add_command(cmd=cmd, f=f, help=help, description=description)
 
@@ -132,8 +139,8 @@ class Cli:
     def add_sub_parser(
         self,
         cmd: str,
-        help: Optional[str] = None,
-        description: Optional[str] = None,
+        help: str | None = None,
+        description: str | None = None,
         propagate_options: bool = False,
     ) -> CommandGroup:
         """Add a sub-command group to the CLI application."""
