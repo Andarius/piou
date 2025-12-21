@@ -1,24 +1,28 @@
 ---
 title: "Installation & Setup"
-date: 2023-10-27
+date: 2025-12-20
 weight: 2
 ---
 
 ## Installation
 
-You can install `piou` with either `pip` or `conda`:
+=== "pip"
 
-### Pip
+    ```bash
+    pip install piou
+    ```
 
-```bash
-pip install piou
-```
+=== "uv"
 
-### Conda
+    ```bash
+    uv add piou
+    ```
 
-```bash
-conda install piou -c conda-forge
-```
+=== "conda"
+
+    ```bash
+    conda install piou -c conda-forge
+    ```
 
 ## Why Piou?
 

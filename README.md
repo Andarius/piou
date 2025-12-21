@@ -18,6 +18,7 @@ A CLI tool to build beautiful command-line interfaces with type validation.
 
 - [Why Piou](#why-piou)
 - [Installation](#installation)
+- [Documentation](#documentation)
 - [Features](#features)
   - [Commands](#commands)
   - [Without Command](#without-command)
@@ -84,10 +85,34 @@ to format the output in a custom way using external libraries (like [Rich](https
 
 ## Installation
 
-You can install `piou` with either:
+=== "pip"
 
-- `pip install piou`
-- `conda install piou -c conda-forge`
+    ```bash
+    pip install piou
+    ```
+
+=== "uv"
+
+    ```bash
+    uv add piou
+    ```
+
+=== "conda"
+
+    ```bash
+    conda install piou -c conda-forge
+    ```
+
+## Documentation
+
+The full documentation is available at [https://andarius.github.io/piou](https://andarius.github.io/piou).
+
+To run the documentation locally:
+
+```bash
+uv sync --group docs
+uv run mkdocs serve -f docs/mkdocs.yml
+```
 
 ## Features
 

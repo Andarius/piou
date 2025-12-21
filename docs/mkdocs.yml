@@ -5,27 +5,32 @@ site_url: https://andarius.github.io/piou
 repo_url: https://github.com/Andarius/piou
 repo_name: Andarius/piou
 
+docs_dir: .
+exclude_docs:
+  - mkdocs.yml
+
 theme:
   name: material
   logo: piou.jpg
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: indigo
-      accent: indigo
+      primary: black
+      accent: deep orange
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: indigo
-      accent: indigo
+      primary: black
+      accent: deep orange
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
   features:
     - navigation.sections
     - navigation.top
+    - navigation.expand
     - search.suggest
     - search.highlight
     - content.code.copy
@@ -36,10 +41,11 @@ extra_css:
 
 nav:
   - Introduction: index.md
-  - Getting Started: getting-started.md
-  - Features: features.md
-  - Advanced: advanced.md
-  - Migration: migration.md
+  - Usage:
+      - Getting Started: getting-started.md
+      - Features: features.md
+      - Advanced: advanced.md
+      - Migration: migration.md
 
 markdown_extensions:
   - admonition
@@ -48,5 +54,10 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
   - attr_list
   - md_in_html
+
+extra:
+  generator: false
