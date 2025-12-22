@@ -130,6 +130,15 @@ def get_type_hints_derived(f):
     _all_hints = {}
     for v in fn_parameters.values():
         _value = hints.get(v.name)
+        # Check for Derived in Annotated type hint (Annotated[T, Derived(...)])
+        if _value is not None and get_origin(_value) is Annotated:
+            args = get_args(_value)
+            for arg in args[1:]:
+                if isinstance(arg, CommandDerivedOption):
+                    # For Annotated[T, Derived(...)], T is the type we want
+                    # Keep the full Annotated type - extraction happens in extract_function_info
+                    break
+
         # Handle legacy syntax: no type hint but Derived in default value
         if _value is None and isinstance(v.default, CommandDerivedOption):
             try:

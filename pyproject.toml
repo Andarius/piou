@@ -1,6 +1,6 @@
 [project]
 name = "piou"
-version = "0.21.0"
+version = "0.22.1"
 description = "A CLI toolkit"
 authors = [{ name = "Julien Brayere", email = "julien.brayere@obitrain.com" }]
 license = "MIT"
@@ -47,9 +47,6 @@ bump = [
 ]
 
 
-[project.scripts]
-piou = "piou:main"
-
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
@@ -94,7 +91,7 @@ target-version = "py312"
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-version = "0.21.0"
+version = "0.22.1"
 tag_format = "$version"
 version_files = [
     "pyproject.toml:version"
