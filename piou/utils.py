@@ -130,7 +130,6 @@ def get_type_hints_derived(f):
     _all_hints = {}
     for v in fn_parameters.values():
         _value = hints.get(v.name)
-
         # Check for Derived in Annotated type hint (Annotated[T, Derived(...)])
         if _value is not None and get_origin(_value) is Annotated:
             args = get_args(_value)

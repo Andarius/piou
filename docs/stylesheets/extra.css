@@ -1,0 +1,29 @@
+:root {
+  --md-primary-fg-color:        #252121;
+  --md-primary-fg-color--light: #4b4545;
+  --md-primary-fg-color--dark:  #000000;
+  --md-accent-fg-color:         #EB5826;
+}
+
+/* Make the header smaller */
+.md-header {
+  height: 2.4rem;
+}
+
+.md-header__inner {
+  padding: 0 0.4rem;
+}
+
+.md-header__button.md-logo img {
+  height: 1.6rem;
+}
+
+/* Adjust main content top padding to match smaller header */
+.md-main__inner {
+  margin-top: 1rem;
+}
+
+/* Hide the search bar on very small headers or adjust it */
+.md-search__inner {
+  padding-top: 0.1rem;
+}

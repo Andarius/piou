@@ -1,0 +1,55 @@
+name: Release
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    branches: [master]
+    types: [completed]
+
+jobs:
+  bump:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Configure Git
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+
+      - name: Bump version
+        run: |
+          uv run --only-group=bump cz bump --yes
+          
+      - name: Get new version
+        id: get_version
+        run: |
+          VERSION=$(uv run --only-group=bump cz version --project)
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Build package
+        run: uv build
+
+      - name: Push changes
+        run: git push origin master --tags
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.get_version.outputs.VERSION }}
+          body_path: CHANGELOG.md
+          files: dist/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
