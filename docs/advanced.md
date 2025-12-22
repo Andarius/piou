@@ -1,7 +1,5 @@
 ---
 title: "Advanced Usage"
-date: 2025-12-20
-weight: 4
 ---
 
 ## Derived Options

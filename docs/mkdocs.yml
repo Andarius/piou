@@ -6,8 +6,9 @@ repo_url: https://github.com/Andarius/piou
 repo_name: Andarius/piou
 
 docs_dir: .
-exclude_docs:
-  - mkdocs.yml
+site_dir: ../site
+exclude_docs: |
+  mkdocs.yml
 
 theme:
   name: material

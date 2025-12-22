@@ -1,7 +1,5 @@
 ---
 title: "Installation & Setup"
-date: 2025-12-20
-weight: 2
 ---
 
 ## Installation

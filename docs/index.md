@@ -1,10 +1,8 @@
 ---
 title: "Introduction"
-date: 2025-12-20
-weight: 1
 ---
 
-<img alt="Piou logo" src="./piou.jpg" width="250" class="mb-8 rounded-lg shadow-md"/>
+<img alt="Piou logo" src="./piou.jpg" width="250"/>
 
 **Piou** is a CLI tool to build beautiful command-line interfaces with type validation.
 

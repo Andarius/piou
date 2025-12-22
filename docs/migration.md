@@ -1,7 +1,5 @@
 ---
 title: "Migration Guide"
-date: 2025-12-20
-weight: 5
 ---
 
 ## Moving from `argparse`
