@@ -38,3 +38,7 @@ The output will look like this:
 `python -m examples.simple -h`
 
 <img alt="example" src="./static/simple-output.svg" width="800"/>
+
+`python -m examples.simple foo -h`
+
+<img alt="foo command help" src="./static/simple-output-foo.svg" width="800"/>
