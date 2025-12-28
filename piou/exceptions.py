@@ -46,10 +46,16 @@ class KeywordParamNotFoundError(CommandException):
 
 
 class CommandNotFoundError(Exception):
-    def __init__(self, valid_commands: list[str], input_args: tuple[Any, ...] | None = None):
+    def __init__(
+        self,
+        valid_commands: list[str],
+        input_command: str | None = None,
+        input_args: tuple[Any, ...] | None = None,
+    ):
         _available_cmds = ", ".join(valid_commands)
         super().__init__(f"Unknown command given. Possible commands are {_available_cmds!r}")
         self.valid_commands = sorted(valid_commands)
+        self.input_command = input_command
         self.input_args = input_args
 
 

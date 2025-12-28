@@ -271,7 +271,15 @@ class CommandGroup:
             raise ShowHelpError(group=command_group or self, parent_args=parent_args, command=command)
 
         if not command:
-            raise CommandNotFoundError(list(self.command_names))
+            # When cmd is None (no valid command found), try to find the first
+            # non-option argument that the user might have intended as a command
+            input_cmd = cmd
+            if input_cmd is None:
+                for arg in args:
+                    if not arg.startswith("-"):
+                        input_cmd = arg
+                        break
+            raise CommandNotFoundError(list(self.command_names), input_command=input_cmd)
 
         args_dict = {}
         # Creates parallel lists that include:
