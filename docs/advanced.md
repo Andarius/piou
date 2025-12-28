@@ -6,6 +6,10 @@ title: "Advanced Usage"
 
 Derived options allow you to group multiple arguments into a single object or reuse common argument patterns across commands (like database connection parameters).
 
+  name: material
+  custom_dir: overrides
+
+
 ### Static Derived
 
 ```python
@@ -46,6 +50,8 @@ def get_pg_url_dynamic(source: Literal['db1', 'db2']):
 def dynamic(url_1: str = Derived(get_pg_url_dynamic('db1'))):
     ...
 ```
+
+<img alt="dynamic derived output" src="./static/dynamic-derived.svg" width="800"/>
 
 ## On Command Run
 

@@ -39,7 +39,6 @@ dev = [
 
 docs = [
     "mkdocs-material>=9.5.0",
-    "mkdocstrings[python]>=0.24.0",
 ]
 
 bump = [

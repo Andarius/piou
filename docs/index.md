@@ -2,7 +2,7 @@
 title: "Introduction"
 ---
 
-<img alt="Piou logo" src="./piou.jpg" width="250"/>
+<img alt="Piou logo" src="./static/piou-dark.png" width="250"/>
 
 **Piou** is a CLI tool to build beautiful command-line interfaces with type validation.
 
@@ -37,4 +37,4 @@ The output will look like this:
 
 `python -m examples.simple -h`
 
-![example](./simple-output.svg)
+<img alt="example" src="./static/simple-output.svg" width="800"/>
