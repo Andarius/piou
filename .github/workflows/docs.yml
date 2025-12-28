@@ -31,4 +31,4 @@ jobs:
         run: |
           export PYTHONPATH=$PYTHONPATH:.
           uv run python bin/generate_screenshots.py
-          uv run mkdocs gh-deploy --config-file docs/mkdocs.yml --force
+          uv run mkdocs gh-deploy --force
