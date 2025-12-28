@@ -112,5 +112,10 @@ tests/junit.xml
 
 # other
 scratch/
+site/
+
+# LLMS
 CLAUDE.md
+GEMINI.md
 .claude/
+.gemini/
