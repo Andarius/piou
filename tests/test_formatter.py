@@ -474,3 +474,162 @@ def test_rich_formatting_default(name, cli_fn, args, expected, capsys):
     cli.run_with_args(*args)
     output = capsys.readouterr().out
     _compare_str(output.strip(), expected.strip())
+
+
+class TestClosestMatch:
+    """Tests for the closest match suggestion feature."""
+
+    @pytest.mark.parametrize(
+        "commands, input_cmd, expected_suggestion, should_suggest",
+        [
+            pytest.param(
+                ["deploy", "status"],
+                "depoly",
+                "deploy",
+                True,
+                id="typo-suggests-deploy",
+            ),
+            pytest.param(
+                ["deploy"],
+                "xyz",
+                None,
+                False,
+                id="no-match-no-suggestion",
+            ),
+            pytest.param(
+                ["start", "stop", "status"],
+                "stat",
+                None,  # Will match one of them
+                True,
+                id="multiple-similar-commands",
+            ),
+            pytest.param(
+                ["install", "uninstall"],
+                "instal",
+                "install",
+                True,
+                id="missing-letter",
+            ),
+            pytest.param(
+                ["build", "rebuild"],
+                "buld",
+                "build",
+                True,
+                id="missing-letter-short",
+            ),
+        ],
+    )
+    def test_close_match_cli(self, commands, input_cmd, expected_suggestion, should_suggest, capsys, sys_exit_counter):
+        """Test close match suggestions with various typos."""
+        from piou import Cli
+        from piou.formatter import RichFormatter
+
+        cli = Cli(formatter=RichFormatter())
+
+        for cmd in commands:
+            cli.add_command(cmd, lambda: None)
+
+        cli.run_with_args(input_cmd)
+
+        output = capsys.readouterr().out
+        if should_suggest:
+            assert "Did you mean" in output
+            if expected_suggestion:
+                assert f"Did you mean '{expected_suggestion}'?" in output
+        else:
+            assert "Did you mean" not in output
+            assert f"Unknown command '{input_cmd}'" in output
+        assert sys_exit_counter() == 1
+
+    @pytest.mark.parametrize(
+        "available, input_cmd, expected_in_output, not_expected_in_output",
+        [
+            pytest.param(
+                ["deploy", "status", "start"],
+                "depoly",
+                ["Did you mean 'deploy'?"],
+                [],
+                id="base-formatter-suggests",
+            ),
+            pytest.param(
+                ["deploy", "status"],
+                None,
+                ["Unknown command"],
+                ["Did you mean"],
+                id="base-formatter-no-input",
+            ),
+        ],
+    )
+    def test_close_match_base_formatter(self, available, input_cmd, expected_in_output, not_expected_in_output, capsys):
+        """Test close match with base formatter."""
+        from piou.formatter.base import Formatter
+        from piou.command import CommandGroup
+
+        class SimpleFormatter(Formatter):
+            def print_cli_help(self, group: CommandGroup) -> None:
+                pass
+
+            def print_cmd_group_help(self, group: CommandGroup, parent_args) -> None:
+                pass
+
+            def print_cmd_help(self, command, options, parent_args=None) -> None:
+                pass
+
+        formatter = SimpleFormatter()
+        formatter.print_invalid_command(available, input_cmd)
+
+        output = capsys.readouterr().out
+        for expected in expected_in_output:
+            assert expected in output
+        for not_expected in not_expected_in_output:
+            assert not_expected not in output
+
+    @pytest.mark.parametrize(
+        "valid_commands, input_command, expected_valid, expected_input",
+        [
+            pytest.param(
+                ["foo", "bar"],
+                "baz",
+                ["bar", "foo"],
+                "baz",
+                id="stores-input-and-sorts",
+            ),
+            pytest.param(
+                ["z", "a", "m"],
+                "x",
+                ["a", "m", "z"],
+                "x",
+                id="sorts-alphabetically",
+            ),
+        ],
+    )
+    def test_exception_stores_input_command(self, valid_commands, input_command, expected_valid, expected_input):
+        """Test that CommandNotFoundError stores the input command correctly."""
+        from piou.exceptions import CommandNotFoundError
+
+        error = CommandNotFoundError(valid_commands, input_command=input_command)
+        assert error.input_command == expected_input
+        assert error.valid_commands == expected_valid
+
+    def test_subcommand_close_match(self, capsys, sys_exit_counter):
+        """Test close match works within subcommand groups."""
+        from piou import Cli
+        from piou.formatter import RichFormatter
+
+        cli = Cli(formatter=RichFormatter())
+
+        sub = cli.add_sub_parser("db", help="Database commands")
+
+        @sub.command(cmd="migrate")
+        def migrate_cmd():
+            pass
+
+        @sub.command(cmd="rollback")
+        def rollback_cmd():
+            pass
+
+        cli.run_with_args("db", "migrat")  # Typo in subcommand
+
+        output = capsys.readouterr().out
+        assert "Did you mean 'migrate'?" in output
+        assert sys_exit_counter() == 1

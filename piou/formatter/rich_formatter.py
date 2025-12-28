@@ -1,6 +1,7 @@
 import os
 import sys
 from dataclasses import dataclass, field
+from difflib import get_close_matches
 from pathlib import Path
 
 from rich.console import Console, RenderableType
@@ -313,9 +314,15 @@ class RichFormatter(Formatter):
     def print_error(self, message: str):
         self.print_fn(f"[red]{message}[/red]")
 
-    def print_invalid_command(self, available_commands: list[str]):
+    def print_invalid_command(self, available_commands: list[str], input_command: str | None = None) -> None:
+        msg = "Unknown command"
+        if input_command:
+            msg = f"Unknown command [bold]{input_command!r}[/bold]"
+            suggestions = get_close_matches(input_command, available_commands, n=1, cutoff=0.6)
+            if suggestions:
+                msg += f". Did you mean [bold]{suggestions[0]!r}[/bold]?"
         _available_cmds = ", ".join(available_commands)
-        self.print_error(f'Unknown command given. Possible commands are "[bold]{_available_cmds}[/bold]"')
+        self.print_error(f'{msg}. Possible commands are "[bold]{_available_cmds}[/bold]"')
 
     def print_keyword_param_error(self, cmd: str, param: str) -> None:
         self.print_error(f"Could not find keyword parameter [bold]{param!r}[/bold] for command [bold]{cmd!r}[/bold]")

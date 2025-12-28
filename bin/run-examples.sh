@@ -13,6 +13,7 @@ uv run coverage run -a -m examples foo 1 --foo2 foo --foo12 '{"foo": 1, "bar": "
 uv run coverage run -a -m examples sub -h
 uv run coverage run -a -m examples foo -h
 uv run coverage run -a -m examples error || true
+uv run coverage run -a -m examples fooo || true  # Did you mean 'foo'?
 uv run coverage run -a -m examples sub foo 1 --foo2 foo
 uv run coverage run -a -m examples.derived -h
 uv run coverage run -a -m examples.derived bar

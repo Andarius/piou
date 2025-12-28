@@ -1,6 +1,7 @@
 import abc
 import shutil
 from dataclasses import dataclass
+from difflib import get_close_matches
 from typing import Callable
 
 from ..command import Command, CommandOption, ParentArgs, CommandGroup
@@ -111,9 +112,15 @@ class Formatter(abc.ABC):
         parent_args: ParentArgs | None = None,
     ) -> None: ...
 
-    def print_invalid_command(self, available_commands: list[str]) -> None:
+    def print_invalid_command(self, available_commands: list[str], input_command: str | None = None) -> None:
+        msg = "Unknown command"
+        if input_command:
+            msg = f"Unknown command {input_command!r}"
+            suggestions = get_close_matches(input_command, available_commands, n=1, cutoff=0.6)
+            if suggestions:
+                msg += f". Did you mean {suggestions[0]!r}?"
         _available_cmds = ", ".join(available_commands)
-        self.print_fn(f'Unknown command given. Possible commands are "{_available_cmds}"')
+        self.print_fn(f'{msg}. Possible commands are "{_available_cmds}"')
 
     def print_param_error(self, key: str, cmd: str) -> None:
         self.print_fn(f"Could not find value for {key!r} in command {cmd!r}")
