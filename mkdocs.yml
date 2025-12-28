@@ -1,0 +1,66 @@
+site_name: Piou
+site_description: A CLI tool to build beautiful command-line interfaces with type validation.
+site_author: Andarius
+site_url: https://andarius.github.io/piou
+repo_url: https://github.com/Andarius/piou
+repo_name: Andarius/piou
+
+docs_dir: docs
+site_dir: site
+
+theme:
+  name: material
+  logo: static/piou-dark.png
+  favicon: static/piou-dark.png
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: deep orange
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: deep orange
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.expand
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - toc.integrate
+
+extra_css:
+  - stylesheets/extra.css
+
+nav:
+  - Introduction: index.md
+  - Usage:
+      - Getting Started: getting-started.md
+      - Features: features.md
+      - Advanced: advanced.md
+      - Migration: migration.md
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - attr_list
+  - md_in_html
+
+extra:
+  generator: false
