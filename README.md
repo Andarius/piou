@@ -1,8 +1,8 @@
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/Andarius/piou/raw/master/docs/piou-dark.png">
-  <source media="(prefers-color-scheme: light)" srcset="https://github.com/Andarius/piou/raw/master/docs/piou.jpg">
+  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/Andarius/piou/raw/master/docs/static/piou-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="https://github.com/Andarius/piou/raw/master/docs/static/piou.jpg">
   <img alt="Piou logo"
-    src="https://github.com/Andarius/piou/raw/master/docs/piou.jpg"
+    src="https://github.com/Andarius/piou/raw/master/docs/static/piou.jpg"
     width="250"/>
 </picture>
 
