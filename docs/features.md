@@ -88,7 +88,7 @@ def sub_bar_main(**kwargs):
 
 Running `python run.py sub -h` will show the specific help for that group.
 
-<img alt="sub command output" src="./static/sub-cmd-output.svg" width="800"/>
+<img alt="sub command output" src="../static/sub-cmd-output.svg" width="800"/>
 
 ## Options Processor
 

@@ -51,7 +51,7 @@ def dynamic(url_1: str = Derived(get_pg_url_dynamic('db1'))):
     ...
 ```
 
-<img alt="dynamic derived output" src="./static/dynamic-derived.svg" width="800"/>
+<img alt="dynamic derived output" src="../static/dynamic-derived.svg" width="800"/>
 
 ## On Command Run
 
