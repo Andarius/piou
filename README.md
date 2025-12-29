@@ -39,7 +39,7 @@ if __name__ == '__main__':
     cli.run()
 ```
 
-![example](https://github.com/Andarius/piou/raw/master/docs/simple-output.svg)
+![example](https://github.com/Andarius/piou/raw/master/docs/static/simple-output.svg)
 
 ## Installation
 
