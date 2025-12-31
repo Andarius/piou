@@ -153,6 +153,29 @@ def get_type_hints_derived(f):
     return _all_hints
 
 
+def _convert_or_raise(
+    converter: Callable[[str], Any],
+    value: str,
+    type_name: str,
+    error_msg: str,
+) -> Any:
+    """Convert value using converter, raising InvalidValueError on failure."""
+    try:
+        return converter(value)
+    except ValueError:
+        raise InvalidValueError(value, type_name, error_msg)
+
+
+# Type converters: (converter_fn, type_name, error_message)
+_TYPE_CONVERTERS: dict[type, tuple[Callable[[str], Any], str, str]] = {
+    int: (int, "int", "must be a valid integer"),
+    float: (float, "float", "must be a valid number"),
+    UUID: (UUID, "UUID", "must be a valid UUID format"),
+    dt.date: (dt.date.fromisoformat, "date", "must be in ISO format (YYYY-MM-DD)"),
+    dt.datetime: (dt.datetime.fromisoformat, "datetime", "must be in ISO format"),
+}
+
+
 def validate_value(
     data_type: Any,
     value: str,
@@ -176,60 +199,41 @@ def validate_value(
         if _value not in _choices:
             raise InvalidChoiceError(value, choices)
 
+    # Simple type conversions via dispatch table
+    if _data_type in _TYPE_CONVERTERS:
+        converter, type_name, error_msg = _TYPE_CONVERTERS[_data_type]
+        return _convert_or_raise(converter, value, type_name, error_msg)
+
+    # Types requiring special handling
     if _data_type is Any or _data_type is bool:
         return value
-    elif _data_type is str or _data_type is Password:
+    if _data_type is str or _data_type is Password:
         return str(value)
-    elif _data_type is LiteralString:
+    if _data_type is LiteralString:
         return cast(LiteralString, str(value))
-    elif _data_type is int:
-        try:
-            return int(value)
-        except ValueError:
-            raise InvalidValueError(value, "int", "must be a valid integer")
-    elif _data_type is float:
-        try:
-            return float(value)
-        except ValueError:
-            raise InvalidValueError(value, "float", "must be a valid number")
-    elif _data_type is UUID:
-        try:
-            return UUID(value)
-        except ValueError:
-            raise InvalidValueError(value, "UUID", "must be a valid UUID format")
-    elif _data_type is dt.date:
-        try:
-            return dt.date.fromisoformat(value)
-        except ValueError:
-            raise InvalidValueError(value, "date", "must be in ISO format (YYYY-MM-DD)")
-    elif _data_type is dt.datetime:
-        try:
-            return dt.datetime.fromisoformat(value)
-        except ValueError:
-            raise InvalidValueError(value, "datetime", "must be in ISO format")
-    elif _data_type is Path:
+    if _data_type is Path:
         p = Path(value)
         if raise_path_does_not_exist and not p.exists():
             raise FileNotFoundError(f'File not found: "{value}"')
         return p
-    elif _data_type is dict:
+    if _data_type is dict:
         try:
             return json.loads(value)
         except json.JSONDecodeError as e:
             raise InvalidValueError(value, "dict", f"must be valid JSON: {e.msg}")
-    elif inspect.isclass(_data_type) and issubclass(_data_type, Enum):
+    if inspect.isclass(_data_type) and issubclass(_data_type, Enum):
         try:
             return _data_type[value].value
         except KeyError:
             valid_values = [e.name for e in _data_type]
             raise InvalidChoiceError(value, valid_values)
-    elif _data_type is list or get_origin(_data_type) is list:
+    if _data_type is list or get_origin(_data_type) is list:
         list_type = get_args(_data_type)
         return [validate_value(list_type[0] if list_type else str, x) for x in value.split(" ")]
-    elif get_origin(_data_type) is Literal:
+    if get_origin(_data_type) is Literal:
         return value
-    else:
-        raise NotImplementedError(f'No parser implemented for data type "{data_type}"')
+
+    raise TypeError(f'Unsupported data type "{data_type}"')
 
 
 _KEYWORD_TO_NAME_REG = re.compile(r"^-+")
@@ -521,9 +525,6 @@ def parse_input_args(
     if not global_option_names:
         return cmd, before_cmd, after_cmd
 
-    # Separate global options from command options
-    global_options = []
-    cmd_options = []
     global_option_types = global_option_types or {}
     cmd_option_names = cmd_option_names or set()
 
@@ -531,43 +532,38 @@ def parse_input_args(
         """Check if an option is a boolean flag (doesn't take a value)."""
         return global_option_types.get(opt_name, bool) is bool
 
-    # Process args before command
-    # Command options take precedence even before the command
-    i = 0
-    while i < len(before_cmd):
-        arg = before_cmd[i]
-        if arg in cmd_option_names:
-            cmd_options.append(arg)
-        elif arg in global_option_names:
-            global_options.append(arg)
-            # Check if next arg is a value for this option (only for non-bool options)
-            if not _is_bool_option(arg) and i + 1 < len(before_cmd) and not before_cmd[i + 1].startswith("-"):
-                i += 1
-                global_options.append(before_cmd[i])
-        else:
-            global_options.append(arg)  # Unknown args before command are global
-        i += 1
+    def _partition_args(args: list[str], unknown_to_global: bool) -> tuple[list[str], list[str]]:
+        """Partition args into global and command options.
 
-    # Process args after command
-    # Command options take precedence over global options
-    cmd_option_names = cmd_option_names or set()
-    i = 0
-    while i < len(after_cmd):
-        arg = after_cmd[i]
-        # Command options take precedence: if arg matches a command option, treat as command
-        if arg in cmd_option_names:
-            cmd_options.append(arg)
-        elif arg in global_option_names:
-            global_options.append(arg)
-            # Check if next arg is a value for this option (only for non-bool options)
-            if not _is_bool_option(arg) and i + 1 < len(after_cmd) and not after_cmd[i + 1].startswith("-"):
-                i += 1
-                global_options.append(after_cmd[i])
-        else:
-            cmd_options.append(arg)  # Everything else after command is command-specific
-        i += 1
+        Args:
+            args: List of arguments to partition
+            unknown_to_global: If True, unknown args go to global; otherwise to command
+        """
+        global_opts, cmd_opts = [], []
+        i = 0
+        while i < len(args):
+            arg = args[i]
+            if arg in cmd_option_names:
+                cmd_opts.append(arg)
+            elif arg in global_option_names:
+                global_opts.append(arg)
+                # Non-bool options consume the next arg as their value
+                if not _is_bool_option(arg) and i + 1 < len(args) and not args[i + 1].startswith("-"):
+                    i += 1
+                    global_opts.append(args[i])
+            elif unknown_to_global:
+                global_opts.append(arg)
+            else:
+                cmd_opts.append(arg)
+            i += 1
+        return global_opts, cmd_opts
 
-    return cmd, global_options, cmd_options
+    # Before command: unknown args are global (backward compatibility)
+    # After command: unknown args are command-specific
+    global_before, cmd_before = _partition_args(before_cmd, unknown_to_global=True)
+    global_after, cmd_after = _partition_args(after_cmd, unknown_to_global=False)
+
+    return cmd, global_before + global_after, cmd_before + cmd_after
 
 
 KeywordParam = namedtuple("KeywordParam", ["name", "validate"])
