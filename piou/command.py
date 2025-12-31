@@ -229,21 +229,40 @@ class CommandGroup:
     def run_with_args(self, *args, parent_args: ParentArgs | None = None):
         """Runs the command with the given arguments."""
 
-        # Collect all global option names from current group and parent args
+        # Collect all global option names and types from current group and parent args
         global_option_names = set()
+        global_option_types: dict[str, type] = {}
         for option in self.options:
             global_option_names.update(option.keyword_args)
+            for kwarg in option.keyword_args:
+                global_option_types[kwarg] = option.data_type
 
         # Add parent global options
         if parent_args:
             for parent_arg in parent_args:
                 for option in parent_arg.options:
                     global_option_names.update(option.keyword_args)
+                    for kwarg in option.keyword_args:
+                        global_option_types[kwarg] = option.data_type
+
+        # Collect all command option names - these take precedence over globals
+        # Include options from commands in subgroups too
+        cmd_option_names = set()
+        for cmd_obj in self._commands.values():
+            for option in cmd_obj.options:
+                cmd_option_names.update(option.keyword_args)
+        for group in self._command_groups.values():
+            for cmd_obj in group._commands.values():
+                for option in cmd_obj.options:
+                    cmd_option_names.update(option.keyword_args)
+
         # Splits the input arguments into:
         # - cmd: The command name to execute
         # - global_options: Options that apply to the current command group
         # - cmd_options: Options specific to the sub-command
-        cmd, global_options, cmd_options = parse_input_args(args, self.command_names, global_option_names)
+        cmd, global_options, cmd_options = parse_input_args(
+            args, self.command_names, global_option_names, global_option_types, cmd_option_names
+        )
         # Determines if cmd refers to a sub-command group or a direct command
         command_group = self._command_groups.get(cmd) if cmd else None
         command = (command_group or self)._commands.get(cmd) if cmd else None

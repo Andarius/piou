@@ -74,13 +74,18 @@ def bar_main(**kwargs):
     pass
 
 
-@cli.command(cmd="error", help="Raise an error")
+@cli.command(cmd="error", help="Raise a command error")
 def error_main():
     raise CommandError("An error occurred")
 
 
 sub_cmd = cli.add_sub_parser(cmd="sub", help="A sub command", propagate_options=True)
 sub_cmd.add_option("--test", help="Test mode")
+
+
+@sub_cmd.command(cmd="exception", help="Raise an error")
+async def exception_main(**kwargs):
+    raise Exception("An unexpected error occurred")
 
 
 @sub_cmd.command(cmd="bar", help="Run bar command")
@@ -122,3 +127,5 @@ if __name__ == "__main__":
         cli.run()
     except KeyboardInterrupt:
         print("Ctrl+C detected, exiting...")
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")

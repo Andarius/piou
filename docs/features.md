@@ -31,6 +31,28 @@ You can specify global options that apply to all commands:
 ```python
 cli = Cli(description='A CLI tool')
 cli.add_option('-q', '--quiet', help='Do not output any message')
+cli.add_option('-c', '--config', help='Config file', data_type=str, default='')
+```
+
+#### Flexible Positioning
+
+Global options can be placed **anywhere** in the command line - before or after subcommands and commands:
+
+```bash
+# All of these are equivalent:
+mycli -v bench run          # before subcommand
+mycli bench -v run          # after subcommand
+mycli bench run -v          # after command
+mycli -v bench run -q       # mixed positions
+```
+
+This is particularly useful when working with nested command groups, as you don't need to remember to put global options before the subcommand.
+
+For options that take values, the value must immediately follow the option:
+
+```bash
+mycli bench -c config.yaml run   # -c takes config.yaml as its value
+mycli -c config.yaml bench run   # also valid
 ```
 
 ### Docstrings as Descriptions

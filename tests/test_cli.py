@@ -1147,3 +1147,120 @@ class TestAnnotated:
 
         cli.run_with_args(cmd, *args)
         assert result["test"] == expected
+
+
+class TestGlobalOptionsPosition:
+    """Tests for global options appearing before or after subcommand."""
+
+    @pytest.mark.parametrize(
+        "args, expected_verbose, expected_verbose2",
+        [
+            pytest.param(["-v", "bench", "run"], True, False, id="global_before_group"),
+            pytest.param(["bench", "-v", "run"], True, False, id="global_after_group"),
+            pytest.param(["bench", "run", "-v"], True, False, id="global_after_cmd"),
+            pytest.param(["-vv", "bench", "run"], False, True, id="global2_before_group"),
+            pytest.param(["bench", "-vv", "run"], False, True, id="global2_after_group"),
+            pytest.param(["bench", "run", "-vv"], False, True, id="global2_after_cmd"),
+            pytest.param(["-v", "-vv", "bench", "run"], True, True, id="both_before"),
+            pytest.param(["bench", "-v", "-vv", "run"], True, True, id="both_after_group"),
+            pytest.param(["bench", "run", "-v", "-vv"], True, True, id="both_after_cmd"),
+            pytest.param(["-v", "bench", "-vv", "run"], True, True, id="split_positions"),
+        ],
+    )
+    def test_global_bool_options_position(self, args, expected_verbose, expected_verbose2):
+        """Global boolean options work regardless of position."""
+        from piou import Cli
+        from piou.command import CommandGroup
+
+        cli = Cli(description="A CLI tool")
+        cli.add_option("-v", "--verbose", help="Verbosity")
+        cli.add_option("-vv", "--verbose2", help="More verbosity")
+
+        processor_result = {}
+
+        def processor(verbose: bool = False, verbose2: bool = False):
+            processor_result["verbose"] = verbose
+            processor_result["verbose2"] = verbose2
+
+        cli.set_options_processor(processor)
+
+        sub_group = CommandGroup(name="bench", help="A subcommand group")
+        cli.add_command_group(sub_group)
+
+        @sub_group.command()
+        def run():
+            pass
+
+        cli._group.run_with_args(*args)
+        assert processor_result["verbose"] is expected_verbose
+        assert processor_result["verbose2"] is expected_verbose2
+
+    @pytest.mark.parametrize(
+        "args, expected_config",
+        [
+            pytest.param(["-c", "config.yaml", "sub", "action"], "config.yaml", id="before_group"),
+            pytest.param(["sub", "-c", "config.yaml", "action"], "config.yaml", id="after_group"),
+            pytest.param(["sub", "action", "-c", "config.yaml"], "config.yaml", id="after_cmd"),
+        ],
+    )
+    def test_global_value_options_position(self, args, expected_config):
+        """Global options with values work regardless of position."""
+        from piou import Cli
+        from piou.command import CommandGroup
+
+        cli = Cli(description="A CLI tool")
+        cli.add_option("-c", "--config", help="Config file", data_type=str, default="")
+
+        processor_result = {}
+
+        def processor(config: str = ""):
+            processor_result["config"] = config
+
+        cli.set_options_processor(processor)
+
+        sub_group = CommandGroup(name="sub", help="A subcommand group")
+        cli.add_command_group(sub_group)
+
+        @sub_group.command()
+        def action():
+            pass
+
+        cli._group.run_with_args(*args)
+        assert processor_result["config"] == expected_config
+
+    @pytest.mark.parametrize(
+        "args",
+        [
+            pytest.param(["sub", "action", "-v"], id="after_cmd"),
+            pytest.param(["sub", "-v", "action"], id="after_group"),
+        ],
+    )
+    def test_command_option_takes_precedence_over_global(self, args):
+        """When global and command options have the same flag, command wins."""
+        from piou import Cli, Option
+        from piou.command import CommandGroup
+
+        cli = Cli(description="A CLI tool")
+        cli.add_option("-v", "--verbose", help="Global verbose")
+
+        processor_result = {}
+
+        def processor(verbose: bool = False):
+            processor_result["verbose"] = verbose
+
+        cli.set_options_processor(processor)
+
+        sub_group = CommandGroup(name="sub", help="A subcommand group")
+        cli.add_command_group(sub_group)
+
+        cmd_result = {}
+
+        @sub_group.command()
+        def action(
+            verbose: bool = Option(False, "-v", "--verbose", help="Command verbose"),
+        ):
+            cmd_result["verbose"] = verbose
+
+        cli._group.run_with_args(*args)
+        assert processor_result["verbose"] is False  # Global doesn't get it
+        assert cmd_result["verbose"] is True  # Command gets it

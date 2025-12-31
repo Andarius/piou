@@ -22,3 +22,9 @@ uv run coverage run -a -m examples.derived dynamic --db1 test
 uv run coverage run -a -m examples.annotated -h
 uv run coverage run -a -m examples.annotated foo 42 -b hello --foo bar
 uv run coverage run -a -m examples.annotated derived -a 3 -b 2 --mode release
+# Global options positioning examples
+uv run coverage run -a -m examples.global_options -h
+uv run coverage run -a -m examples.global_options -v bench run        # before subcommand
+uv run coverage run -a -m examples.global_options bench -v run        # after subcommand
+uv run coverage run -a -m examples.global_options bench run -v        # after command
+uv run coverage run -a -m examples.global_options bench -c cfg.yaml run  # with value, after subcommand

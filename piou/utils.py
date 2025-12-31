@@ -450,7 +450,11 @@ def get_default_args(func) -> list[CommandOption]:
 
 
 def parse_input_args(
-    args: tuple[Any, ...], commands: set[str], global_option_names: set[str] | None = None
+    args: tuple[Any, ...],
+    commands: set[str],
+    global_option_names: set[str] | None = None,
+    global_option_types: dict[str, Any] | None = None,
+    cmd_option_names: set[str] | None = None,
 ) -> tuple[str | None, list[str], list[str]]:
     """
     Split command-line arguments into global options, command name, and command options.
@@ -460,6 +464,8 @@ def parse_input_args(
         commands: Valid command names (may include "__main__" for single-command CLIs)
         global_option_names: Global option names (e.g., {'-q', '--quiet'}). When provided,
                            these options are treated as global regardless of position.
+        global_option_types: Mapping of option names to their types. Used to determine
+                           if an option expects a value (non-bool) or is a flag (bool).
 
     Returns:
         (command_name, global_options, command_options)
@@ -473,6 +479,7 @@ def parse_input_args(
         - Args after command are command-specific unless they match global option names
         - If no command found but "__main__" exists, all args become command options
         - Without global_option_names, uses simple positional parsing
+        - Boolean options (flags) don't consume the next argument as a value
 
     Examples:
         >>> parse_input_args(("--verbose", "deploy", "--env", "prod"),
@@ -517,15 +524,24 @@ def parse_input_args(
     # Separate global options from command options
     global_options = []
     cmd_options = []
+    global_option_types = global_option_types or {}
+    cmd_option_names = cmd_option_names or set()
+
+    def _is_bool_option(opt_name: str) -> bool:
+        """Check if an option is a boolean flag (doesn't take a value)."""
+        return global_option_types.get(opt_name, bool) is bool
 
     # Process args before command
+    # Command options take precedence even before the command
     i = 0
     while i < len(before_cmd):
         arg = before_cmd[i]
-        if arg in global_option_names:
+        if arg in cmd_option_names:
+            cmd_options.append(arg)
+        elif arg in global_option_names:
             global_options.append(arg)
-            # Check if next arg is a value for this option
-            if i + 1 < len(before_cmd) and not before_cmd[i + 1].startswith("-"):
+            # Check if next arg is a value for this option (only for non-bool options)
+            if not _is_bool_option(arg) and i + 1 < len(before_cmd) and not before_cmd[i + 1].startswith("-"):
                 i += 1
                 global_options.append(before_cmd[i])
         else:
@@ -533,13 +549,18 @@ def parse_input_args(
         i += 1
 
     # Process args after command
+    # Command options take precedence over global options
+    cmd_option_names = cmd_option_names or set()
     i = 0
     while i < len(after_cmd):
         arg = after_cmd[i]
-        if arg in global_option_names:
+        # Command options take precedence: if arg matches a command option, treat as command
+        if arg in cmd_option_names:
+            cmd_options.append(arg)
+        elif arg in global_option_names:
             global_options.append(arg)
-            # Check if next arg is a value for this option
-            if i + 1 < len(after_cmd) and not after_cmd[i + 1].startswith("-") and after_cmd[i + 1] not in commands:
+            # Check if next arg is a value for this option (only for non-bool options)
+            if not _is_bool_option(arg) and i + 1 < len(after_cmd) and not after_cmd[i + 1].startswith("-"):
                 i += 1
                 global_options.append(after_cmd[i])
         else:
