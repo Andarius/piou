@@ -128,16 +128,9 @@ def get_type_hints_derived(f):
     hints = get_type_hints(f, include_extras=True)
     fn_parameters = inspect.signature(f).parameters
     _all_hints = {}
+
     for v in fn_parameters.values():
         _value = hints.get(v.name)
-        # Check for Derived in Annotated type hint (Annotated[T, Derived(...)])
-        if _value is not None and get_origin(_value) is Annotated:
-            args = get_args(_value)
-            for arg in args[1:]:
-                if isinstance(arg, CommandDerivedOption):
-                    # For Annotated[T, Derived(...)], T is the type we want
-                    # Keep the full Annotated type - extraction happens in extract_function_info
-                    break
 
         # Handle legacy syntax: no type hint but Derived in default value
         if _value is None and isinstance(v.default, CommandDerivedOption):
@@ -293,12 +286,8 @@ class CommandOption(Generic[T]):
 
     @property
     def names(self) -> list[str]:
-        names = []
-        if self._name:
-            names.append(self._name)
-        for keyword_arg in self.keyword_args:
-            names.append(keyword_arg_to_name(keyword_arg))
-        return names
+        base = [self._name] if self._name else []
+        return base + [keyword_arg_to_name(kw) for kw in self.keyword_args]
 
     @property
     def is_required(self):
@@ -350,31 +339,24 @@ def _split_cmd(cmd: str) -> list[str]:
     Utility to split a string containing arrays like --foo 1 2 3
     from ['--foo', '1', '2', '3'] to ['--foo', '1 2 3']
     """
-
-    def reset_buff():
-        nonlocal buff, cmd_split
-        cmd_split.append(" ".join(buff))
-        buff = []
-
     is_pos_arg = True
-    buff = []
-    cmd_split = []
+    buff: list[str] = []
+    cmd_split: list[str] = []
+
     for arg in shlex.split(cmd):
         if arg.startswith("-"):
             if buff:
-                reset_buff()
+                cmd_split.append(" ".join(buff))
+                buff = []
             is_pos_arg = False
-        else:
-            if is_pos_arg:
-                cmd_split.append(arg)
-                continue
-            else:
-                buff.append(arg)
-
-        if not buff:
             cmd_split.append(arg)
+        elif is_pos_arg:
+            cmd_split.append(arg)
+        else:
+            buff.append(arg)
+
     if buff:
-        reset_buff()
+        cmd_split.append(" ".join(buff))
     return cmd_split
 
 
@@ -745,8 +727,6 @@ def extract_function_info(
             _options, _ = extract_function_info(_option.processor, from_derived=True)
             options += _options
             derived_opts.append(_option)
-        else:
-            pass
 
     return options, derived_opts
 
