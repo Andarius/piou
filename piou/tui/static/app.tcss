@@ -1,0 +1,131 @@
+Screen {
+    background: transparent;
+    padding: 0 2;
+}
+
+#main {
+    background: transparent;
+    scrollbar-size: 0 0;
+}
+
+#name {
+    background: transparent;
+    color: white;
+    text-style: bold;
+    padding: 0;
+    margin: 0;
+    height: 1;
+}
+
+#description {
+    background: transparent;
+    color: grey;
+    padding: 0;
+    margin: 0;
+    height: 1;
+}
+
+Rule {
+    background: transparent;
+    color: grey;
+    margin: 0;
+    padding: 0;
+}
+
+.command {
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    height: 1;
+}
+
+#suggestions {
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    height: auto;
+    max-height: 10;
+    overflow-y: auto;
+}
+
+.suggestion {
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    height: 1;
+    color: grey;
+}
+
+.suggestion.selected {
+    color: white;
+}
+
+#input-row {
+    background: transparent;
+    height: 1;
+    padding: 0;
+    margin: 0;
+}
+
+#prompt {
+    background: transparent;
+    color: white;
+    width: 2;
+    height: 1;
+    padding: 0;
+    margin: 0;
+}
+
+Input {
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+    height: 1;
+    color: white;
+}
+
+Input:focus {
+    border: none;
+}
+
+Input > .input--cursor {
+    background: white;
+    color: black;
+}
+
+#messages {
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    height: auto;
+}
+
+.message {
+    background: white 20%;
+    color: white;
+    padding: 0;
+    margin: 0 0 1 0;
+    height: 1;
+}
+
+.output {
+    background: transparent;
+    color: white;
+    padding: 0;
+    margin: 0;
+    height: auto;
+}
+
+.output.error {
+    color: red;
+}
+
+#exit-hint {
+    background: transparent;
+    color: grey;
+    padding: 0;
+    margin: 0;
+    height: 1;
+    display: none;
+}

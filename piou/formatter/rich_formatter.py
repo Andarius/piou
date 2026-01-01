@@ -141,23 +141,26 @@ MIN_MARKDOWN_SIZE: int = 75
 
 @dataclass
 class RichFormatter(Formatter):
-    _console: Console = field(init=False, default_factory=lambda: Console(markup=True, highlight=False))
+    _console: Console = field(init=False, repr=False, default=None)  # type: ignore[assignment]
     cmd_color: str = "cyan"
     option_color: str = "cyan"
     default_color: str = "white"
     show_default: bool = True
-    """Use Markdown object for the description, otherwise use 
+    """Use Markdown object for the description, otherwise use
     default str
     """
     use_markdown: bool = True
     """See https://pygments.org/styles/ for a list of styles """
     # Only usable if use_markdown is True
     code_theme: str = "solarized-dark"
+    """Force terminal mode for ANSI output (useful for TUI capture)"""
+    force_terminal: bool = False
 
     def _color_cmd(self, cmd: str):
         return f"[{self.cmd_color}]{cmd}[/{self.cmd_color}]"
 
     def __post_init__(self):
+        self._console = Console(markup=True, highlight=False, force_terminal=self.force_terminal)
         self.print_fn = self._console.print
 
     def _print_description(self, item: CommandGroup | Command):

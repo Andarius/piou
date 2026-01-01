@@ -40,7 +40,9 @@ dev = [
     "pre-commit>=4.3.0",
     "pyright>=1.1.407",
     "pytest>=8.4.1",
+    "pytest-asyncio>=0.24.0",
     "pytest-cov>=6.2.1",
+    "pytest-textual-snapshot>=1.0.0",
     "ruff>=0.14.4",
 ]
 
@@ -59,6 +61,7 @@ build-backend = "hatchling.build"
 
 [tool.pytest.ini_options]
 addopts = "--cov=piou -s -q -x --no-cov-on-fail"
+asyncio_mode = "auto"
 testpaths = [
     "tests"
 ]
