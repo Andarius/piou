@@ -225,6 +225,7 @@ class TuiApp(App):
             self.suggestion_index = (self.suggestion_index - 1) % len(self.current_suggestions)
         inp = self.query_one(Input)
         inp.value = self.current_suggestions[self.suggestion_index]
+        inp.cursor_position = len(inp.value)
         # Highlight selected suggestion
         suggestions = self.query(f".{CssClass.SUGGESTION}")
         for i, s in enumerate(suggestions):
