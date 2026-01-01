@@ -28,8 +28,15 @@ dependencies = [
     "typing-extensions>=4.4.0",
 ]
 
+[project.optional-dependencies]
+tui = [
+    "textual>=0.40.0",
+]
+
 [dependency-groups]
 dev = [
+    "textual>=0.40.0",
+    "textual-dev>=1.0.0",
     "pre-commit>=4.3.0",
     "pyright>=1.1.407",
     "pytest>=8.4.1",

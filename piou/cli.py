@@ -1,3 +1,4 @@
+import os
 import sys
 from dataclasses import dataclass, field
 from typing import Any, Callable
@@ -35,6 +36,8 @@ class Cli:
     For instance, you can use this to get the arguments passed
     for monitoring
     """
+    tui: bool = os.getenv("PIOU_TUI", "0") == "1"
+    """Run in interactive TUI mode instead of CLI mode. Requires piou[tui]."""
     _group: CommandGroup = field(init=False, default_factory=CommandGroup)
     """The main command group that will contain all the commands and options"""
 
@@ -49,11 +52,25 @@ class Cli:
 
     def run(self):
         """Run the CLI application, parsing the command line arguments."""
+        if self.tui:
+            self.run_tui()
+            return
+
         try:
             _, *args = sys.argv
         except ValueError:
             return
         self.run_with_args(*args)
+
+    def run_tui(self):
+        """Run the CLI in interactive TUI mode. Requires piou[tui]."""
+        try:
+            from .tui import TuiCli
+        except ImportError:
+            self.formatter.print_error("TUI mode requires textual. Install piou\\[tui] or 'textual' package.")
+            sys.exit(1)
+
+        TuiCli(self).run()
 
     def run_with_args(self, *args):
         """Run the CLI application with the given arguments."""

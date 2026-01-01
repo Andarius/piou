@@ -1,4 +1,5 @@
 from __future__ import annotations
+import asyncio
 import textwrap
 from dataclasses import dataclass, field
 from functools import wraps
@@ -60,8 +61,8 @@ class Command:
         """
         return self.positional_args + self.keyword_args
 
-    def run(self, *args, **kwargs):
-        run_function(self.fn, *args, **kwargs)
+    def run(self, *args, loop: asyncio.AbstractEventLoop | None = None, **kwargs):
+        return run_function(self.fn, *args, loop=loop, **kwargs)
 
     def __post_init__(self):
         self.description = clean_multiline(self.description) if self.description else None
@@ -226,7 +227,12 @@ class CommandGroup:
 
         return _processor
 
-    def run_with_args(self, *args, parent_args: ParentArgs | None = None):
+    def run_with_args(
+        self,
+        *args,
+        parent_args: ParentArgs | None = None,
+        loop: asyncio.AbstractEventLoop | None = None,
+    ):
         """Runs the command with the given arguments."""
 
         # Collect all global option names from current group and parent args
@@ -264,7 +270,7 @@ class CommandGroup:
                     propagate_args=self.propagate_options,
                 )
             )
-            return command_group.run_with_args(*cmd_options, parent_args=parent_args)
+            return command_group.run_with_args(*cmd_options, parent_args=parent_args, loop=loop)
 
         # Checks if help was requested and raises a special exception to display help
         if set(global_options + cmd_options) & {"-h", "--help"}:
@@ -325,7 +331,7 @@ class CommandGroup:
             full_command_name = ".".join([x.cmd for x in parent_args] + [command.name])
             self.on_cmd_run(CommandMeta(full_command_name, fn_args=args_dict, cmd_args=cmd_args))
 
-        return command.run(**args_dict)
+        return command.run(loop=loop, **args_dict)
 
     def set_options_processor(self, fn: Callable):
         """Sets the options processor function for the command group."""
