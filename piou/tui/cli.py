@@ -20,6 +20,7 @@ except ImportError as e:
     raise ImportError("TUI mode requires textual. Install piou[tui] or 'textual' package.") from e
 
 from ..command import CommandGroup, ShowHelpError
+from ..formatter.rich_formatter import RichFormatter
 
 
 class CssClass:
@@ -83,10 +84,10 @@ class TuiApp(App):
     BINDINGS = [("escape", "quit", "Quit")]
     CSS_PATH = "static/app.tcss"
 
-    def action_quit(self) -> None:
+    async def action_quit(self) -> None:
         """Save history and quit"""
         self.history.save()
-        super().action_quit()
+        await super().action_quit()
 
     def __init__(
         self,
@@ -97,7 +98,7 @@ class TuiApp(App):
         super().__init__(ansi_color=ansi_color)
         self.cli = cli
         # Enable force_terminal on formatter to preserve ANSI colors when capturing output
-        if hasattr(self.cli.formatter, "force_terminal"):
+        if isinstance(self.cli.formatter, RichFormatter):
             self.cli.formatter.force_terminal = True
             self.cli.formatter.__post_init__()  # Reinitialize console with new setting
         self.cli_name = Path(sys.argv[0]).stem if sys.argv else "cli"
