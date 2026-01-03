@@ -22,6 +22,21 @@ title: "Installation & Setup"
     conda install piou -c conda-forge
     ```
 
+### Optional: Raw Formatter
+
+By default, Piou uses [Rich](https://rich.readthedocs.io/) for colorful terminal output. If you prefer plain text output, you can use the raw formatter:
+
+```bash
+# Via environment variable
+PIOU_FORMATTER=raw python your_cli.py --help
+
+# Or programmatically
+from piou import Cli
+from piou.formatter import get_formatter
+
+cli = Cli(formatter=get_formatter('raw'))
+```
+
 ## Why Piou?
 
 I could not find a library that provided:

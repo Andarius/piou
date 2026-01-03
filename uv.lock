@@ -560,6 +560,7 @@ requires-dist = [
     { name = "rich", specifier = ">=10.11.0,<15.0" },
     { name = "typing-extensions", specifier = ">=4.4.0" },
 ]
+provides-extras = ["raw"]
 
 [package.metadata.requires-dev]
 bump = [{ name = "commitizen", specifier = ">=4.9.1" }]
