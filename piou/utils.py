@@ -650,10 +650,22 @@ def cleanup_event_loop():
         _LOOP_CREATED = False
 
 
-def run_function(fn: Callable, *args, **kwargs):
+def run_function(fn: Callable, *args, loop: asyncio.AbstractEventLoop | None = None, **kwargs):
     global _LOOP, _LOOP_CREATED
-    """Runs an async / non async function"""
+    """Runs an async / non async function.
+
+    Args:
+        fn: The function to run
+        *args: Positional arguments to pass to the function
+        loop: Optional event loop to use. If provided and running, returns the coroutine
+              for the caller to await instead of blocking.
+        **kwargs: Keyword arguments to pass to the function
+    """
     if iscoroutinefunction(fn):
+        # If a running loop was provided, return coroutine for caller to await
+        if loop is not None and loop.is_running():
+            return fn(*args, **kwargs)
+
         if _LOOP is None:
             try:
                 _LOOP = asyncio.get_running_loop()
