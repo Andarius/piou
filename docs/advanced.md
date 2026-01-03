@@ -67,14 +67,101 @@ def on_cmd_run(meta: CommandMeta):
 cli = Cli(description='A CLI tool', on_cmd_run=on_cmd_run)
 ```
 
-## Custom Formatter
+## Formatters
 
-You can customize the help output and error messages by subclassing `Formatter`.
+Piou provides two built-in formatters for help output and error messages.
 
-The default is the **RichFormatter**, which supports:
-- `cmd_color`
-- `option_color`
-- `default_color`
-- `show_default`
+### RichFormatter (Default)
 
-It also supports the `Password` type to hide default values in help output.
+The default formatter uses [Rich](https://rich.readthedocs.io/) for colorful, styled terminal output.
+
+```python
+from piou import Cli
+from piou.formatter import RichFormatter
+
+cli = Cli(formatter=RichFormatter(
+    cmd_color='cyan',
+    option_color='cyan',
+    default_color='white',
+    show_default=True,
+    use_markdown=True,
+    code_theme='solarized-dark',
+))
+```
+
+**Options:**
+
+- `cmd_color` - Color for command names
+- `option_color` - Color for option flags
+- `default_color` - Color for default values
+- `show_default` - Show default values in help output
+- `use_markdown` - Parse descriptions as Markdown
+- `code_theme` - Pygments theme for code blocks (see [Pygments styles](https://pygments.org/styles/))
+
+### Raw Formatter (Plain Text)
+
+For plain text output without Rich dependencies, use the base `Formatter`:
+
+```python
+from piou import Cli
+from piou.formatter import Formatter
+
+cli = Cli(formatter=Formatter())
+```
+
+### Selecting Formatter
+
+You can select the formatter in several ways:
+
+**1. Environment variable:**
+
+```bash
+# Use raw (plain text) formatter
+PIOU_FORMATTER=raw python your_cli.py --help
+
+# Use Rich formatter (default)
+PIOU_FORMATTER=rich python your_cli.py --help
+```
+
+**2. Using `get_formatter()`:**
+
+```python
+from piou import Cli
+from piou.formatter import get_formatter
+
+# Auto-detect (uses Rich if available, falls back to raw)
+cli = Cli(formatter=get_formatter())
+
+# Force specific formatter
+cli = Cli(formatter=get_formatter('raw'))
+cli = Cli(formatter=get_formatter('rich'))
+```
+
+**3. Direct instantiation:**
+
+```python
+from piou import Cli
+from piou.formatter import Formatter, RichFormatter
+
+cli = Cli(formatter=Formatter())        # Raw
+cli = Cli(formatter=RichFormatter())    # Rich
+```
+
+### Custom Formatter
+
+You can create your own formatter by subclassing `Formatter`:
+
+```python
+from piou.formatter import Formatter
+
+class MyFormatter(Formatter):
+    def print_cli_help(self, group):
+        # Custom help output
+        ...
+
+    def print_error(self, message):
+        # Custom error output
+        ...
+```
+
+The `Password` type is supported by both formatters to hide default values in help output.

@@ -1,6 +1,6 @@
 [project]
 name = "piou"
-version = "0.23.0"
+version = "0.24.0"
 description = "A CLI toolkit"
 authors = [{ name = "Julien Brayere", email = "julien.brayere@obitrain.com" }]
 license = "MIT"
@@ -24,11 +24,13 @@ include = [
 requires-python = ">=3.10"
 
 dependencies = [
-    "rich>=10.11.0,<15.0",
     "typing-extensions>=4.4.0",
+    "rich>=10.11.0,<15.0",
 ]
 
 [project.optional-dependencies]
+raw = []
+
 tui = [
     "textual>=0.40.0",
 ]
@@ -100,7 +102,7 @@ target-version = "py312"
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-version = "0.23.0"
+version = "0.24.0"
 tag_format = "$version"
 version_files = [
     "pyproject.toml:version"

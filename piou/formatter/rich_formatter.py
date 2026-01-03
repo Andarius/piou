@@ -1,8 +1,5 @@
-import os
-import sys
 from dataclasses import dataclass, field
 from difflib import get_close_matches
-from pathlib import Path
 
 from rich.console import Console, RenderableType
 from rich.markdown import Markdown
@@ -10,6 +7,7 @@ from rich.padding import Padding
 from rich.table import Table
 
 from .base import Formatter, Titles
+from .utils import get_program_name, fmt_help as _fmt_help_base
 from ..command import Command, CommandOption, ParentArgs, CommandGroup
 
 
@@ -19,7 +17,7 @@ def pad(s: RenderableType, padding_left: int = 1):
 
 
 def fmt_option(option: CommandOption, show_full: bool = False, color: str = "white") -> str:
-    """Format a command option for display."""
+    """Format a command option for display with Rich markup."""
     if option.is_positional_arg:
         return f"[{color}]<{option.name}>[/{color}]"
     elif show_full:
@@ -48,52 +46,8 @@ def fmt_help(
     markdown_open: str | None = "[bold]",
     markdown_close: str | None = "[/bold]",
 ):
-    """Format the help text for a command option."""
-    _choices = option.get_choices()
-    _markdown_open, _markdown_close = markdown_open or "", markdown_close or ""
-
-    if show_default and option.default is not None and not option.is_required:
-        default_str = option.default if not option.is_password else "******"
-        default_str = f"{_markdown_open}(default: {default_str}){_markdown_close}"
-        return option.help + f" {default_str}" if option.help else default_str
-    elif _choices is not None and not option.hide_choices:
-        if len(_choices) <= 3:
-            possible_choices = ", ".join(str(_choice) for _choice in _choices)
-            choices_help = f"{_markdown_open}(choices are: {possible_choices}){_markdown_close}"
-        else:
-            sep = " \n - "
-            possible_choices = sep + sep.join(str(_choice) for _choice in _choices)
-            choices_help = f"\n{_markdown_open}Possible choices are:" + possible_choices + _markdown_close
-        return option.help + f" {choices_help}" if option.help else choices_help
-    else:
-        return option.help
-
-
-def get_program_name() -> str:
-    """
-    Get the program name for display in usage messages.
-
-    Handles both direct script execution and module execution (python -m module_name).
-    When run as a module, returns the module name instead of __main__.py.
-    """
-
-    program_name = os.path.basename(sys.argv[0])
-    # If running as a module (python -m module_name), extract the module name
-    if program_name == "__main__.py":
-        import __main__
-
-        if hasattr(__main__, "__file__") and __main__.__file__:
-            # Get the parent directory name which should be the module name
-            module_path = Path(__main__.__file__).parent
-            program_name = module_path.name
-        else:
-            # Fallback: try to get from sys.modules
-            main_module = sys.modules.get("__main__")
-            if main_module and hasattr(main_module, "__package__") and main_module.__package__:
-                program_name = main_module.__package__
-            # If all else fails, keep __main__.py as fallback
-
-    return program_name
+    """Format the help text for a command option with Rich markup."""
+    return _fmt_help_base(option, show_default, markdown_open=markdown_open, markdown_close=markdown_close)
 
 
 def get_usage(
@@ -266,7 +220,7 @@ class RichFormatter(Formatter):
         self._print_description(command)
 
     def print_cmd_group_help(self, group: CommandGroup, parent_args: ParentArgs):
-        parent_commands = [os.path.basename(sys.argv[0])] + [x.cmd for x in parent_args]
+        parent_commands = [get_program_name()] + [x.cmd for x in parent_args]
         commands_str = []
         for i, (cmd_name, cmd) in enumerate(group.commands.items()):
             _cmds = []
