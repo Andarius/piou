@@ -13,7 +13,7 @@ from .exceptions import (
     InvalidValueError,
     CommandError,
 )
-from .formatter import Formatter, RichFormatter
+from .formatter import Formatter, get_formatter
 
 
 @dataclass
@@ -22,8 +22,8 @@ class Cli:
 
     description: str | None = None
     """Description of the CLI that will be displayed when displaying the help"""
-    formatter: Formatter = field(default_factory=RichFormatter)
-    """Formatter to use to display help and errors"""
+    formatter: Formatter = field(default_factory=get_formatter)
+    """Formatter to use to display help and errors. Uses PIOU_FORMATTER env var or auto-detects."""
     propagate_options: bool = False
     """
     Propagate the options to sub-command functions or not.

@@ -24,9 +24,12 @@ include = [
 requires-python = ">=3.10"
 
 dependencies = [
-    "rich>=10.11.0,<15.0",
     "typing-extensions>=4.4.0",
+    "rich>=10.11.0,<15.0",
 ]
+
+[project.optional-dependencies]
+raw = []
 
 [dependency-groups]
 dev = [
