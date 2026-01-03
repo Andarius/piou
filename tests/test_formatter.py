@@ -635,14 +635,16 @@ class TestClosestMatch:
         assert sys_exit_counter() == 1
 
 
-class TestRawFormatter:
-    """Tests for the base Formatter (raw/plain text output)."""
+@pytest.mark.parametrize("formatter_cls", ["Formatter", "RichFormatter"])
+class TestFormatterOutput:
+    """Tests for both Formatter and RichFormatter output."""
 
-    def test_cli_help(self, capsys):
+    def test_cli_help(self, formatter_cls, capsys):
         from piou import Cli, Option
-        from piou.formatter import Formatter
+        from piou.formatter import Formatter, RichFormatter
 
-        cli = Cli(description="A CLI tool", formatter=Formatter())
+        formatter = Formatter() if formatter_cls == "Formatter" else RichFormatter()
+        cli = Cli(description="A CLI tool", formatter=formatter)
 
         @cli.command(cmd="foo", help="Run foo command")
         def foo_main(
@@ -658,11 +660,12 @@ class TestRawFormatter:
         assert "foo" in output
         assert "Run foo command" in output
 
-    def test_command_help(self, capsys):
+    def test_command_help(self, formatter_cls, capsys):
         from piou import Cli, Option
-        from piou.formatter import Formatter
+        from piou.formatter import Formatter, RichFormatter
 
-        cli = Cli(formatter=Formatter())
+        formatter = Formatter() if formatter_cls == "Formatter" else RichFormatter()
+        cli = Cli(formatter=formatter)
 
         @cli.command(cmd="foo", help="Run foo command")
         def foo_main(
@@ -680,11 +683,12 @@ class TestRawFormatter:
         assert "OPTIONS" in output
         assert "--foo2" in output
 
-    def test_error_output(self, capsys, sys_exit_counter):
+    def test_error_output(self, formatter_cls, capsys, sys_exit_counter):
         from piou import Cli
-        from piou.formatter import Formatter
+        from piou.formatter import Formatter, RichFormatter
 
-        cli = Cli(formatter=Formatter())
+        formatter = Formatter() if formatter_cls == "Formatter" else RichFormatter()
+        cli = Cli(formatter=formatter)
 
         @cli.command(cmd="foo")
         def foo_main():
@@ -697,11 +701,12 @@ class TestRawFormatter:
         assert "bar" in output
         assert sys_exit_counter() == 1
 
-    def test_close_match_suggestion(self, capsys, sys_exit_counter):
+    def test_close_match_suggestion(self, formatter_cls, capsys, sys_exit_counter):
         from piou import Cli
-        from piou.formatter import Formatter
+        from piou.formatter import Formatter, RichFormatter
 
-        cli = Cli(formatter=Formatter())
+        formatter = Formatter() if formatter_cls == "Formatter" else RichFormatter()
+        cli = Cli(formatter=formatter)
 
         @cli.command(cmd="migrate")
         def migrate_cmd():
@@ -717,39 +722,49 @@ class TestRawFormatter:
 class TestFormatterEnvVar:
     """Tests for PIOU_FORMATTER environment variable."""
 
-    def test_env_var_raw(self, monkeypatch, capsys):
-        monkeypatch.setenv("PIOU_FORMATTER", "raw")
+    @pytest.mark.parametrize(
+        "env_value,expected_cls_name",
+        [
+            ("raw", "Formatter"),
+            ("rich", "RichFormatter"),
+        ],
+    )
+    def test_env_var_formatter(self, monkeypatch, env_value, expected_cls_name):
+        monkeypatch.setenv("PIOU_FORMATTER", env_value)
 
-        from piou.formatter import get_formatter, Formatter
+        from piou.formatter import get_formatter, Formatter, RichFormatter
 
         formatter = get_formatter()
-        assert type(formatter) is Formatter
+        expected_cls = Formatter if expected_cls_name == "Formatter" else RichFormatter
+        assert type(formatter) is expected_cls
 
-    def test_env_var_rich(self, monkeypatch):
-        monkeypatch.setenv("PIOU_FORMATTER", "rich")
+    @pytest.mark.parametrize(
+        "formatter_type,expected_cls_name",
+        [
+            ("raw", "Formatter"),
+            ("rich", "RichFormatter"),
+        ],
+    )
+    def test_get_formatter(self, formatter_type, expected_cls_name):
+        from piou.formatter import get_formatter, Formatter, RichFormatter
 
-        from piou.formatter import get_formatter, RichFormatter
+        formatter = get_formatter(formatter_type)
+        expected_cls = Formatter if expected_cls_name == "Formatter" else RichFormatter
+        assert type(formatter) is expected_cls
 
-        formatter = get_formatter()
-        assert type(formatter) is RichFormatter
-
-    def test_get_formatter_raw(self):
-        from piou.formatter import get_formatter, Formatter
-
-        formatter = get_formatter("raw")
-        assert type(formatter) is Formatter
-
-    def test_get_formatter_rich(self):
-        from piou.formatter import get_formatter, RichFormatter
-
-        formatter = get_formatter("rich")
-        assert type(formatter) is RichFormatter
-
-    def test_cli_uses_env_var(self, monkeypatch, capsys):
-        monkeypatch.setenv("PIOU_FORMATTER", "raw")
+    @pytest.mark.parametrize(
+        "env_value,expected_cls_name",
+        [
+            ("raw", "Formatter"),
+            ("rich", "RichFormatter"),
+        ],
+    )
+    def test_cli_uses_env_var(self, monkeypatch, env_value, expected_cls_name):
+        monkeypatch.setenv("PIOU_FORMATTER", env_value)
 
         from piou import Cli
-        from piou.formatter import Formatter
+        from piou.formatter import Formatter, RichFormatter
 
         cli = Cli()
-        assert type(cli.formatter) is Formatter
+        expected_cls = Formatter if expected_cls_name == "Formatter" else RichFormatter
+        assert type(cli.formatter) is expected_cls

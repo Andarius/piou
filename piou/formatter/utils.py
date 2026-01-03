@@ -1,8 +1,51 @@
+from __future__ import annotations
+
 import os
 import sys
 from pathlib import Path
+from typing import Literal, TYPE_CHECKING
 
 from ..command import CommandOption
+
+if TYPE_CHECKING:
+    from .base import Formatter
+
+FormatterType = Literal["raw", "rich"]
+
+
+def get_formatter(formatter_type: FormatterType | None = None) -> Formatter:
+    """
+    Return a formatter based on the specified type.
+
+    Args:
+        formatter_type: The formatter to use. If None, uses PIOU_FORMATTER env var
+                       or defaults to 'rich' if available.
+
+    Returns:
+        Formatter instance (RichFormatter or base Formatter)
+    """
+    from .base import Formatter
+
+    if formatter_type is None:
+        formatter_type = os.environ.get("PIOU_FORMATTER", "").lower() or None  # type: ignore[assignment]
+
+    if formatter_type == "raw":
+        return Formatter()
+    elif formatter_type == "rich":
+        try:
+            from .rich_formatter import RichFormatter
+
+            return RichFormatter()
+        except ImportError:
+            raise ImportError("Rich is not installed. Install it with: pip install rich")
+
+    # Default: use Rich if available
+    try:
+        from .rich_formatter import RichFormatter
+
+        return RichFormatter()
+    except ImportError:
+        return Formatter()
 
 
 def get_program_name() -> str:
