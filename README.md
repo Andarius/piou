@@ -137,3 +137,44 @@ PIOU_TUI=1 python my_cli.py
   - `Up/Down` - Navigate suggestions or history
   - `Ctrl+C` - Clear input (press twice to exit)
   - `Escape` - Quit
+
+## Development
+
+### Running Tests
+
+```bash
+uv run pytest
+```
+
+### Generating Documentation
+
+```bash
+# Build docs
+uv run --group docs mkdocs build
+
+# Serve locally
+uv run --group docs mkdocs serve
+```
+
+### Generating Screenshots and GIFs
+
+Terminal recordings are created with [VHS](https://github.com/charmbracelet/vhs). Install it first:
+
+```bash
+# Ubuntu/Debian
+sudo apt install vhs ttyd
+
+# macOS
+brew install vhs
+
+# Or via Go
+go install github.com/charmbracelet/vhs@latest
+```
+
+Then generate recordings from tape files:
+
+```bash
+vhs docs/static/tui-demo.tape
+```
+
+Tape files are located in `docs/static/` and define scripted terminal sessions that produce GIFs.
