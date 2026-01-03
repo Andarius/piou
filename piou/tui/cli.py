@@ -5,7 +5,7 @@ import io
 import shlex
 import sys
 from contextlib import redirect_stdout, redirect_stderr
-from dataclasses import dataclass, field as dataclass_field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -19,8 +19,13 @@ try:
 except ImportError as e:
     raise ImportError("TUI mode requires textual. Install piou[tui] or 'textual' package.") from e
 
-from ..command import CommandGroup, ShowHelpError
+if TYPE_CHECKING:
+    from ..cli import Cli
+
+from ..command import Command, CommandGroup, ShowHelpError
 from ..formatter.rich_formatter import RichFormatter
+from .history import History
+from .suggester import CommandSuggester
 
 
 class CssClass:
@@ -29,55 +34,6 @@ class CssClass:
     MESSAGE = "message"
     OUTPUT = "output"
     ERROR = "error"
-
-
-@dataclass
-class History:
-    file: Path
-    entries: list[str] = dataclass_field(default_factory=list)
-    index: int = -1
-
-    def __post_init__(self) -> None:
-        if self.file.exists():
-            try:
-                self.entries = self.file.read_text().strip().split("\n")
-            except Exception:
-                pass
-
-    def append(self, entry: str) -> None:
-        """Add entry to history and persist to file."""
-        self.entries.insert(0, entry)
-        try:
-            with self.file.open("a") as f:
-                f.write(entry + "\n")
-        except Exception:
-            pass
-
-    def save(self, max_entries: int = 1000) -> None:
-        """Save and truncate history file to max entries."""
-        try:
-            entries = self.entries[:max_entries]
-            self.file.write_text("\n".join(entries))
-        except Exception:
-            pass
-
-    def navigate(self, direction: str) -> str | None:
-        """Navigate history up/down, return entry or None if at boundary."""
-        if not self.entries:
-            return None
-        if direction == "up":
-            self.index = min(self.index + 1, len(self.entries) - 1)
-        else:
-            self.index = max(self.index - 1, -1)
-        return self.entries[self.index] if self.index >= 0 else None
-
-    def reset_index(self) -> None:
-        """Reset navigation index."""
-        self.index = -1
-
-
-if TYPE_CHECKING:
-    from ..cli import Cli
 
 
 class TuiApp(App):
@@ -109,6 +65,24 @@ class TuiApp(App):
         self.cycling = False
         self.history = History(file=history_file or Path.home() / f".{self.cli_name}_history")
         self.exit_pending = False
+
+    def get_command_for_path(self, path: str) -> Command | CommandGroup | None:
+        """Get command/group for a path like 'stats' or 'stats:uploads'"""
+        parts = path.split(":")
+        current = self.cli._group
+        for part in parts:
+            found = None
+            for cmd in current.commands.values():
+                if cmd.name.lower() == part.lower():
+                    found = cmd
+                    break
+            if found is None:
+                return None
+            if isinstance(found, CommandGroup):
+                current = found
+            else:
+                return found
+        return current
 
     def _suggest_subcommands(self, query: str, suggestions: Vertical) -> None:
         """Suggest subcommands for a command path like 'stats:' or 'stats:up'"""
@@ -149,7 +123,7 @@ class TuiApp(App):
         yield Rule()
         with Horizontal(id="input-row"):
             yield Static("> ", id="prompt")
-            yield Input()
+            yield Input(suggester=CommandSuggester(self))
         yield Rule()
         yield Static("Press Ctrl+C again to exit", id="exit-hint")
         yield Vertical(id="suggestions")

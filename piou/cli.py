@@ -3,7 +3,7 @@ import sys
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
-from .command import CommandGroup, ShowHelpError, clean_multiline, OnCommandRun
+from .command import CommandGroup, ShowHelpError, ShowTuiError, clean_multiline, OnCommandRun
 from .utils import cleanup_event_loop
 from .exceptions import (
     CommandNotFoundError,
@@ -82,6 +82,8 @@ class Cli:
             sys.exit(1)
         except ShowHelpError as e:
             self.formatter.print_help(group=e.group, command=e.command, parent_args=e.parent_args)
+        except ShowTuiError:
+            self.run_tui()
         except KeywordParamNotFoundError as e:
             if not e.cmd:
                 raise

@@ -272,9 +272,13 @@ class CommandGroup:
             )
             return command_group.run_with_args(*cmd_options, parent_args=parent_args, loop=loop)
 
+        _all_options = set(global_options + cmd_options)
         # Checks if help was requested and raises a special exception to display help
-        if set(global_options + cmd_options) & {"-h", "--help"}:
+        if _all_options & {"-h", "--help"}:
             raise ShowHelpError(group=command_group or self, parent_args=parent_args, command=command)
+        # Checks if TUI mode was requested
+        if "--tui" in _all_options:
+            raise ShowTuiError()
 
         if not command:
             # When cmd is None (no valid command found), try to find the first
@@ -350,3 +354,9 @@ class ShowHelpError(Exception):
         self.command = command
         self.group = group
         self.parent_args = parent_args
+
+
+class ShowTuiError(Exception):
+    """Exception raised to run TUI mode."""
+
+    pass

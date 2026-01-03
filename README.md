@@ -71,6 +71,7 @@ Full documentation is available at **[andarius.github.io/piou](https://andarius.
 - Derived options for reusable argument patterns
 - Async command support
 - Type validation and casting
+- **Interactive TUI mode** with command suggestions and history
 
 ## Why Piou?
 
@@ -83,3 +84,56 @@ I could not find a library that provided:
 [Typer](https://github.com/tiangolo/typer) is the closest alternative but lacks the possibility to format the output in a custom way using external libraries (like [Rich](https://github.com/Textualize/rich)).
 
 **Piou** provides all these possibilities and lets you define your own Formatter.
+
+## Interactive TUI Mode
+
+Piou includes an optional interactive TUI (Text User Interface) mode powered by [Textual](https://textual.textualize.io/).
+This provides a rich terminal experience with command suggestions, history, and inline completions.
+
+### Installation
+
+```bash
+pip install piou[tui]
+```
+
+### Usage
+
+Enable TUI mode by setting `tui=True` when creating your CLI:
+
+```python
+from piou import Cli, Option
+
+cli = Cli(description='My Interactive CLI', tui=True)
+
+@cli.command(cmd='hello', help='Say hello')
+def hello(name: str = Option(..., help='Name to greet')):
+    print(f'Hello, {name}!')
+
+if __name__ == '__main__':
+    cli.run()
+```
+
+Or via the `--tui` flag:
+
+```bash
+python my_cli.py --tui
+```
+
+Or via the `PIOU_TUI=1` environment variable:
+
+```bash
+PIOU_TUI=1 python my_cli.py
+```
+
+### TUI Features
+
+- **Command suggestions**: Type `/` to see available commands with descriptions
+- **Subcommand navigation**: Use `:` to navigate subcommands (e.g., `/stats:uploads`)
+- **Inline completions**: See argument placeholders as you type
+- **Command history**: Navigate previous commands with up/down arrows (persisted across sessions)
+- **Rich output**: ANSI colors and formatting preserved in output
+- **Keyboard shortcuts**:
+  - `Tab` - Confirm selected suggestion
+  - `Up/Down` - Navigate suggestions or history
+  - `Ctrl+C` - Clear input (press twice to exit)
+  - `Escape` - Quit

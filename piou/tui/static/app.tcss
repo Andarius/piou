@@ -94,6 +94,10 @@ Input > .input--cursor {
     color: black;
 }
 
+Input > .input--suggestion {
+    color: #555555;
+}
+
 #messages {
     background: transparent;
     padding: 0;

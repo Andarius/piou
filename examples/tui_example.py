@@ -58,5 +58,31 @@ def format_text(
         print(text.title())
 
 
+# Command group with subcommands
+stats = cli.add_sub_parser(cmd="stats", help="View statistics")
+
+
+@stats.command(cmd="uploads", help="Show upload statistics")
+def stats_uploads(
+    days: int = Option(7, "-d", "--days", help="Number of days to show"),
+):
+    """Display upload statistics."""
+    print(f"Upload statistics for the last {days} days:")
+    print("  - Total uploads: 1,234")
+    print("  - Total size: 5.6 GB")
+    print("  - Average per day: 176 uploads")
+
+
+@stats.command(cmd="downloads", help="Show download statistics")
+def stats_downloads(
+    days: int = Option(7, "-d", "--days", help="Number of days to show"),
+):
+    """Display download statistics."""
+    print(f"Download statistics for the last {days} days:")
+    print("  - Total downloads: 8,901")
+    print("  - Total size: 42.1 GB")
+    print("  - Average per day: 1,271 downloads")
+
+
 if __name__ == "__main__":
     cli.run()
