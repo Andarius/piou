@@ -175,6 +175,66 @@ def testing_choices(input_type, value, options, expected, error):
 
 
 @pytest.mark.parametrize(
+    "value, choices, expected_valid",
+    [
+        # Regex pattern matching
+        ("dev-123", [re.compile(r"dev-\d+")], True),
+        ("dev-abc", [re.compile(r"dev-\d+")], False),
+        ("prod", [re.compile(r"dev-\d+")], False),
+        # Mixed literal and regex
+        ("prod", ["prod", re.compile(r"dev-\d+")], True),
+        ("dev-456", ["prod", re.compile(r"dev-\d+")], True),
+        ("staging", ["prod", re.compile(r"dev-\d+")], False),
+        # Multiple regex patterns
+        ("ra-123.tracktor", [re.compile(r"ra-\d+\.tracktor"), re.compile(r"dev-\d+")], True),
+        ("dev-999", [re.compile(r"ra-\d+\.tracktor"), re.compile(r"dev-\d+")], True),
+        ("invalid", [re.compile(r"ra-\d+\.tracktor"), re.compile(r"dev-\d+")], False),
+        # Regex with fullmatch (must match entire string)
+        ("dev-123-extra", [re.compile(r"dev-\d+")], False),
+        ("prefix-dev-123", [re.compile(r"dev-\d+")], False),
+    ],
+)
+def test_regex_choices(value, choices, expected_valid):
+    from piou.utils import validate_value
+    from piou.exceptions import InvalidChoiceError
+
+    if expected_valid:
+        result = validate_value(str, value, choices=choices)
+        assert result == value
+    else:
+        with pytest.raises(InvalidChoiceError) as e:
+            validate_value(str, value, choices=choices)
+        assert e.value.value == value
+        assert e.value.choices == choices
+
+
+def test_regex_helper():
+    """Test the Regex helper function creates proper patterns."""
+    from piou.utils import Regex
+
+    pattern = Regex(r"dev-\d+")
+    assert isinstance(pattern, re.Pattern)
+    assert pattern.fullmatch("dev-123")
+    assert not pattern.fullmatch("dev-abc")
+
+    # With flags
+    pattern_i = Regex(r"dev-\d+", re.IGNORECASE)
+    assert pattern_i.fullmatch("DEV-123")
+
+
+def test_invalid_choice_error_attributes():
+    """Test that InvalidChoiceError correctly separates literal and regex choices."""
+    from piou.exceptions import InvalidChoiceError
+
+    choices = ["prod", "staging", re.compile(r"dev-\d+"), re.compile(r"ra-\d+\.tracktor")]
+    err = InvalidChoiceError("invalid", choices)
+
+    assert err.value == "invalid"
+    assert err.literal_choices == ["prod", "staging"]
+    assert err.regex_patterns == [r"dev-\d+", r"ra-\d+\.tracktor"]
+
+
+@pytest.mark.parametrize(
     "data_type, value, expected, expected_str",
     [(Path, "a-file.py", FileNotFoundError, 'File not found: "a-file.py"')],
 )

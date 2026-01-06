@@ -23,9 +23,29 @@ pick: Literal['foo'] | Literal['bar'] = Option(None, '--pick')
 
 # Option C: Explicit choices list
 pick: str = Option(None, '--pick', choices=['foo', 'bar'])
+
+# Option D: Dynamic choices from a callable
+def get_environments() -> list[str]:
+    return ['prod', 'staging', 'dev']
+
+env: str = Option(None, '--env', choices=get_environments)
+
+# Option E: Regex patterns in choices
+from piou import Regex
+
+# Accept "prod", "staging", or any string matching "dev-\d+" (e.g., "dev-123")
+env: str = Option(None, '--env', choices=['prod', 'staging', Regex(r'dev-\d+')])
+
+# Mix literal values with multiple regex patterns
+db_name: str = Option(..., '--db', choices=[
+    'production',
+    Regex(r'dev-\d+'),           # matches dev-456
+])
 ```
 
 > **Note**: You can disable case sensitivity with `Option(..., case_sensitive=False)`.
+>
+> **Note**: Regex patterns use `fullmatch`, meaning the entire value must match the pattern.
 
 ### 2. Boolean Flags (Store True)
 

@@ -50,6 +50,19 @@ class Secret(str):
     pass
 
 
+def Regex(pattern: str, flags: int = 0) -> re.Pattern[str]:
+    """Helper to create a regex pattern for use in choices.
+
+    Use this in the choices parameter to allow values matching a regex pattern.
+
+    Example:
+        db_name: str = Option(..., help="Database", choices=["prod", Regex(r"dev-\\d+")])
+
+    This would accept "prod" or any string matching "dev-\\d+" like "dev-123".
+    """
+    return re.compile(pattern, flags)
+
+
 T = TypeVar("T", str, int, float, dt.date, dt.datetime, Path, dict, list, Password, EllipsisType, None)
 
 
@@ -165,15 +178,29 @@ def validate_value(
     Converts `value` to `data_type`, if not possible raises the appropriate error
     Options:
      - case_sensitive: If True, will not lowercase the value before checking if it's in the choices
-     - choices: If set, will check if the value is in the choices
+     - choices: If set, will check if the value is in the choices (supports re.Pattern for regex matching)
      - raise_path_does_not_exist: If True, will raise a FileNotFoundError if the path does not exist
     """
     _data_type = extract_optional_type(data_type)
 
     if choices:
-        _choices = choices if case_sensitive else [x.lower() for x in choices]
         _value = value if case_sensitive else value.lower()
-        if _value not in _choices:
+        is_valid = False
+
+        for choice in choices:
+            if isinstance(choice, re.Pattern):
+                # Regex pattern - check if value matches
+                if choice.fullmatch(_value):
+                    is_valid = True
+                    break
+            else:
+                # Literal choice - check for equality
+                _choice = choice if case_sensitive else choice.lower()
+                if _value == _choice:
+                    is_valid = True
+                    break
+
+        if not is_valid:
             raise InvalidChoiceError(value, choices)
 
     if _data_type is Any or _data_type is bool:

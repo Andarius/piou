@@ -289,8 +289,14 @@ class RichFormatter(Formatter):
             f"Expected {expected_count} positional arguments but got {count} for command [bold]{cmd}[/bold]"
         )
 
-    def print_invalid_value_error(self, value: str, choices: list[str]):
+    def print_invalid_value_error(
+        self, value: str, literal_choices: list[str], regex_patterns: list[str] | None = None
+    ):
         sep = "\n - "
-        possible_fields = sep + sep.join(_choice for _choice in choices)
-        msg = f"Invalid value [bold]{value}[/bold] found. Possible values are: {possible_fields}"
+        parts = []
+        if literal_choices:
+            parts.append(f"Possible values are:{sep}{sep.join(literal_choices)}")
+        if regex_patterns:
+            parts.append(f"Or matching patterns:{sep}{sep.join(f'/{p}/' for p in regex_patterns)}")
+        msg = f"Invalid value [bold]{value}[/bold] found.\n" + "\n".join(parts)
         self.print_error(msg)
