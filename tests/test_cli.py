@@ -186,9 +186,9 @@ def testing_choices(input_type, value, options, expected, error):
         ("dev-456", ["prod", re.compile(r"dev-\d+")], True),
         ("staging", ["prod", re.compile(r"dev-\d+")], False),
         # Multiple regex patterns
-        ("ra-123.tracktor", [re.compile(r"ra-\d+\.tracktor"), re.compile(r"dev-\d+")], True),
-        ("dev-999", [re.compile(r"ra-\d+\.tracktor"), re.compile(r"dev-\d+")], True),
-        ("invalid", [re.compile(r"ra-\d+\.tracktor"), re.compile(r"dev-\d+")], False),
+        ("test-123.db", [re.compile(r"test-\d+\.db"), re.compile(r"dev-\d+")], True),
+        ("dev-999", [re.compile(r"test-\d+\.db"), re.compile(r"dev-\d+")], True),
+        ("invalid", [re.compile(r"test-\d+\.db"), re.compile(r"dev-\d+")], False),
         # Regex with fullmatch (must match entire string)
         ("dev-123-extra", [re.compile(r"dev-\d+")], False),
         ("prefix-dev-123", [re.compile(r"dev-\d+")], False),
@@ -226,12 +226,12 @@ def test_invalid_choice_error_attributes():
     """Test that InvalidChoiceError correctly separates literal and regex choices."""
     from piou.exceptions import InvalidChoiceError
 
-    choices = ["prod", "staging", re.compile(r"dev-\d+"), re.compile(r"ra-\d+\.tracktor")]
+    choices = ["prod", "staging", re.compile(r"dev-\d+"), re.compile(r"test-\d+\.db")]
     err = InvalidChoiceError("invalid", choices)
 
     assert err.value == "invalid"
     assert err.literal_choices == ["prod", "staging"]
-    assert err.regex_patterns == [r"dev-\d+", r"ra-\d+\.tracktor"]
+    assert err.regex_patterns == [r"dev-\d+", r"test-\d+\.db"]
 
 
 @pytest.mark.parametrize(
