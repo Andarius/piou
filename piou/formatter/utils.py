@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Literal, TYPE_CHECKING
@@ -91,6 +92,13 @@ def fmt_cmd_options_raw(options: list[CommandOption]) -> str:
     return " ".join([fmt_option_raw(x) for x in options]) if options else ""
 
 
+def fmt_choice(choice: str | re.Pattern[str]) -> str:
+    """Format a choice for display, converting regex patterns to /pattern/ format."""
+    if isinstance(choice, re.Pattern):
+        return f"/{choice.pattern}/"
+    return str(choice)
+
+
 def fmt_help(
     option: CommandOption,
     show_default: bool,
@@ -108,11 +116,11 @@ def fmt_help(
         return option.help + f" {default_str}" if option.help else default_str
     elif _choices is not None and not option.hide_choices:
         if len(_choices) <= 3:
-            possible_choices = ", ".join(str(_choice) for _choice in _choices)
+            possible_choices = ", ".join(fmt_choice(_choice) for _choice in _choices)
             choices_help = f"{_markdown_open}(choices are: {possible_choices}){_markdown_close}"
         else:
             sep = " \n - "
-            possible_choices = sep + sep.join(str(_choice) for _choice in _choices)
+            possible_choices = sep + sep.join(fmt_choice(_choice) for _choice in _choices)
             choices_help = f"\n{_markdown_open}Possible choices are:{_markdown_close}" + possible_choices
         return option.help + f" {choices_help}" if option.help else choices_help
     else:
