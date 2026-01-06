@@ -1,17 +1,43 @@
 """Tests for the TUI module."""
 
+from __future__ import annotations
+
 import tempfile
+from typing import TYPE_CHECKING, cast
 from pathlib import Path
 
 import pytest
 
-from piou import Cli, Option
+from piou import Cli, Option, TuiContext, TuiOption, get_tui_context
+from piou.tui.context import SeverityLevel, set_tui_context, reset_tui_context
 
 # Check if textual is available
 pytest.importorskip("textual")
 
 from piou.tui import TuiApp
 from piou.tui.cli import History, CssClass
+
+if TYPE_CHECKING:
+    from textual.widget import Widget
+
+
+# ============================================================================
+# Mock TUI for context tests
+# ============================================================================
+
+
+class MockTui:
+    """Mock TUI interface for testing."""
+
+    def __init__(self) -> None:
+        self.notifications: list[tuple[str, str, str]] = []
+        self.mounted: list[Widget] = []
+
+    def notify(self, message: str, *, title: str = "", severity: str = "information") -> None:
+        self.notifications.append((message, title, severity))
+
+    def mount_widget(self, widget: Widget) -> None:
+        self.mounted.append(widget)
 
 
 @pytest.fixture
@@ -326,6 +352,167 @@ class TestTuiApp:
 
             errors = app.query(f".{CssClass.ERROR}")
             assert len(errors) >= 1
+
+
+# ============================================================================
+# TuiContext tests
+# ============================================================================
+
+
+@pytest.fixture
+def reset_context():
+    """Reset context before and after each test."""
+    reset_tui_context()
+    yield
+    reset_tui_context()
+
+
+class TestTuiContext:
+    """Tests for the TuiContext class."""
+
+    def test_default_context_not_tui(self):
+        """Default context should not be in TUI mode."""
+        ctx = TuiContext()
+        assert ctx.is_tui is False
+        assert ctx.tui is None
+
+    def test_context_with_tui(self):
+        """Context with TUI interface should report is_tui=True."""
+        tui = MockTui()
+        ctx = TuiContext(_tui=tui)
+        assert ctx.is_tui is True
+        assert ctx.tui is tui
+
+    @pytest.mark.parametrize("severity", ["information", "warning", "error"])
+    def test_notify_no_tui(self, severity: SeverityLevel):
+        """notify() should be a no-op when not in TUI mode."""
+        ctx = TuiContext()
+        # Should not raise
+        ctx.notify("test message", title="Title", severity=severity)
+
+    @pytest.mark.parametrize("severity", ["information", "warning", "error"])
+    def test_notify_with_tui(self, severity: SeverityLevel):
+        """notify() should call TUI's notify method."""
+        tui = MockTui()
+        ctx = TuiContext(_tui=tui)
+        ctx.notify("Hello", title="Alert", severity=severity)
+
+        assert tui.notifications == [("Hello", "Alert", severity)]
+
+    def test_mount_widget_no_tui(self):
+        """mount_widget() should be a no-op when not in TUI mode."""
+        ctx = TuiContext()
+        # Should not raise - using cast since we're testing the no-op behavior
+        ctx.mount_widget(cast("Widget", object()))
+
+    def test_mount_widget_with_tui(self):
+        """mount_widget() should call TUI's mount_widget method."""
+        tui = MockTui()
+        widget = cast("Widget", object())
+        ctx = TuiContext(_tui=tui)
+        ctx.mount_widget(widget)
+
+        assert tui.mounted == [widget]
+
+
+class TestGetTuiContext:
+    """Tests for get_tui_context() and context management."""
+
+    def test_get_tui_context_default(self, reset_context):
+        """get_tui_context() should return a default context."""
+        ctx = get_tui_context()
+        assert isinstance(ctx, TuiContext)
+        assert ctx.is_tui is False
+
+    def test_set_and_get_tui_context(self, reset_context):
+        """set_tui_context() should update the current context."""
+        custom_ctx = TuiContext(_tui=MockTui())
+        set_tui_context(custom_ctx)
+
+        ctx = get_tui_context()
+        assert ctx is custom_ctx
+        assert ctx.is_tui is True
+
+    def test_reset_tui_context(self, reset_context):
+        """reset_tui_context() should restore default context."""
+        set_tui_context(TuiContext(_tui=MockTui()))
+        assert get_tui_context().is_tui is True
+
+        reset_tui_context()
+        assert get_tui_context().is_tui is False
+
+
+class TestTuiOption:
+    """Tests for TuiOption derived option."""
+
+    def test_tui_option_injection_cli_mode(self, reset_context):
+        """TuiOption should inject a non-TUI context in CLI mode."""
+        cli = Cli(description="Test")
+        captured_ctx = None
+
+        @cli.command(cmd="test")
+        def test_cmd(ctx: TuiContext = TuiOption()):
+            nonlocal captured_ctx
+            captured_ctx = ctx
+
+        cli._group.run_with_args("test")
+
+        assert captured_ctx is not None
+        assert isinstance(captured_ctx, TuiContext)
+        assert captured_ctx.is_tui is False
+
+    def test_tui_option_injection_with_set_context(self, reset_context):
+        """TuiOption should inject the current context when set."""
+        cli = Cli(description="Test")
+        captured_ctx = None
+
+        @cli.command(cmd="test")
+        def test_cmd(ctx: TuiContext = TuiOption()):
+            nonlocal captured_ctx
+            captured_ctx = ctx
+
+        # Set a TUI context before running
+        tui_ctx = TuiContext(_tui=MockTui())
+        set_tui_context(tui_ctx)
+
+        cli._group.run_with_args("test")
+
+        assert captured_ctx is tui_ctx
+        assert captured_ctx is not None
+        assert captured_ctx.is_tui is True
+
+    def test_tui_option_with_other_args(self, reset_context):
+        """TuiOption should work alongside other arguments."""
+        cli = Cli(description="Test")
+        captured: dict[str, object] = {}
+
+        @cli.command(cmd="greet")
+        def greet(
+            name: str = Option(..., help="Name"),
+            ctx: TuiContext = TuiOption(),
+        ):
+            captured["name"] = name
+            captured["ctx"] = ctx
+
+        cli._group.run_with_args("greet", "Alice")
+
+        assert captured["name"] == "Alice"
+        assert isinstance(captured["ctx"], TuiContext)
+
+    def test_get_tui_context_inside_command(self, reset_context):
+        """get_tui_context() should work inside command functions."""
+        cli = Cli(description="Test")
+        captured_ctx = None
+
+        @cli.command(cmd="test")
+        def test_cmd():
+            nonlocal captured_ctx
+            captured_ctx = get_tui_context()
+
+        cli._group.run_with_args("test")
+
+        assert captured_ctx is not None
+        assert isinstance(captured_ctx, TuiContext)
 
 
 # ============================================================================

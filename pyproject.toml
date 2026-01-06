@@ -35,10 +35,16 @@ tui = [
     "textual>=0.40.0",
 ]
 
+tui-reload = [
+    "textual>=0.40.0",
+    "watchfiles>=1.0.0",
+]
+
 [dependency-groups]
 dev = [
     "textual>=0.40.0",
     "textual-dev>=1.0.0",
+    "watchfiles>=1.0.0",
     "pre-commit>=4.3.0",
     "pyright>=1.1.407",
     "pytest>=8.4.1",
@@ -54,6 +60,11 @@ docs = [
 
 bump = [
     "commitizen>=4.9.1",
+]
+examples = [
+    "aiohttp>=3.13.3",
+    "httpx[http2]>=0.28.1",
+    "niquests>=3.16.1",
 ]
 
 

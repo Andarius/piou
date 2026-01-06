@@ -7,25 +7,37 @@ import sys
 from contextlib import redirect_stdout, redirect_stderr
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 
 from rich.text import Text
 
 try:
     from textual.app import App, ComposeResult
     from textual.containers import Horizontal, Vertical
+    from textual.widget import Widget
     from textual.widgets import Input, Rule, Static
     from textual.events import Key
 except ImportError as e:
     raise ImportError("TUI mode requires textual. Install piou[tui] or 'textual' package.") from e
 
+# Optional watchfiles for hot reload
+try:
+    import watchfiles  # noqa: F401
+
+    HAS_WATCHFILES = True
+except ImportError:
+    HAS_WATCHFILES = False
+
 if TYPE_CHECKING:
     from ..cli import Cli
 
 from ..command import Command, CommandGroup, ShowHelpError
+from .context import TuiContext, set_tui_context, reset_tui_context
 from ..formatter.rich_formatter import RichFormatter
 from .history import History
 from .suggester import CommandSuggester
+
+WatchCallback = Callable[[set[tuple[str, str]]], None]
 
 
 class CssClass:
@@ -43,6 +55,7 @@ class TuiApp(App):
     async def action_quit(self) -> None:
         """Save history and quit"""
         self.history.save()
+        reset_tui_context()
         await super().action_quit()
 
     def __init__(
@@ -53,6 +66,8 @@ class TuiApp(App):
     ):
         super().__init__(ansi_color=ansi_color)
         self.cli = cli
+        # Set up TUI context for commands to access
+        set_tui_context(TuiContext(_tui=self))
         # Enable force_terminal on formatter to preserve ANSI colors when capturing output
         if isinstance(self.cli.formatter, RichFormatter):
             self.cli.formatter.force_terminal = True
@@ -330,6 +345,56 @@ class TuiApp(App):
 
         if stderr_output:
             messages.mount(Static(Text.from_ansi(stderr_output), classes=f"{CssClass.OUTPUT} {CssClass.ERROR}"))
+
+    # TuiInterface implementation - App.notify handles the actual display
+    def mount_widget(self, widget: Widget) -> None:
+        """Mount a widget to the messages area."""
+        messages = self.query_one("#messages", Vertical)
+        messages.mount(widget)
+
+    def watch_files(
+        self,
+        *paths: Path | str,
+        on_change: WatchCallback | None = None,
+    ) -> asyncio.Task[None]:
+        """Watch paths for file changes and show notifications.
+
+        Requires `piou[tui-reload]` extra (watchfiles).
+
+        Args:
+            *paths: Paths to watch (files or directories)
+            on_change: Optional callback called with set of (change_type, path) tuples
+
+        Returns:
+            An asyncio.Task that can be cancelled to stop watching.
+
+        Raises:
+            ImportError: If watchfiles is not installed.
+        """
+        if not HAS_WATCHFILES:
+            raise ImportError("Hot reload requires watchfiles. Install piou[tui-reload] or 'watchfiles' package.")
+
+        from watchfiles import awatch as watchfiles_awatch
+
+        async def _watch_task() -> None:
+            resolved_paths = [Path(p) if isinstance(p, str) else p for p in paths]
+            path_names = ", ".join(p.name for p in resolved_paths)
+            self.notify(f"Watching: {path_names}", title="Hot Reload")
+
+            async for changes in watchfiles_awatch(*resolved_paths):
+                # changes is a set of (change_type, path) tuples
+                changed_files = {Path(p).name for _, p in changes}
+                self.notify(
+                    f"Changed: {', '.join(changed_files)}",
+                    title="Hot Reload",
+                    severity="warning",
+                )
+                if on_change is not None:
+                    # Convert to (str, str) tuples as per WatchCallback type
+                    changes_str = {(str(change_type), path) for change_type, path in changes}
+                    on_change(changes_str)
+
+        return asyncio.create_task(_watch_task())
 
 
 @dataclass

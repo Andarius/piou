@@ -4,9 +4,12 @@ Run with:
     python -m examples.tui_example
 """
 
+import asyncio
+import time
+from pathlib import Path
 from typing import Literal
 
-from piou import Cli, Option
+from piou import Cli, Option, TuiContext, TuiOption, get_tui_context
 
 cli = Cli(description="Interactive CLI Demo", tui=True)
 
@@ -82,6 +85,62 @@ def stats_downloads(
     print("  - Total downloads: 8,901")
     print("  - Total size: 42.1 GB")
     print("  - Average per day: 1,271 downloads")
+
+
+# Example using TuiContext for TUI-specific features
+@cli.command(cmd="process", help="Process data with notifications")
+def process(
+    items: int = Option(5, "-n", "--items", help="Number of items to process"),
+    ctx: TuiContext = TuiOption(),
+):
+    """Process items and show TUI notifications."""
+    ctx.notify(f"Starting to process {items} items...")
+
+    for i in range(items):
+        time.sleep(0.3)
+        print(f"Processing item {i + 1}/{items}")
+
+    ctx.notify("Processing complete!", title="Done", severity="information")
+    print(f"Successfully processed {items} items")
+
+
+@cli.command(cmd="warn", help="Show warning notification")
+def warn(
+    message: str = Option(..., help="Warning message"),
+):
+    """Show a warning using get_tui_context()."""
+    ctx = get_tui_context()
+    if ctx.is_tui:
+        ctx.notify(message, title="Warning", severity="warning")
+    else:
+        print(f"WARNING: {message}")
+
+
+# Example using hot reload with watchfiles
+@cli.command(cmd="watch", help="Watch for file changes (requires piou[tui-reload])")
+async def watch_files(
+    path: str = Option(str(Path(__file__).parent), "-p", "--path", help="Path to watch"),
+    ctx: TuiContext = TuiOption(),
+):
+    """Watch a directory for file changes and show notifications.
+
+    Requires `piou[tui-reload]` extra (watchfiles).
+    """
+    watch_path = Path(path)
+    print(f"Watching: {watch_path}")
+
+    def on_change(changes: set[tuple[str, str]]) -> None:
+        for change_type, file_path in changes:
+            print(f"  [{change_type}] {file_path}")
+
+    try:
+        task = ctx.watch_files(watch_path, on_change=on_change)
+        if task:
+            # Keep running until cancelled
+            await asyncio.sleep(3600)  # Watch for 1 hour max
+    except ImportError as e:
+        print(f"Error: {e}")
+        print("Install with: pip install piou[tui-reload]")
 
 
 if __name__ == "__main__":

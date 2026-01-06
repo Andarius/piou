@@ -5,6 +5,9 @@ from rich.console import Console, RenderableType
 from rich.markdown import Markdown
 from rich.padding import Padding
 from rich.table import Table
+from rich.traceback import Traceback
+
+import piou
 
 from .base import Formatter, Titles
 from .utils import get_program_name, fmt_help as _fmt_help_base
@@ -297,3 +300,20 @@ class RichFormatter(Formatter):
         possible_fields = sep + sep.join(_choice for _choice in choices)
         msg = f"Invalid value [bold]{value}[/bold] found. Possible values are: {possible_fields}"
         self.print_error(msg)
+
+    def print_exception(self, exc: BaseException, *, hide_internals: bool = True) -> None:
+        """Print an exception traceback with Rich formatting.
+
+        Args:
+            exc: The exception to print
+            hide_internals: If True, hide piou internal frames from the traceback
+        """
+        suppress = [piou] if hide_internals else []
+        tb = Traceback.from_exception(
+            type(exc),
+            exc,
+            exc.__traceback__,
+            suppress=suppress,
+            show_locals=False,
+        )
+        self._console.print(tb)

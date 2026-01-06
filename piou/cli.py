@@ -38,6 +38,8 @@ class Cli:
     """
     tui: bool = os.getenv("PIOU_TUI", "0") == "1"
     """Run in interactive TUI mode instead of CLI mode. Requires piou[tui]."""
+    hide_internal_errors: bool = True
+    """Hide piou internal frames from exception tracebacks. Set to False to show full tracebacks."""
     _group: CommandGroup = field(init=False, default_factory=CommandGroup)
     """The main command group that will contain all the commands and options"""
 
@@ -107,6 +109,9 @@ class Cli:
             sys.exit(1)
         except CommandError as e:
             self.formatter.print_error(e.message)
+            sys.exit(1)
+        except Exception as e:
+            self.formatter.print_exception(e, hide_internals=self.hide_internal_errors)
             sys.exit(1)
         finally:
             cleanup_event_loop()
