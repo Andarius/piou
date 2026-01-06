@@ -1,7 +1,7 @@
 from typing import Annotated
 
 from .cli import Cli, CommandGroup
-from .utils import Option, Derived, Password
+from .utils import Option, Derived, Password, Regex
 from .command import CommandMeta
 from .exceptions import CommandNotFoundError, CommandError
 
@@ -12,6 +12,7 @@ __all__ = (
     "Option",
     "Derived",
     "Password",
+    "Regex",
     "CommandMeta",
     "CommandNotFoundError",
     "CommandError",

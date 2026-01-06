@@ -277,9 +277,21 @@ class Formatter:
     def print_count_error(self, expected_count: int, count: int, cmd: str) -> None:
         self.print_fn(f"Expected {expected_count} positional arguments but got {count} for command {cmd!r}")
 
-    def print_invalid_value_error(self, value: str, choices: list[str]) -> None:
-        possible_fields = "\n" + "\n - ".join(_choice for _choice in choices)
-        self.print_fn(f"Invalid value {value!r} found. Possible values are: {possible_fields}")
+    def print_invalid_value_error(
+        self, value: str, literal_choices: list[str], regex_patterns: list[str] | None = None
+    ) -> None:
+        parts = []
+        if literal_choices:
+            parts.append("Possible values are:")
+            parts.extend(f" - {choice}" for choice in literal_choices)
+        if regex_patterns:
+            parts.append("Or matching patterns:")
+            parts.extend(f" - /{pattern}/" for pattern in regex_patterns)
+        if parts:
+            msg = f"Invalid value {value!r} found.\n" + "\n".join(parts)
+        else:
+            msg = f"Invalid value {value!r} found."
+        self.print_fn(msg)
 
     def print_error(self, message: str) -> None:
         self.print_fn(message)

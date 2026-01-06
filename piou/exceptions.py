@@ -1,4 +1,5 @@
-from typing import Any
+from typing import Any, Sequence
+import re
 
 
 class CommandException(Exception):
@@ -60,9 +61,17 @@ class CommandNotFoundError(Exception):
 
 
 class InvalidChoiceError(Exception):
-    def __init__(self, value: str, choices: list[str]):
+    def __init__(self, value: str, choices: Sequence[str | re.Pattern[str]]):
         self.value = value
         self.choices = choices
+        # Separate literal choices from regex patterns for display
+        self.literal_choices: list[str] = []
+        self.regex_patterns: list[str] = []
+        for choice in choices:
+            if isinstance(choice, re.Pattern):
+                self.regex_patterns.append(choice.pattern)
+            else:
+                self.literal_choices.append(str(choice))
 
 
 class InvalidValueError(Exception):
