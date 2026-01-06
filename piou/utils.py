@@ -184,18 +184,18 @@ def validate_value(
     _data_type = extract_optional_type(data_type)
 
     if choices:
-        _value = value if case_sensitive else value.lower()
         is_valid = False
 
         for choice in choices:
             if isinstance(choice, re.Pattern):
-                # Regex pattern - check if value matches
-                if choice.fullmatch(_value):
+                # Regex: use original value, user controls case via re.IGNORECASE flag
+                if choice.fullmatch(value):
                     is_valid = True
                     break
             else:
-                # Literal choice - check for equality
-                _choice = choice if case_sensitive else choice.lower()
+                # Literal: respect case_sensitive setting
+                _choice = choice if case_sensitive else str(choice).lower()
+                _value = value if case_sensitive else value.lower()
                 if _value == _choice:
                     is_valid = True
                     break

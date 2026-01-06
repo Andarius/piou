@@ -43,9 +43,11 @@ db_name: str = Option(..., '--db', choices=[
 ])
 ```
 
-> **Note**: You can disable case sensitivity with `Option(..., case_sensitive=False)`.
+> **Note**: You can disable case sensitivity with `Option(..., case_sensitive=False)` for literal choices.
 >
 > **Note**: Regex patterns use `fullmatch`, meaning the entire value must match the pattern.
+> The `case_sensitive` option only affects literal string choices, not regex patterns.
+> For case-insensitive regex matching, use `Regex(r'...', re.IGNORECASE)`.
 
 ### 2. Boolean Flags (Store True)
 

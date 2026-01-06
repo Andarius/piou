@@ -298,5 +298,8 @@ class RichFormatter(Formatter):
             parts.append(f"Possible values are:{sep}{sep.join(literal_choices)}")
         if regex_patterns:
             parts.append(f"Or matching patterns:{sep}{sep.join(f'/{p}/' for p in regex_patterns)}")
-        msg = f"Invalid value [bold]{value}[/bold] found.\n" + "\n".join(parts)
+        if parts:
+            msg = f"Invalid value [bold]{value}[/bold] found.\n" + "\n".join(parts)
+        else:
+            msg = f"Invalid value [bold]{value}[/bold] found."
         self.print_error(msg)

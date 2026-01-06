@@ -287,7 +287,10 @@ class Formatter:
         if regex_patterns:
             parts.append("Or matching patterns:")
             parts.extend(f" - /{pattern}/" for pattern in regex_patterns)
-        msg = f"Invalid value {value!r} found.\n" + "\n".join(parts)
+        if parts:
+            msg = f"Invalid value {value!r} found.\n" + "\n".join(parts)
+        else:
+            msg = f"Invalid value {value!r} found."
         self.print_fn(msg)
 
     def print_error(self, message: str) -> None:
