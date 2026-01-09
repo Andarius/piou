@@ -70,8 +70,7 @@ class TuiApp(App):
         set_tui_context(TuiContext(_tui=self))
         # Enable force_terminal on formatter to preserve ANSI colors when capturing output
         if isinstance(self.cli.formatter, RichFormatter):
-            self.cli.formatter.force_terminal = True
-            self.cli.formatter.__post_init__()  # Reinitialize console with new setting
+            self.cli.formatter._console._force_terminal = True
         self.cli_name = Path(sys.argv[0]).stem if sys.argv else "cli"
         self.commands = list(cli.commands.values())
         self.commands_map = {f"/{cmd.name}": cmd for cmd in self.commands}

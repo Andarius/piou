@@ -175,6 +175,83 @@ def testing_choices(input_type, value, options, expected, error):
 
 
 @pytest.mark.parametrize(
+    "value, choices, case_sensitive, expected_valid",
+    [
+        # Regex pattern matching
+        pytest.param("dev-123", [re.compile(r"dev-\d+")], True, True, id="regex_match"),
+        pytest.param("dev-abc", [re.compile(r"dev-\d+")], True, False, id="regex_no_match"),
+        pytest.param("prod", [re.compile(r"dev-\d+")], True, False, id="regex_literal_no_match"),
+        # Mixed literal and regex
+        pytest.param("prod", ["prod", re.compile(r"dev-\d+")], True, True, id="mixed_literal_match"),
+        pytest.param("dev-456", ["prod", re.compile(r"dev-\d+")], True, True, id="mixed_regex_match"),
+        pytest.param("staging", ["prod", re.compile(r"dev-\d+")], True, False, id="mixed_no_match"),
+        # Multiple regex patterns
+        pytest.param(
+            "test-123.db", [re.compile(r"test-\d+\.db"), re.compile(r"dev-\d+")], True, True, id="multi_regex_first"
+        ),
+        pytest.param(
+            "dev-999", [re.compile(r"test-\d+\.db"), re.compile(r"dev-\d+")], True, True, id="multi_regex_second"
+        ),
+        pytest.param(
+            "invalid", [re.compile(r"test-\d+\.db"), re.compile(r"dev-\d+")], True, False, id="multi_regex_no_match"
+        ),
+        # Regex with fullmatch (must match entire string)
+        pytest.param("dev-123-extra", [re.compile(r"dev-\d+")], True, False, id="fullmatch_suffix"),
+        pytest.param("prefix-dev-123", [re.compile(r"dev-\d+")], True, False, id="fullmatch_prefix"),
+        # case_sensitive only affects literals, not regex
+        pytest.param("DEV-123", [re.compile(r"DEV-\d+")], False, True, id="regex_case_insensitive_flag_ignored"),
+        pytest.param("dev-123", [re.compile(r"DEV-\d+")], False, False, id="regex_case_mismatch"),
+        # Use re.IGNORECASE for case-insensitive regex
+        pytest.param("DEV-123", [re.compile(r"dev-\d+", re.IGNORECASE)], True, True, id="regex_ignorecase_upper"),
+        pytest.param("dev-123", [re.compile(r"dev-\d+", re.IGNORECASE)], True, True, id="regex_ignorecase_lower"),
+        # Mixed: literal with case_sensitive=False, regex with IGNORECASE
+        pytest.param("PROD", ["prod", re.compile(r"dev-\d+")], False, True, id="mixed_literal_case_insensitive"),
+        pytest.param(
+            "DEV-999", ["prod", re.compile(r"dev-\d+", re.IGNORECASE)], False, True, id="mixed_regex_ignorecase"
+        ),
+    ],
+)
+def test_regex_choices(value, choices, case_sensitive, expected_valid):
+    from piou.utils import validate_value
+    from piou.exceptions import InvalidChoiceError
+
+    if expected_valid:
+        result = validate_value(str, value, case_sensitive=case_sensitive, choices=choices)
+        assert result == value
+    else:
+        with pytest.raises(InvalidChoiceError) as e:
+            validate_value(str, value, case_sensitive=case_sensitive, choices=choices)
+        assert e.value.value == value
+        assert e.value.choices == choices
+
+
+def test_regex_helper():
+    """Test the Regex helper function creates proper patterns."""
+    from piou.utils import Regex
+
+    pattern = Regex(r"dev-\d+")
+    assert isinstance(pattern, re.Pattern)
+    assert pattern.fullmatch("dev-123")
+    assert not pattern.fullmatch("dev-abc")
+
+    # With flags
+    pattern_i = Regex(r"dev-\d+", re.IGNORECASE)
+    assert pattern_i.fullmatch("DEV-123")
+
+
+def test_invalid_choice_error_attributes():
+    """Test that InvalidChoiceError correctly separates literal and regex choices."""
+    from piou.exceptions import InvalidChoiceError
+
+    choices = ["prod", "staging", re.compile(r"dev-\d+"), re.compile(r"test-\d+\.db")]
+    err = InvalidChoiceError("invalid", choices)
+
+    assert err.value == "invalid"
+    assert err.literal_choices == ["prod", "staging"]
+    assert err.regex_patterns == [r"dev-\d+", r"test-\d+\.db"]
+
+
+@pytest.mark.parametrize(
     "data_type, value, expected, expected_str",
     [(Path, "a-file.py", FileNotFoundError, 'File not found: "a-file.py"')],
 )

@@ -102,7 +102,7 @@ class Cli:
             self.formatter.print_count_error(e.expected_count, e.count, e.cmd)
             sys.exit(1)
         except InvalidChoiceError as e:
-            self.formatter.print_invalid_value_error(e.value, e.choices)
+            self.formatter.print_invalid_value_error(e.value, e.literal_choices, e.regex_patterns)
             sys.exit(1)
         except InvalidValueError as e:
             self.formatter.print_error(str(e))

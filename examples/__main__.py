@@ -6,6 +6,7 @@ from typing import Literal
 from typing_extensions import LiteralString
 
 from piou import Cli, Option
+from piou.utils import Regex
 from piou.exceptions import CommandError
 from piou.formatter import RichFormatter
 
@@ -44,6 +45,7 @@ def foo_main(
     foo11: LiteralString | None = Option(None, "--foo11", help="Foo11 argument"),
     foo12: dict | None = Option(None, "--foo12", help="Foo12 argument"),
     foo13: int | None = Option(None, "--foo13", help="Foo13 argument", choices=lambda: list(range(10))),
+    foo14: str | None = Option(None, "--foo14", help="Foo14 argument", choices=["prod", "staging", Regex(r"dev-\d+")]),
     foo_bar: int = Option(..., "--foo-bar", help="Foo bar argument"),
 ):
     """
@@ -65,6 +67,7 @@ def foo_main(
         ("foo12", foo12),
         ("foo_bar", foo_bar),
         ("foo13", foo13),
+        ("foo14", foo14),
     ]:
         print(f"{name} = {value} ({type(value)})")
 

@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+import asyncio
 import tempfile
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Callable, cast
 from pathlib import Path
 
 import pytest
@@ -38,6 +39,16 @@ class MockTui:
 
     def mount_widget(self, widget: Widget) -> None:
         self.mounted.append(widget)
+
+    def watch_files(
+        self,
+        *paths: Path | str,
+        on_change: Callable[[set[tuple[str, str]]], None] | None = None,
+    ) -> asyncio.Task[None]:
+        async def _noop() -> None:
+            pass
+
+        return asyncio.ensure_future(_noop())
 
 
 @pytest.fixture
