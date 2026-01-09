@@ -98,7 +98,7 @@ MIN_MARKDOWN_SIZE: int = 75
 
 @dataclass
 class RichFormatter(Formatter):
-    _console: Console = field(init=False, repr=False, default=None)  # type: ignore[assignment]
+    _console: Console = field(init=False, repr=False, default=None)
     cmd_color: str = "cyan"
     option_color: str = "cyan"
     default_color: str = "white"
@@ -117,7 +117,12 @@ class RichFormatter(Formatter):
         return f"[{self.cmd_color}]{cmd}[/{self.cmd_color}]"
 
     def __post_init__(self):
-        self._console = Console(markup=True, highlight=False, force_terminal=self.force_terminal)
+        # Only pass force_terminal if explicitly set to True, otherwise let Rich auto-detect
+        # (Rich respects FORCE_COLOR env var when force_terminal is not specified)
+        if self.force_terminal:
+            self._console = Console(markup=True, highlight=False, force_terminal=True)
+        else:
+            self._console = Console(markup=True, highlight=False)
         self.print_fn = self._console.print
 
     def _print_description(self, item: CommandGroup | Command):
