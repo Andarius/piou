@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import asyncio
 import io
+import os
 import shlex
 import sys
 from contextlib import redirect_stdout, redirect_stderr
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable
 
@@ -63,9 +64,11 @@ class TuiApp(App):
         cli: Cli,
         ansi_color: bool = True,
         history_file: Path | None = None,
+        initial_input: str | None = None,
     ):
         super().__init__(ansi_color=ansi_color)
         self.cli = cli
+        self.initial_input = initial_input
         # Set up TUI context for commands to access
         set_tui_context(TuiContext(_tui=self))
         # Enable force_terminal on formatter to preserve ANSI colors when capturing output
@@ -79,6 +82,8 @@ class TuiApp(App):
         self.cycling = False
         self.history = History(file=history_file or Path.home() / f".{self.cli_name}_history")
         self.exit_pending = False
+        self.running_task: asyncio.Task[None] | None = None
+        self.command_queue: list[str] = []
 
     def get_command_for_path(self, path: str) -> Command | CommandGroup | None:
         """Get command/group for a path like 'stats' or 'stats:uploads'"""
@@ -141,6 +146,13 @@ class TuiApp(App):
         yield Rule()
         yield Static("Press Ctrl+C again to exit", id="exit-hint")
         yield Vertical(id="suggestions")
+
+    def on_mount(self) -> None:
+        """Called when the app is mounted. Prefill input if initial_input is set."""
+        if self.initial_input:
+            inp = self.query_one(Input)
+            inp.value = self.initial_input
+            inp.cursor_position = len(inp.value)
 
     def on_input_changed(self, event: Input.Changed) -> None:
         """Show command suggestions when input starts with /"""
@@ -237,11 +249,16 @@ class TuiApp(App):
         self.history.reset_index()
 
     def handle_ctrl_c(self) -> None:
-        """Handle Ctrl+C: clear input, or show exit hint, or exit"""
+        """Handle Ctrl+C: cancel running task, clear input, show exit hint, or exit"""
         inp = self.query_one(Input)
         exit_hint = self.query_one("#exit-hint", Static)
 
-        if inp.value:
+        # If a command is running, cancel it
+        if self.running_task is not None and not self.running_task.done():
+            self.running_task.cancel()
+            self.exit_pending = False
+            exit_hint.display = False
+        elif inp.value:
             # Input has content: clear it and reset exit state
             self.clear_input()
             self.exit_pending = False
@@ -273,7 +290,7 @@ class TuiApp(App):
         self.current_suggestions = []
         self.suggestion_index = -1
 
-    async def on_input_submitted(self, event: Input.Submitted) -> None:
+    def on_input_submitted(self, event: Input.Submitted) -> None:
         """Show user input in messages area and execute command when Enter is pressed"""
         value = event.value.strip()
         if not value:
@@ -285,6 +302,7 @@ class TuiApp(App):
 
         messages = self.query_one("#messages", Vertical)
         messages.mount(Static(f"> {value}", classes=CssClass.MESSAGE))
+        self.call_after_refresh(self.screen.scroll_end)
         event.input.value = ""
         # Clear suggestions
         self.query_one("#suggestions", Vertical).remove_children()
@@ -293,7 +311,37 @@ class TuiApp(App):
 
         # Execute command if it starts with /
         if value.startswith("/"):
+            # Queue command if one is already running
+            if self.running_task is not None and not self.running_task.done():
+                self.command_queue.append(value)
+                messages.mount(Static("(queued)", classes=f"{CssClass.OUTPUT}"))
+            else:
+                self.running_task = asyncio.create_task(self._run_command(value))
+
+    async def _run_command(self, value: str) -> None:
+        """Run a command as a cancellable task and handle interruption."""
+        cancelled = False
+        try:
             await self.execute_command(value)
+        except asyncio.CancelledError:
+            cancelled = True
+
+        if cancelled:
+            messages = self.query_one("#messages", Vertical)
+            messages.mount(Static("Interrupted", classes=f"{CssClass.OUTPUT} {CssClass.ERROR}"))
+            # Clear the queue on cancellation
+            self.command_queue.clear()
+            self.running_task = None
+            self.call_after_refresh(self.screen.scroll_end)
+        else:
+            # Process next command in queue
+            self.running_task = None
+            if self.command_queue:
+                next_cmd = self.command_queue.pop(0)
+                messages = self.query_one("#messages", Vertical)
+                messages.mount(Static(f"> {next_cmd}", classes=CssClass.MESSAGE))
+                self.call_after_refresh(self.screen.scroll_end)
+                self.running_task = asyncio.create_task(self._run_command(next_cmd))
 
     async def execute_command(self, value: str) -> None:
         """Parse and execute a command, capturing and displaying output"""
@@ -316,6 +364,7 @@ class TuiApp(App):
             with redirect_stdout(help_capture):
                 self.cli.formatter.print_help(group=self.cli._group, command=None, parent_args=[])
             messages.mount(Static(Text.from_ansi(help_capture.getvalue().strip()), classes=CssClass.OUTPUT))
+            self.call_after_refresh(self.screen.scroll_end)
             return
 
         # Capture stdout and stderr
@@ -345,11 +394,15 @@ class TuiApp(App):
         if stderr_output:
             messages.mount(Static(Text.from_ansi(stderr_output), classes=f"{CssClass.OUTPUT} {CssClass.ERROR}"))
 
+        if stdout_output or stderr_output:
+            self.call_after_refresh(self.screen.scroll_end)
+
     # TuiInterface implementation - App.notify handles the actual display
     def mount_widget(self, widget: Widget) -> None:
         """Mount a widget to the messages area."""
         messages = self.query_one("#messages", Vertical)
         messages.mount(widget)
+        self.call_after_refresh(self.screen.scroll_end)
 
     def watch_files(
         self,
@@ -401,6 +454,23 @@ class TuiCli:
     """TUI wrapper for a piou CLI."""
 
     cli: Cli
+    inline: bool = field(default_factory=lambda: os.getenv("PIOU_TUI_INLINE", "0") == "1")
+    """Run TUI in inline mode (uses native terminal scrolling). Supports PIOU_TUI_INLINE env var."""
 
-    def run(self) -> None:
-        TuiApp(self.cli).run()
+    def run(self, *args: str) -> None:
+        """Run the TUI app.
+
+        Args:
+            *args: Command-line arguments to prefill in the input field.
+                   Will be formatted as "/<cmd> <args...>" if provided.
+        """
+        initial_input = None
+        if args:
+            # Format args as TUI command: first arg is command name, rest are arguments
+            cmd_name = args[0]
+            cmd_args = args[1:]
+            if cmd_args:
+                initial_input = f"/{cmd_name} {shlex.join(cmd_args)}"
+            else:
+                initial_input = f"/{cmd_name}"
+        TuiApp(self.cli, initial_input=initial_input).run(inline=self.inline)

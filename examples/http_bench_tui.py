@@ -44,6 +44,7 @@ async def bench_library(
     url: str,
     count: int,
     on_progress: asyncio.Queue[tuple[str, int]] | None = None,
+    track_progress: bool = True,
 ) -> BenchResult:
     """Benchmark a single library."""
     result = BenchResult(library=lib, requests=count)
@@ -51,6 +52,8 @@ async def bench_library(
 
     async def report_progress() -> None:
         nonlocal completed
+        if not track_progress:
+            return
         completed += 1
         if on_progress is not None:
             await on_progress.put((lib, completed))
@@ -68,6 +71,7 @@ async def bench_library(
             async with aiohttp.ClientSession() as session:
                 await asyncio.gather(*[_fetch(session, url) for _ in range(count)])
             result.elapsed = time.perf_counter() - before
+
         case "httpx":
             import httpx
 
@@ -165,6 +169,48 @@ async def grid_view(
         slowest = max(final_results, key=lambda r: r.elapsed)
         speedup = ((slowest.elapsed / fastest.elapsed) - 1) * 100
         ctx.notify(f"{fastest.library} wins! {speedup:.1f}% faster", title="Complete", severity="information")
+
+
+@cli.command(cmd="bench", help="Raw benchmark without progress tracking")
+async def bench_raw(
+    url: str = Option("https://httpbingo.org/get", "-u", "--url", help="URL"),
+    count: int = Option(100, "-n", "--count", help="Requests per library"),
+    best_of: int = Option(1, "-b", "--best-of", help="Best of X runs"),
+    ctx: TuiContext = TuiOption(),
+):
+    """Run benchmarks without progress overhead for raw speed comparison."""
+    from textual.widgets import ProgressBar
+
+    ctx.mount_widget(Static(f"Benchmarking {url} x{count} (best of {best_of})"))
+    status = Static("Starting...")
+    ctx.mount_widget(status)
+    progress_bar = ProgressBar(total=best_of * len(LIBRARIES))
+    ctx.mount_widget(progress_bar)
+
+    best_results: dict[str, BenchResult] = {}
+
+    for run in range(best_of):
+        for lib in LIBRARIES:
+            status.update(f"Testing [cyan]{lib}[/] (round {run + 1}/{best_of})")
+            result = await bench_library(lib, url, count, track_progress=False)
+            if result.error is None:
+                if lib not in best_results or result.elapsed < best_results[lib].elapsed:
+                    best_results[lib] = result
+            progress_bar.advance(1)
+
+    # Show results in a table
+    sorted_results = sorted(best_results.values(), key=lambda r: r.elapsed)
+    slowest_time = sorted_results[-1].elapsed
+
+    table = DataTable()
+    table.add_columns("Library", "Time", "Req/s", "vs slowest")
+    for r in sorted_results:
+        diff = ((slowest_time / r.elapsed) - 1) * 100
+        diff_str = "slowest" if diff == 0 else f"+{diff:.0f}%"
+        table.add_row(r.library, f"{r.elapsed:.3f}s", f"{r.rps:.0f}", diff_str)
+
+    status.update("Complete!")
+    ctx.mount_widget(table)
 
 
 @cli.command(cmd="table", help="Show results in a table format")

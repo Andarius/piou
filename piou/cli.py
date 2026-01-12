@@ -54,17 +54,18 @@ class Cli:
 
     def run(self):
         """Run the CLI application, parsing the command line arguments."""
-        if self.tui:
-            self.run_tui()
-            return
-
         try:
             _, *args = sys.argv
         except ValueError:
+            args = []
+
+        if self.tui:
+            self.run_tui(*args)
             return
+
         self.run_with_args(*args)
 
-    def run_tui(self):
+    def run_tui(self, *args: str):
         """Run the CLI in interactive TUI mode. Requires piou[tui]."""
         try:
             from .tui import TuiCli
@@ -72,7 +73,7 @@ class Cli:
             self.formatter.print_error("TUI mode requires textual. Install piou\\[tui] or 'textual' package.")
             sys.exit(1)
 
-        TuiCli(self).run()
+        TuiCli(self).run(*args)
 
     def run_with_args(self, *args):
         """Run the CLI application with the given arguments."""

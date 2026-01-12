@@ -1,6 +1,11 @@
 Screen {
     background: transparent;
     padding: 0 2;
+
+    &:inline {
+        scrollbar-size: 0 0;
+        height: 100vh;
+    }
 }
 
 #main {
