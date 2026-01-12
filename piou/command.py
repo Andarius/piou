@@ -2,7 +2,6 @@ from __future__ import annotations
 import asyncio
 import textwrap
 from dataclasses import dataclass, field
-from functools import wraps
 from inspect import getdoc
 from typing import Any, NamedTuple, Callable
 
@@ -202,12 +201,8 @@ class CommandGroup:
         """Decorator to mark a function as a command."""
 
         def _command(f):
-            @wraps(f)
-            def wrapper(*args, **kwargs):
-                return f(*args, **kwargs)
-
             self.add_command(f, cmd=cmd, help=help, description=description, is_main=is_main)
-            return wrapper
+            return f
 
         return _command
 
@@ -215,15 +210,11 @@ class CommandGroup:
         """Decorator to mark a function as an option processor."""
 
         def _processor(f):
-            @wraps(f)
-            def wrapper(*args, **kwargs):
-                return f(*args, **kwargs)
-
             options, _ = extract_function_info(f)
             for option in options:
                 self._options.append(option)
             self.set_options_processor(f)
-            return wrapper
+            return f
 
         return _processor
 

@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 
 from piou import Cli, Option, TuiContext, TuiOption, get_tui_context
-from piou.tui.context import SeverityLevel, set_tui_context, reset_tui_context
+from piou.tui.context import SeverityLevel, set_tui_context
 
 # Check if textual is available
 pytest.importorskip("textual")
@@ -373,9 +373,9 @@ class TestTuiApp:
 @pytest.fixture
 def reset_context():
     """Reset context before and after each test."""
-    reset_tui_context()
+    set_tui_context(TuiContext())
     yield
-    reset_tui_context()
+    set_tui_context(TuiContext())
 
 
 class TestTuiContext:
@@ -390,7 +390,8 @@ class TestTuiContext:
     def test_context_with_tui(self):
         """Context with TUI interface should report is_tui=True."""
         tui = MockTui()
-        ctx = TuiContext(_tui=tui)
+        ctx = TuiContext()
+        ctx.tui = tui
         assert ctx.is_tui is True
         assert ctx.tui is tui
 
@@ -405,7 +406,8 @@ class TestTuiContext:
     def test_notify_with_tui(self, severity: SeverityLevel):
         """notify() should call TUI's notify method."""
         tui = MockTui()
-        ctx = TuiContext(_tui=tui)
+        ctx = TuiContext()
+        ctx.tui = tui
         ctx.notify("Hello", title="Alert", severity=severity)
 
         assert tui.notifications == [("Hello", "Alert", severity)]
@@ -420,7 +422,8 @@ class TestTuiContext:
         """mount_widget() should call TUI's mount_widget method."""
         tui = MockTui()
         widget = cast("Widget", object())
-        ctx = TuiContext(_tui=tui)
+        ctx = TuiContext()
+        ctx.tui = tui
         ctx.mount_widget(widget)
 
         assert tui.mounted == [widget]
@@ -437,20 +440,13 @@ class TestGetTuiContext:
 
     def test_set_and_get_tui_context(self, reset_context):
         """set_tui_context() should update the current context."""
-        custom_ctx = TuiContext(_tui=MockTui())
+        custom_ctx = TuiContext()
+        custom_ctx.tui = MockTui()
         set_tui_context(custom_ctx)
 
         ctx = get_tui_context()
         assert ctx is custom_ctx
         assert ctx.is_tui is True
-
-    def test_reset_tui_context(self, reset_context):
-        """reset_tui_context() should restore default context."""
-        set_tui_context(TuiContext(_tui=MockTui()))
-        assert get_tui_context().is_tui is True
-
-        reset_tui_context()
-        assert get_tui_context().is_tui is False
 
 
 class TestTuiOption:
@@ -483,7 +479,8 @@ class TestTuiOption:
             captured_ctx = ctx
 
         # Set a TUI context before running
-        tui_ctx = TuiContext(_tui=MockTui())
+        tui_ctx = TuiContext()
+        tui_ctx.tui = MockTui()
         set_tui_context(tui_ctx)
 
         cli._group.run_with_args("test")

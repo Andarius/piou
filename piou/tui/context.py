@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from contextvars import ContextVar
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Literal, Protocol, runtime_checkable
 
@@ -52,17 +52,12 @@ class TuiContext:
             ctx.notify(f"Hello, {name}!")
     """
 
-    _tui: TuiInterface | None = None
+    tui: TuiInterface | None = field(default=None, init=False)
 
     @property
     def is_tui(self) -> bool:
         """Return True if running in TUI mode."""
-        return self._tui is not None
-
-    @property
-    def tui(self) -> TuiInterface | None:
-        """Access the TUI interface directly. Returns None in CLI mode."""
-        return self._tui
+        return self.tui is not None
 
     def notify(
         self,
@@ -81,8 +76,8 @@ class TuiContext:
             title: Optional title for the notification
             severity: One of "information", "warning", or "error"
         """
-        if self._tui is not None:
-            self._tui.notify(message, title=title, severity=severity)
+        if self.tui is not None:
+            self.tui.notify(message, title=title, severity=severity)
 
     def mount_widget(self, widget: Widget) -> None:
         """Mount a Textual widget to the messages area.
@@ -93,8 +88,8 @@ class TuiContext:
         Args:
             widget: A Textual Widget to mount
         """
-        if self._tui is not None:
-            self._tui.mount_widget(widget)
+        if self.tui is not None:
+            self.tui.mount_widget(widget)
 
     def watch_files(
         self,
@@ -125,8 +120,8 @@ class TuiContext:
                 ctx.watch_files(Path(__file__).parent, on_change=lambda changes: reload_module())
                 await run_server()
         """
-        if self._tui is not None:
-            return self._tui.watch_files(*paths, on_change=on_change)
+        if self.tui is not None:
+            return self.tui.watch_files(*paths, on_change=on_change)
         return None
 
 
@@ -154,11 +149,6 @@ def get_tui_context() -> TuiContext:
 def set_tui_context(ctx: TuiContext) -> None:
     """Set the current TUI execution context. Used internally by TuiApp."""
     _current_tui_context.set(ctx)
-
-
-def reset_tui_context() -> None:
-    """Reset the TUI context to default (no TUI). Used internally."""
-    _current_tui_context.set(TuiContext())
 
 
 def TuiOption() -> TuiContext:

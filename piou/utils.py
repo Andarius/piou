@@ -471,11 +471,6 @@ def get_cmd_args(cmd: str, types: dict[str, Any]) -> tuple[list[str], dict[str, 
     return positional_args, keyword_params
 
 
-def get_default_args(func) -> list[CommandOption]:
-    signature = inspect.signature(func)
-    return [v.default for v in signature.parameters.values() if v is not inspect.Parameter.empty]
-
-
 def parse_input_args(
     args: tuple[Any, ...], commands: set[str], global_option_names: set[str] | None = None
 ) -> tuple[str | None, list[str], list[str]]:
@@ -738,7 +733,8 @@ def extract_function_info(
     options: list[CommandOption] = []
     derived_opts: list[CommandDerivedOption] = []
     type_hints = get_type_hints_derived(f)
-    default_args = get_default_args(f)
+    signature = inspect.signature(f)
+    default_args = [v.default for v in signature.parameters.values() if v is not inspect.Parameter.empty]
 
     for (param_name, param_type), default_value in zip(type_hints.items(), default_args):
         # Check if option is defined via Annotated syntax

@@ -33,7 +33,7 @@ if TYPE_CHECKING:
     from ..cli import Cli
 
 from ..command import Command, CommandGroup, ShowHelpError
-from .context import TuiContext, set_tui_context, reset_tui_context
+from .context import TuiContext, set_tui_context
 from ..formatter.rich_formatter import RichFormatter
 from .history import History
 from .suggester import CommandSuggester
@@ -56,7 +56,6 @@ class TuiApp(App):
     async def action_quit(self) -> None:
         """Save history and quit"""
         self.history.save()
-        reset_tui_context()
         await super().action_quit()
 
     def __init__(
@@ -70,7 +69,9 @@ class TuiApp(App):
         self.cli = cli
         self.initial_input = initial_input
         # Set up TUI context for commands to access
-        set_tui_context(TuiContext(_tui=self))
+        ctx = TuiContext()
+        ctx.tui = self
+        set_tui_context(ctx)
         # Enable force_terminal on formatter to preserve ANSI colors when capturing output
         if isinstance(self.cli.formatter, RichFormatter):
             self.cli.formatter._console._force_terminal = True
@@ -79,8 +80,8 @@ class TuiApp(App):
         self.commands_map = {f"/{cmd.name}": cmd for cmd in self.commands}
         self.suggestion_index = -1
         self.current_suggestions: list[str] = []
-        self.cycling = False
         self.history = History(file=history_file or Path.home() / f".{self.cli_name}_history")
+        self.suppress_input_change = False
         self.exit_pending = False
         self.running_task: asyncio.Task[None] | None = None
         self.command_queue: list[str] = []
@@ -135,6 +136,20 @@ class TuiApp(App):
                 suggestions.mount(Static(text, classes=classes))
 
     def compose(self) -> ComposeResult:
+        """
+        ┌─────────────────────────────────┐
+        │ cli_name                        │
+        │ description                     │
+        │                                 │
+        │ #messages (command output)      │
+        │                                 │
+        │─────────────────────────────────│
+        │ > [input                      ] │
+        │─────────────────────────────────│
+        │ Press Ctrl+C again to exit      │
+        │ #suggestions                    │
+        └─────────────────────────────────┘
+        """
         yield Static(self.cli_name, id="name")
         if self.cli.description:
             yield Static(self.cli.description, id="description")
@@ -156,8 +171,9 @@ class TuiApp(App):
 
     def on_input_changed(self, event: Input.Changed) -> None:
         """Show command suggestions when input starts with /"""
-        if self.cycling:
-            self.cycling = False
+        if self.history.is_cycling or self.suppress_input_change:
+            self.history.is_cycling = False
+            self.suppress_input_change = False
             return
 
         # Reset exit hint when user starts typing
@@ -218,7 +234,7 @@ class TuiApp(App):
 
     def on_up_down(self, key: str) -> None:
         """Cycle through suggestions with up/down arrows"""
-        self.cycling = True
+        self.suppress_input_change = True
         if key == "down":
             self.suggestion_index = (self.suggestion_index + 1) % len(self.current_suggestions)
         else:
@@ -233,10 +249,9 @@ class TuiApp(App):
 
     def on_history(self, key: str) -> None:
         """Cycle through command history with up/down arrows"""
-        self.cycling = True
         entry = self.history.navigate(key)
         inp = self.query_one(Input)
-        inp.value = entry or ""
+        inp.value = entry or ""  # None when navigating past most recent entry
         inp.cursor_position = len(inp.value)
 
     def clear_input(self) -> None:
@@ -274,7 +289,7 @@ class TuiApp(App):
 
     def on_tab(self) -> None:
         """Confirm selection and show first argument placeholder"""
-        self.cycling = True
+        self.suppress_input_change = True
         # Clear suggestions
         self.query_one("#suggestions", Vertical).remove_children()
         # Get selected command and show first arg placeholder
@@ -298,7 +313,6 @@ class TuiApp(App):
 
         # Add to history
         self.history.append(value)
-        self.history.reset_index()
 
         messages = self.query_one("#messages", Vertical)
         messages.mount(Static(f"> {value}", classes=CssClass.MESSAGE))

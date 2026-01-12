@@ -8,8 +8,3 @@ try:
 except ImportError:
     RichFormatter = None  # type: ignore[misc, assignment]
     HAS_RICH = False
-
-
-def get_default_formatter() -> Formatter:
-    """Return the best available formatter (RichFormatter if available, else Formatter)."""
-    return get_formatter()
