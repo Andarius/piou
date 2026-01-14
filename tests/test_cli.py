@@ -1224,3 +1224,75 @@ class TestAnnotated:
 
         cli.run_with_args(cmd, *args)
         assert result["test"] == expected
+
+
+class TestNestedCommandGroup:
+    """Tests for nested CommandGroup added via add_group()."""
+
+    def test_nested_command_group_help_display(self, capsys):
+        """Test that nested CommandGroup help displays correctly with formatter."""
+        from piou import Cli, CommandGroup
+        from piou.formatter import RichFormatter
+
+        cli = Cli(description="Test CLI", formatter=RichFormatter())
+
+        parent = CommandGroup(name="parent", help="Parent group")
+        child = CommandGroup(name="child", help="Child group")
+
+        @child.command("action", help="Run action")
+        def action():
+            pass
+
+        parent.add_group(child)
+        cli.add_command_group(parent)
+
+        # Trigger help display for the nested group - this was crashing before the fix
+        cli.run_with_args("parent", "child", "-h")
+
+        output = capsys.readouterr().out
+        assert "USAGE" in output
+        assert "COMMANDS" in output
+        assert "action" in output
+        assert "Run action" in output
+
+    def test_nested_command_group_with_options(self, capsys):
+        """Test nested CommandGroup with options displays help correctly."""
+        from piou import Cli, CommandGroup, Option
+        from piou.formatter import RichFormatter
+
+        cli = Cli(description="Test CLI", formatter=RichFormatter())
+
+        parent = CommandGroup(name="scw", help="Scaleway commands")
+        child = CommandGroup(name="baremetal", help="Baremetal commands")
+
+        @child.command("offers", help="List offers")
+        def offers(zone: str = Option("fr-par-2", "-z", "--zone", help="Zone")):
+            pass
+
+        parent.add_group(child)
+        cli.add_command_group(parent)
+
+        # Test parent group help
+        cli.run_with_args("scw", "-h")
+        output = capsys.readouterr().out
+        assert "baremetal" in output
+        assert "Baremetal commands" in output
+
+        # Test child group help - exercises print_cmd_group_help
+        cli.run_with_args("scw", "baremetal", "-h")
+        output = capsys.readouterr().out
+        assert "COMMANDS" in output
+        assert "offers" in output
+        assert "List offers" in output
+
+    def test_command_group_options_sorted_property(self):
+        """Test that CommandGroup has options_sorted for interface consistency with Command."""
+        from piou import CommandGroup
+
+        group = CommandGroup(name="test", help="Test group")
+        group.add_option("-a", "--alpha", help="Alpha option")
+        group.add_option("-b", "--beta", help="Beta option")
+
+        # options_sorted should exist and return same as options
+        assert hasattr(group, "options_sorted")
+        assert group.options_sorted == group.options
