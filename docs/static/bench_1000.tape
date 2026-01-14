@@ -14,10 +14,12 @@ Set TypingSpeed 50ms
 Env PROMPT "$ "
 Env PS1 "$ "
 
-# Start the TUI
+# Start the TUI (hidden from recording)
+Hide
 Type "uv run python -m examples.http_bench_tui"
 Enter
 Sleep 1s
+Show
 
 # Run HTTP benchmark with 1000 requests
 Type "/grid -n 1000 -b 3"
