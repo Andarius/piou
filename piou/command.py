@@ -126,6 +126,11 @@ class CommandGroup:
         """Returns a list of options, sorted by whether they are required or not."""
         return sorted(self._options, key=lambda x: x.is_required, reverse=True)
 
+    @property
+    def options_sorted(self):
+        """Alias for options, for consistency with Command interface."""
+        return self.options
+
     def add_sub_parser(self, help: str | None = None, description: str | None = None):
         """Adds a sub-parser to the command group, which can be used to add sub-commands."""
         cls = type(self)
