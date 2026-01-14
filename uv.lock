@@ -1245,7 +1245,7 @@ wheels = [
 
 [[package]]
 name = "piou"
-version = "0.25.1"
+version = "0.25.2"
 source = { editable = "." }
 dependencies = [
     { name = "rich" },

@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable
 
+from rich.console import Console
 from rich.text import Text
 
 try:
@@ -106,6 +107,82 @@ class TuiApp(App):
                 return found
         return current
 
+    def _format_command_help(self, cmd: Command | CommandGroup) -> Text:
+        """Format command help for display in the help widget."""
+        lines: list[str] = []
+
+        # Usage line with arguments
+        if isinstance(cmd, Command):
+            args_parts = []
+            for opt in cmd.positional_args:
+                args_parts.append(f"<{opt.name}>")
+            for opt in cmd.keyword_args:
+                arg_name = sorted(opt.keyword_args)[-1]
+                if opt.is_required:
+                    args_parts.append(f"{arg_name} <value>")
+                else:
+                    args_parts.append(f"[{arg_name}]")
+            if args_parts:
+                lines.append(f"[bold]Usage:[/bold] /{cmd.name} {' '.join(args_parts)}")
+            else:
+                lines.append(f"[bold]Usage:[/bold] /{cmd.name}")
+
+            # Arguments section
+            if cmd.positional_args:
+                lines.append("")
+                lines.append("[bold]Arguments:[/bold]")
+                for opt in cmd.positional_args:
+                    type_name = getattr(opt.data_type, "__name__", str(opt.data_type))
+                    help_text = f" - {opt.help}" if opt.help else ""
+                    lines.append(f"  [cyan]<{opt.name}>[/cyan] ({type_name}){help_text}")
+
+            # Options section
+            if cmd.keyword_args:
+                lines.append("")
+                lines.append("[bold]Options:[/bold]")
+                for opt in cmd.keyword_args:
+                    arg_display = ", ".join(sorted(opt.keyword_args))
+                    type_name = getattr(opt.data_type, "__name__", str(opt.data_type))
+                    required = " [red]*required[/red]" if opt.is_required else ""
+                    default = f" (default: {opt.default})" if not opt.is_required and opt.default is not None else ""
+                    help_text = f" - {opt.help}" if opt.help else ""
+                    lines.append(f"  [cyan]{arg_display}[/cyan] ({type_name}){required}{default}{help_text}")
+        else:
+            # CommandGroup
+            lines.append(f"[bold]Usage:[/bold] /{cmd.name}:<subcommand>")
+            if cmd.commands:
+                lines.append("")
+                lines.append("[bold]Subcommands:[/bold]")
+                for subcmd in cmd.commands.values():
+                    help_text = f" - {subcmd.help}" if subcmd.help else ""
+                    lines.append(f"  [cyan]{subcmd.name}[/cyan]{help_text}")
+
+        # Render with Rich markup
+        console = Console(force_terminal=True, markup=True, highlight=False)
+        with console.capture() as capture:
+            for line in lines:
+                console.print(line)
+        return Text.from_ansi(capture.get().rstrip())
+
+    def _update_command_help(self, cmd_path: str | None) -> None:
+        """Update the command help widget based on selected command."""
+        help_widget = self.query_one("#command-help", Static)
+
+        if cmd_path is None or cmd_path == "/help":
+            help_widget.update("")
+            return
+
+        # Strip leading / and get command
+        path = cmd_path.lstrip("/")
+        cmd = self.get_command_for_path(path)
+
+        if cmd is None:
+            help_widget.update("")
+            return
+
+        help_text = self._format_command_help(cmd)
+        help_widget.update(help_text)
+
     def _suggest_subcommands(self, query: str, suggestions: Vertical) -> None:
         """Suggest subcommands for a command path like 'stats:' or 'stats:up'"""
         parts = query.split(":")
@@ -150,6 +227,7 @@ class TuiApp(App):
         │─────────────────────────────────│
         │ Press Ctrl+C again to exit      │
         │ #suggestions                    │
+        │ #command-help                   │
         └─────────────────────────────────┘
         """
         yield Static(self.cli_name, id="name")
@@ -163,6 +241,7 @@ class TuiApp(App):
         yield Rule()
         yield Static("Press Ctrl+C again to exit", id="exit-hint")
         yield Vertical(id="suggestions")
+        yield Static(id="command-help")
 
     def on_mount(self) -> None:
         """Called when the app is mounted. Prefill input if initial_input is set."""
@@ -214,6 +293,11 @@ class TuiApp(App):
 
             if self.current_suggestions:
                 self.suggestion_index = 0
+                self._update_command_help(self.current_suggestions[0])
+            else:
+                self._update_command_help(None)
+        else:
+            self._update_command_help(None)
 
     def on_key(self, event: Key) -> None:
         """Route key events to specific handlers"""
@@ -248,6 +332,8 @@ class TuiApp(App):
         suggestions = self.query(f".{CssClass.SUGGESTION}")
         for i, s in enumerate(suggestions):
             s.set_class(i == self.suggestion_index, CssClass.SELECTED)
+        # Update help for selected command
+        self._update_command_help(self.current_suggestions[self.suggestion_index])
 
     def on_history(self, key: str) -> None:
         """Cycle through command history with up/down arrows"""
@@ -264,6 +350,7 @@ class TuiApp(App):
         self.current_suggestions = []
         self.suggestion_index = -1
         self.history.reset_index()
+        self._update_command_help(None)
 
     def handle_ctrl_c(self) -> None:
         """Handle Ctrl+C: cancel running task, clear input, show exit hint, or exit"""
@@ -320,10 +407,11 @@ class TuiApp(App):
         messages.mount(Static(f"> {value}", classes=CssClass.MESSAGE))
         self.call_after_refresh(self.screen.scroll_end)
         event.input.value = ""
-        # Clear suggestions
+        # Clear suggestions and help
         self.query_one("#suggestions", Vertical).remove_children()
         self.current_suggestions = []
         self.suggestion_index = -1
+        self._update_command_help(None)
 
         # Execute command if it starts with /
         if value.startswith("/"):

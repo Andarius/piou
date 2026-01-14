@@ -37,6 +37,8 @@
 .terminal-r3 { fill: #808080 }
 .terminal-r4 { fill: #ffffff }
 .terminal-r5 { fill: #000000 }
+.terminal-r6 { fill: #808080;font-weight: bold }
+.terminal-r7 { fill: #68a0b3 }
     </style>
 
     <defs>
@@ -134,11 +136,11 @@
 </text><text class="terminal-r3" x="24.4" y="190.8" textLength="353.8" clip-path="url(#terminal-line-7)">/echo&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;Echo&#160;a&#160;message</text><text class="terminal-r1" x="976" y="190.8" textLength="12.2" clip-path="url(#terminal-line-7)">
 </text><text class="terminal-r3" x="24.4" y="215.2" textLength="427" clip-path="url(#terminal-line-8)">/hello&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;Say&#160;hello&#160;to&#160;someone</text><text class="terminal-r1" x="976" y="215.2" textLength="12.2" clip-path="url(#terminal-line-8)">
 </text><text class="terminal-r1" x="976" y="239.6" textLength="12.2" clip-path="url(#terminal-line-9)">
-</text><text class="terminal-r1" x="976" y="264" textLength="12.2" clip-path="url(#terminal-line-10)">
+</text><text class="terminal-r6" x="24.4" y="264" textLength="73.2" clip-path="url(#terminal-line-10)">Usage:</text><text class="terminal-r3" x="97.6" y="264" textLength="158.6" clip-path="url(#terminal-line-10)">&#160;/add&#160;&lt;a&gt;&#160;&lt;b&gt;</text><text class="terminal-r1" x="976" y="264" textLength="12.2" clip-path="url(#terminal-line-10)">
 </text><text class="terminal-r1" x="976" y="288.4" textLength="12.2" clip-path="url(#terminal-line-11)">
-</text><text class="terminal-r1" x="976" y="312.8" textLength="12.2" clip-path="url(#terminal-line-12)">
-</text><text class="terminal-r1" x="976" y="337.2" textLength="12.2" clip-path="url(#terminal-line-13)">
-</text><text class="terminal-r1" x="976" y="361.6" textLength="12.2" clip-path="url(#terminal-line-14)">
+</text><text class="terminal-r6" x="24.4" y="312.8" textLength="122" clip-path="url(#terminal-line-12)">Arguments:</text><text class="terminal-r1" x="976" y="312.8" textLength="12.2" clip-path="url(#terminal-line-12)">
+</text><text class="terminal-r7" x="48.8" y="337.2" textLength="36.6" clip-path="url(#terminal-line-13)">&lt;a&gt;</text><text class="terminal-r3" x="85.4" y="337.2" textLength="256.2" clip-path="url(#terminal-line-13)">&#160;(int)&#160;-&#160;First&#160;number</text><text class="terminal-r1" x="976" y="337.2" textLength="12.2" clip-path="url(#terminal-line-13)">
+</text><text class="terminal-r7" x="48.8" y="361.6" textLength="36.6" clip-path="url(#terminal-line-14)">&lt;b&gt;</text><text class="terminal-r3" x="85.4" y="361.6" textLength="268.4" clip-path="url(#terminal-line-14)">&#160;(int)&#160;-&#160;Second&#160;number</text><text class="terminal-r1" x="976" y="361.6" textLength="12.2" clip-path="url(#terminal-line-14)">
 </text><text class="terminal-r1" x="976" y="386" textLength="12.2" clip-path="url(#terminal-line-15)">
 </text><text class="terminal-r1" x="976" y="410.4" textLength="12.2" clip-path="url(#terminal-line-16)">
 </text><text class="terminal-r1" x="976" y="434.8" textLength="12.2" clip-path="url(#terminal-line-17)">
