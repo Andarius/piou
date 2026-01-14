@@ -9,7 +9,6 @@ class History:
     file: Path
     entries: list[str] = field(default_factory=list)
     index: int = -1
-    is_cycling: bool = False
 
     def __post_init__(self) -> None:
         if self.file.exists():
@@ -44,7 +43,6 @@ class History:
             self.index = min(self.index + 1, len(self.entries) - 1)
         else:
             self.index = max(self.index - 1, -1)
-        self.is_cycling = True
         return self.entries[self.index] if self.index >= 0 else None
 
     def reset_index(self) -> None:

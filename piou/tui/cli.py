@@ -8,7 +8,7 @@ import sys
 from contextlib import redirect_stdout, redirect_stderr
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING
 
 from rich.console import Console
 from rich.text import Text
@@ -22,13 +22,6 @@ try:
 except ImportError as e:
     raise ImportError("TUI mode requires textual. Install piou[tui] or 'textual' package.") from e
 
-# Optional watchfiles for hot reload
-try:
-    import watchfiles  # noqa: F401
-
-    HAS_WATCHFILES = True
-except ImportError:
-    HAS_WATCHFILES = False
 
 if TYPE_CHECKING:
     from ..cli import Cli
@@ -38,8 +31,6 @@ from .context import TuiContext, set_tui_context
 from ..formatter.rich_formatter import RichFormatter
 from .history import History
 from .suggester import CommandSuggester
-
-WatchCallback = Callable[[set[tuple[str, str]]], None]
 
 
 class CssClass:
@@ -74,10 +65,8 @@ class TuiApp(App):
         ctx.tui = self
         set_tui_context(ctx)
         # Enable force_terminal on formatter to preserve ANSI colors when capturing output
-        # Must also re-detect color system since it was cached as None during construction
         if isinstance(self.cli.formatter, RichFormatter):
-            self.cli.formatter._console._force_terminal = True
-            self.cli.formatter._console._color_system = self.cli.formatter._console._detect_color_system()
+            self.cli.formatter._console = Console(markup=True, highlight=False, force_terminal=True)
         self.cli_name = Path(sys.argv[0]).stem if sys.argv else "cli"
         self.commands = list(cli.commands.values())
         self.commands_map = {f"/{cmd.name}": cmd for cmd in self.commands}
@@ -86,8 +75,8 @@ class TuiApp(App):
         self.history = History(file=history_file or Path.home() / f".{self.cli_name}_history")
         self.suppress_input_change = False
         self.exit_pending = False
-        self.running_task: asyncio.Task[None] | None = None
-        self.command_queue: list[str] = []
+        self.command_queue: asyncio.Queue[str] = asyncio.Queue()
+        self.command_processor_task: asyncio.Task[None] | None = None
 
     def get_command_for_path(self, path: str) -> Command | CommandGroup | None:
         """Get command/group for a path like 'stats' or 'stats:uploads'"""
@@ -249,11 +238,12 @@ class TuiApp(App):
             inp = self.query_one(Input)
             inp.value = self.initial_input
             inp.cursor_position = len(inp.value)
+        # Start command processor task
+        self.command_processor_task = asyncio.create_task(self._process_command_queue())
 
     def on_input_changed(self, event: Input.Changed) -> None:
         """Show command suggestions when input starts with /"""
-        if self.history.is_cycling or self.suppress_input_change:
-            self.history.is_cycling = False
+        if self.suppress_input_change:
             self.suppress_input_change = False
             return
 
@@ -337,6 +327,7 @@ class TuiApp(App):
 
     def on_history(self, key: str) -> None:
         """Cycle through command history with up/down arrows"""
+        self.suppress_input_change = True
         entry = self.history.navigate(key)
         inp = self.query_one(Input)
         inp.value = entry or ""  # None when navigating past most recent entry
@@ -353,13 +344,16 @@ class TuiApp(App):
         self._update_command_help(None)
 
     def handle_ctrl_c(self) -> None:
-        """Handle Ctrl+C: cancel running task, clear input, show exit hint, or exit"""
+        """Handle Ctrl+C: cancel running command, clear input, show exit hint, or exit"""
         inp = self.query_one(Input)
         exit_hint = self.query_one("#exit-hint", Static)
 
-        # If a command is running, cancel it
-        if self.running_task is not None and not self.running_task.done():
-            self.running_task.cancel()
+        # If commands are queued or running, cancel the processor
+        if not self.command_queue.empty():
+            if self.command_processor_task and not self.command_processor_task.done():
+                self.command_processor_task.cancel()
+                # Restart the processor for future commands
+                self.command_processor_task = asyncio.create_task(self._process_command_queue())
             self.exit_pending = False
             exit_hint.display = False
         elif inp.value:
@@ -395,7 +389,7 @@ class TuiApp(App):
         self.suggestion_index = -1
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
-        """Show user input in messages area and execute command when Enter is pressed"""
+        """Show user input in messages area and queue command for execution"""
         value = event.value.strip()
         if not value:
             return
@@ -413,39 +407,41 @@ class TuiApp(App):
         self.suggestion_index = -1
         self._update_command_help(None)
 
-        # Execute command if it starts with /
+        # Queue command for execution if it starts with /
         if value.startswith("/"):
-            # Queue command if one is already running
-            if self.running_task is not None and not self.running_task.done():
-                self.command_queue.append(value)
+            self.command_queue.put_nowait(value)
+            # Show queued indicator if there are already commands in queue
+            if self.command_queue.qsize() > 1:
                 messages.mount(Static("(queued)", classes=f"{CssClass.OUTPUT}"))
-            else:
-                self.running_task = asyncio.create_task(self._run_command(value))
-
-    async def _run_command(self, value: str) -> None:
-        """Run a command as a cancellable task and handle interruption."""
-        cancelled = False
-        try:
-            await self.execute_command(value)
-        except asyncio.CancelledError:
-            cancelled = True
-
-        if cancelled:
-            messages = self.query_one("#messages", Vertical)
-            messages.mount(Static("Interrupted", classes=f"{CssClass.OUTPUT} {CssClass.ERROR}"))
-            # Clear the queue on cancellation
-            self.command_queue.clear()
-            self.running_task = None
-            self.call_after_refresh(self.screen.scroll_end)
-        else:
-            # Process next command in queue
-            self.running_task = None
-            if self.command_queue:
-                next_cmd = self.command_queue.pop(0)
-                messages = self.query_one("#messages", Vertical)
-                messages.mount(Static(f"> {next_cmd}", classes=CssClass.MESSAGE))
                 self.call_after_refresh(self.screen.scroll_end)
-                self.running_task = asyncio.create_task(self._run_command(next_cmd))
+
+    async def _process_command_queue(self) -> None:
+        """Continuously process commands from the queue."""
+        while True:
+            try:
+                # Wait for next command
+                value = await self.command_queue.get()
+
+                try:
+                    await self.execute_command(value)
+                except asyncio.CancelledError:
+                    # Command was cancelled, show message and clear queue
+                    messages = self.query_one("#messages", Vertical)
+                    messages.mount(Static("Interrupted", classes=f"{CssClass.OUTPUT} {CssClass.ERROR}"))
+                    self.call_after_refresh(self.screen.scroll_end)
+                    # Drain the queue
+                    while not self.command_queue.empty():
+                        try:
+                            self.command_queue.get_nowait()
+                        except asyncio.QueueEmpty:
+                            break
+                    raise  # Re-raise to stop the processor
+                finally:
+                    # Mark task as done
+                    self.command_queue.task_done()
+            except asyncio.CancelledError:
+                # Processor is being shut down
+                break
 
     async def execute_command(self, value: str) -> None:
         """Parse and execute a command, capturing and displaying output"""
@@ -486,7 +482,14 @@ class TuiApp(App):
             with redirect_stdout(stdout_capture):
                 self.cli.formatter.print_help(group=e.group, command=e.command, parent_args=e.parent_args)
         except Exception as e:
-            stderr_capture.write(str(e))
+            # Capture exception traceback using formatter's console
+            if isinstance(self.cli.formatter, RichFormatter):
+                with self.cli.formatter._console.capture() as capture:
+                    self.cli.formatter.print_exception(e, hide_internals=self.cli.hide_internal_errors)
+                stderr_capture.write(capture.get())
+            else:
+                with redirect_stderr(stderr_capture):
+                    self.cli.formatter.print_exception(e, hide_internals=self.cli.hide_internal_errors)
 
         # Display captured output
         stdout_output = stdout_capture.getvalue().strip()
@@ -507,50 +510,6 @@ class TuiApp(App):
         messages = self.query_one("#messages", Vertical)
         messages.mount(widget)
         self.call_after_refresh(self.screen.scroll_end)
-
-    def watch_files(
-        self,
-        *paths: Path | str,
-        on_change: WatchCallback | None = None,
-    ) -> asyncio.Task[None]:
-        """Watch paths for file changes and show notifications.
-
-        Requires `piou[tui-reload]` extra (watchfiles).
-
-        Args:
-            *paths: Paths to watch (files or directories)
-            on_change: Optional callback called with set of (change_type, path) tuples
-
-        Returns:
-            An asyncio.Task that can be cancelled to stop watching.
-
-        Raises:
-            ImportError: If watchfiles is not installed.
-        """
-        if not HAS_WATCHFILES:
-            raise ImportError("Hot reload requires watchfiles. Install piou[tui-reload] or 'watchfiles' package.")
-
-        from watchfiles import awatch as watchfiles_awatch
-
-        async def _watch_task() -> None:
-            resolved_paths = [Path(p) if isinstance(p, str) else p for p in paths]
-            path_names = ", ".join(p.name for p in resolved_paths)
-            self.notify(f"Watching: {path_names}", title="Hot Reload")
-
-            async for changes in watchfiles_awatch(*resolved_paths):
-                # changes is a set of (change_type, path) tuples
-                changed_files = {Path(p).name for _, p in changes}
-                self.notify(
-                    f"Changed: {', '.join(changed_files)}",
-                    title="Hot Reload",
-                    severity="warning",
-                )
-                if on_change is not None:
-                    # Convert to (str, str) tuples as per WatchCallback type
-                    changes_str = {(str(change_type), path) for change_type, path in changes}
-                    on_change(changes_str)
-
-        return asyncio.create_task(_watch_task())
 
 
 @dataclass

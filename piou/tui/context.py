@@ -2,18 +2,14 @@ from __future__ import annotations
 
 from contextvars import ContextVar
 from dataclasses import dataclass, field
-from pathlib import Path
-from typing import TYPE_CHECKING, Callable, Literal, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Literal, Protocol, runtime_checkable
 
 from ..utils import Derived
 
 if TYPE_CHECKING:
-    import asyncio
-
     from textual.widget import Widget
 
 SeverityLevel = Literal["information", "warning", "error"]
-WatchCallback = Callable[[set[tuple[str, str]]], None]
 
 
 @runtime_checkable
@@ -29,12 +25,6 @@ class TuiInterface(Protocol):
     ) -> None: ...
 
     def mount_widget(self, widget: Widget) -> None: ...
-
-    def watch_files(
-        self,
-        *paths: Path | str,
-        on_change: WatchCallback | None = None,
-    ) -> asyncio.Task[None]: ...
 
 
 @dataclass
@@ -90,39 +80,6 @@ class TuiContext:
         """
         if self.tui is not None:
             self.tui.mount_widget(widget)
-
-    def watch_files(
-        self,
-        *paths: Path | str,
-        on_change: WatchCallback | None = None,
-    ) -> asyncio.Task[None] | None:
-        """Watch paths for file changes and notify.
-
-        In TUI mode, starts watching the specified paths for changes.
-        When changes are detected, shows a notification and optionally
-        calls the on_change callback.
-
-        Requires `piou[tui-reload]` extra (watchfiles).
-
-        In CLI mode, this is a no-op and returns None.
-
-        Args:
-            *paths: Paths to watch (files or directories)
-            on_change: Optional callback called with set of (change_type, path) tuples
-
-        Returns:
-            An asyncio.Task that can be cancelled to stop watching,
-            or None in CLI mode.
-
-        Example:
-            @cli.command()
-            async def serve(ctx: TuiContext = TuiOption()):
-                ctx.watch_files(Path(__file__).parent, on_change=lambda changes: reload_module())
-                await run_server()
-        """
-        if self.tui is not None:
-            return self.tui.watch_files(*paths, on_change=on_change)
-        return None
 
 
 _current_tui_context: ContextVar[TuiContext] = ContextVar("piou_tui_context", default=TuiContext())
