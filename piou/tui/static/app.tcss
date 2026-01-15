@@ -47,7 +47,7 @@ Rule {
 #suggestions {
     background: transparent;
     padding: 0;
-    margin: 0;
+    margin: 1 0 0 0;
     height: auto;
     max-height: 10;
     overflow-y: auto;
@@ -105,9 +105,15 @@ Input > .input--suggestion {
 
 #messages {
     background: transparent;
-    padding: 0;
+    padding: 0 0 2 0;
     margin: 0;
-    height: auto;
+    height: 1fr;
+    max-height: 100%;
+    overflow-y: auto;
+
+    &:inline {
+        height: auto;
+    }
 }
 
 .message {
@@ -142,7 +148,7 @@ Input > .input--suggestion {
 #command-help {
     background: transparent;
     color: grey;
-    padding: 0;
+    padding: 0 0 1 0;
     margin: 1 0 0 0;
     height: auto;
 }

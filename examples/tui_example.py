@@ -4,9 +4,7 @@ Run with:
     python -m examples.tui_example
 """
 
-import asyncio
 import time
-from pathlib import Path
 from typing import Literal
 
 from piou import Cli, Option, TuiContext, TuiOption, get_tui_context
@@ -114,33 +112,6 @@ def warn(
         ctx.notify(message, title="Warning", severity="warning")
     else:
         print(f"WARNING: {message}")
-
-
-# Example using hot reload with watchfiles
-@cli.command(cmd="watch", help="Watch for file changes (requires piou[tui-reload])")
-async def watch_files(
-    path: str = Option(str(Path(__file__).parent), "-p", "--path", help="Path to watch"),
-    ctx: TuiContext = TuiOption(),
-):
-    """Watch a directory for file changes and show notifications.
-
-    Requires `piou[tui-reload]` extra (watchfiles).
-    """
-    watch_path = Path(path)
-    print(f"Watching: {watch_path}")
-
-    def on_change(changes: set[tuple[str, str]]) -> None:
-        for change_type, file_path in changes:
-            print(f"  [{change_type}] {file_path}")
-
-    try:
-        task = ctx.watch_files(watch_path, on_change=on_change)
-        if task:
-            # Keep running until cancelled
-            await asyncio.sleep(3600)  # Watch for 1 hour max
-    except ImportError as e:
-        print(f"Error: {e}")
-        print("Install with: pip install piou[tui-reload]")
 
 
 if __name__ == "__main__":

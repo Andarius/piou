@@ -27,6 +27,13 @@ if TYPE_CHECKING:
     from ..cli import Cli
 
 from ..command import Command, CommandGroup, ShowHelpError
+from ..exceptions import (
+    CommandException,
+    CommandNotFoundError,
+    InvalidChoiceError,
+    InvalidValueError,
+    CommandError,
+)
 from .context import TuiContext, set_tui_context
 from ..formatter.rich_formatter import RichFormatter
 from .history import History
@@ -333,6 +340,16 @@ class TuiApp(App):
         inp.value = entry or ""  # None when navigating past most recent entry
         inp.cursor_position = len(inp.value)
 
+    def _autoscroll(self) -> None:
+        """Scroll to the bottom of the messages area."""
+        if self.is_inline:
+            # In inline mode, scroll the screen (uses terminal scrolling)
+            self.call_after_refresh(self.screen.scroll_end, animate=False)
+        else:
+            # In normal mode, scroll the messages container
+            messages = self.query_one("#messages", Vertical)
+            self.call_after_refresh(messages.scroll_end, animate=False)
+
     def clear_input(self) -> None:
         """Clear input field and suggestions"""
         inp = self.query_one(Input)
@@ -399,7 +416,7 @@ class TuiApp(App):
 
         messages = self.query_one("#messages", Vertical)
         messages.mount(Static(f"> {value}", classes=CssClass.MESSAGE))
-        self.call_after_refresh(self.screen.scroll_end)
+        self._autoscroll()
         event.input.value = ""
         # Clear suggestions and help
         self.query_one("#suggestions", Vertical).remove_children()
@@ -413,7 +430,7 @@ class TuiApp(App):
             # Show queued indicator if there are already commands in queue
             if self.command_queue.qsize() > 1:
                 messages.mount(Static("(queued)", classes=f"{CssClass.OUTPUT}"))
-                self.call_after_refresh(self.screen.scroll_end)
+                self._autoscroll()
 
     async def _process_command_queue(self) -> None:
         """Continuously process commands from the queue."""
@@ -428,7 +445,7 @@ class TuiApp(App):
                     # Command was cancelled, show message and clear queue
                     messages = self.query_one("#messages", Vertical)
                     messages.mount(Static("Interrupted", classes=f"{CssClass.OUTPUT} {CssClass.ERROR}"))
-                    self.call_after_refresh(self.screen.scroll_end)
+                    self._autoscroll()
                     # Drain the queue
                     while not self.command_queue.empty():
                         try:
@@ -464,7 +481,7 @@ class TuiApp(App):
             with redirect_stdout(help_capture):
                 self.cli.formatter.print_help(group=self.cli._group, command=None, parent_args=[])
             messages.mount(Static(Text.from_ansi(help_capture.getvalue().strip()), classes=CssClass.OUTPUT))
-            self.call_after_refresh(self.screen.scroll_end)
+            self._autoscroll()
             return
 
         # Capture stdout and stderr
@@ -481,8 +498,11 @@ class TuiApp(App):
         except ShowHelpError as e:
             with redirect_stdout(stdout_capture):
                 self.cli.formatter.print_help(group=e.group, command=e.command, parent_args=e.parent_args)
+        except (CommandNotFoundError, CommandException, InvalidChoiceError, InvalidValueError, CommandError) as e:
+            # User-facing errors: only show the error message, not full traceback
+            stderr_capture.write(str(e))
         except Exception as e:
-            # Capture exception traceback using formatter's console
+            # System errors: show full traceback for debugging
             if isinstance(self.cli.formatter, RichFormatter):
                 with self.cli.formatter._console.capture() as capture:
                     self.cli.formatter.print_exception(e, hide_internals=self.cli.hide_internal_errors)
@@ -502,14 +522,14 @@ class TuiApp(App):
             messages.mount(Static(Text.from_ansi(stderr_output), classes=f"{CssClass.OUTPUT} {CssClass.ERROR}"))
 
         if stdout_output or stderr_output:
-            self.call_after_refresh(self.screen.scroll_end)
+            self._autoscroll()
 
     # TuiInterface implementation - App.notify handles the actual display
     def mount_widget(self, widget: Widget) -> None:
         """Mount a widget to the messages area."""
         messages = self.query_one("#messages", Vertical)
         messages.mount(widget)
-        self.call_after_refresh(self.screen.scroll_end)
+        self._autoscroll()
 
 
 @dataclass
