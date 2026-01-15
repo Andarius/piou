@@ -1,4 +1,5 @@
 import shutil
+import traceback
 from dataclasses import dataclass
 from difflib import get_close_matches
 from typing import Callable
@@ -295,3 +296,13 @@ class Formatter:
 
     def print_error(self, message: str) -> None:
         self.print_fn(message)
+
+    def print_exception(self, exc: BaseException, *, hide_internals: bool = True) -> None:
+        """Print an exception traceback.
+
+        Args:
+            exc: The exception to print
+            hide_internals: If True, hide piou internal frames from the traceback
+        """
+        # Base implementation just prints the full traceback
+        traceback.print_exception(type(exc), exc, exc.__traceback__)

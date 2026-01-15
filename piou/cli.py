@@ -1,8 +1,9 @@
+import os
 import sys
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
-from .command import CommandGroup, ShowHelpError, clean_multiline, OnCommandRun
+from .command import CommandGroup, ShowHelpError, ShowTuiError, clean_multiline, OnCommandRun
 from .utils import cleanup_event_loop
 from .exceptions import (
     CommandNotFoundError,
@@ -35,6 +36,10 @@ class Cli:
     For instance, you can use this to get the arguments passed
     for monitoring
     """
+    tui: bool = os.getenv("PIOU_TUI", "0") == "1"
+    """Run in interactive TUI mode instead of CLI mode. Requires piou[tui]."""
+    hide_internal_errors: bool = True
+    """Hide piou internal frames from exception tracebacks. Set to False to show full tracebacks."""
     _group: CommandGroup = field(init=False, default_factory=CommandGroup)
     """The main command group that will contain all the commands and options"""
 
@@ -52,8 +57,23 @@ class Cli:
         try:
             _, *args = sys.argv
         except ValueError:
+            args = []
+
+        if self.tui:
+            self.run_tui(*args)
             return
+
         self.run_with_args(*args)
+
+    def run_tui(self, *args: str):
+        """Run the CLI in interactive TUI mode. Requires piou[tui]."""
+        try:
+            from .tui import TuiCli
+        except ImportError:
+            self.formatter.print_error("TUI mode requires textual. Install piou\\[tui] or 'textual' package.")
+            sys.exit(1)
+
+        TuiCli(self).run(*args)
 
     def run_with_args(self, *args):
         """Run the CLI application with the given arguments."""
@@ -65,6 +85,8 @@ class Cli:
             sys.exit(1)
         except ShowHelpError as e:
             self.formatter.print_help(group=e.group, command=e.command, parent_args=e.parent_args)
+        except ShowTuiError:
+            self.run_tui()
         except KeywordParamNotFoundError as e:
             if not e.cmd:
                 raise
@@ -88,6 +110,9 @@ class Cli:
             sys.exit(1)
         except CommandError as e:
             self.formatter.print_error(e.message)
+            sys.exit(1)
+        except Exception as e:
+            self.formatter.print_exception(e, hide_internals=self.hide_internal_errors)
             sys.exit(1)
         finally:
             cleanup_event_loop()
