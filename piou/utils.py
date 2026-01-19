@@ -46,7 +46,46 @@ class Password(str):
     pass
 
 
-class Secret(str):
+class _SecretBase(str):
+    """Base class for secret types with configurable masking."""
+
+    _show_first: int = 0
+    _show_last: int = 0
+
+
+def Secret(show_first: int = 0, show_last: int = 0) -> type[str]:
+    """Create a Secret type with configurable masking.
+
+    Args:
+        show_first: Number of characters to show at the beginning
+        show_last: Number of characters to show at the end
+
+    Examples:
+        # Full mask (like Password)
+        token: Secret() = Option("abc123", "--token")
+        # Show first 3 chars: "sk-******"
+        api_key: Secret(show_first=3) = Option("sk-12345678", "--api-key")
+        # Show last 4 chars: "******1234"
+        card: Secret(show_last=4) = Option("4111111111111234", "--card")
+    """
+
+    class SecretType(_SecretBase):
+        _show_first = show_first
+        _show_last = show_last
+
+    return SecretType
+
+
+class MaybePath(Path):
+    """Path type that skips existence checking.
+
+    Use this for path arguments where the file may not exist yet.
+    This is simpler than `Path = Option(..., raise_path_does_not_exist=False)`.
+
+    Example:
+        config: MaybePath = Option(..., "--config")
+    """
+
     pass
 
 
@@ -207,6 +246,8 @@ def validate_value(
         return value
     elif _data_type is str or _data_type is Password:
         return str(value)
+    elif isinstance(_data_type, type) and issubclass(_data_type, _SecretBase):
+        return str(value)
     elif _data_type is LiteralString:
         return cast(LiteralString, str(value))
     elif _data_type is int:
@@ -234,9 +275,11 @@ def validate_value(
             return dt.datetime.fromisoformat(value)
         except ValueError:
             raise InvalidValueError(value, "datetime", "must be in ISO format")
-    elif _data_type is Path:
+    elif _data_type is Path or _data_type is MaybePath:
         p = Path(value)
-        if raise_path_does_not_exist and not p.exists():
+        # MaybePath auto-skips existence check
+        should_raise = raise_path_does_not_exist and _data_type is not MaybePath
+        if should_raise and not p.exists():
             raise FileNotFoundError(f'File not found: "{value}"')
         return p
     elif _data_type is dict:
@@ -307,6 +350,24 @@ class CommandOption(Generic[T]):
         return self.data_type == Password
 
     @property
+    def is_secret(self) -> bool:
+        try:
+            return isinstance(self.data_type, type) and issubclass(self.data_type, _SecretBase)
+        except TypeError:
+            return False
+
+    @property
+    def secret_config(self) -> tuple[int, int]:
+        if self.is_secret:
+            dt = cast(type[_SecretBase], self.data_type)
+            return (dt._show_first, dt._show_last)
+        return (0, 0)
+
+    @property
+    def is_optional_path(self) -> bool:
+        return self.data_type is MaybePath
+
+    @property
     def name(self):
         return self._name or keyword_arg_to_name(sorted(self.keyword_args)[0])
 
@@ -336,12 +397,14 @@ class CommandOption(Generic[T]):
         return self.literal_values or _choices
 
     def validate(self, value: str) -> T:
+        # Auto-disable existence check for MaybePath
+        _raise_path = self.raise_path_does_not_exist and not self.is_optional_path
         _value = validate_value(
             self.data_type,
             value,
             case_sensitive=self.case_sensitive,
             choices=self.get_choices(),
-            raise_path_does_not_exist=self.raise_path_does_not_exist,
+            raise_path_does_not_exist=_raise_path,
         )
         return _value  # type: ignore
 

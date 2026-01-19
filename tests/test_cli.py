@@ -12,6 +12,8 @@ from uuid import UUID
 import pytest
 from typing_extensions import LiteralString
 
+from piou.utils import Secret
+
 _IS_GE_PY310 = f"{sys.version_info.major}.{sys.version_info.minor:02}" >= "3.10"
 
 
@@ -137,6 +139,137 @@ def test_validate_value(data_type, value, expected, options):
     assert validate_value(Optional[data_type], value, **_options) == expected
     if _IS_GE_PY310:
         assert validate_value(data_type | None, value, **_options) == expected
+
+
+class TestSecretType:
+    """Tests for Secret type with configurable masking."""
+
+    def test_secret_factory_creates_unique_types(self):
+        """Each Secret() call should create a unique type."""
+        from piou.utils import Secret, _SecretBase
+
+        SecretA = Secret(show_first=3)
+        SecretB = Secret(show_last=4)
+        SecretC = Secret()
+
+        assert SecretA is not SecretB
+        assert SecretB is not SecretC
+        assert issubclass(SecretA, _SecretBase)
+        assert issubclass(SecretB, _SecretBase)
+        assert issubclass(SecretC, _SecretBase)
+
+    def test_secret_config_attributes(self):
+        """Test that Secret types store config correctly."""
+        from piou.utils import Secret, _SecretBase
+
+        SecretA = Secret(show_first=3, show_last=4)
+        assert issubclass(SecretA, _SecretBase)
+        assert SecretA._show_first == 3  # pyright: ignore[reportAttributeAccessIssue]
+        assert SecretA._show_last == 4  # pyright: ignore[reportAttributeAccessIssue]
+
+        SecretB = Secret()
+        assert SecretB._show_first == 0  # pyright: ignore[reportAttributeAccessIssue]
+        assert SecretB._show_last == 0  # pyright: ignore[reportAttributeAccessIssue]
+
+    def test_command_option_is_secret_property(self):
+        """Test is_secret property on CommandOption."""
+        from piou.utils import CommandOption, Secret, Password
+
+        opt_secret = CommandOption("value")
+        opt_secret.data_type = Secret(show_first=3)
+        assert opt_secret.is_secret is True
+
+        opt_password = CommandOption("value")
+        opt_password.data_type = Password
+        assert opt_password.is_secret is False  # Password is not a Secret
+
+        opt_str = CommandOption("value")
+        opt_str.data_type = str
+        assert opt_str.is_secret is False
+
+    def test_command_option_secret_config_property(self):
+        """Test secret_config property returns correct tuple."""
+        from piou.utils import CommandOption, Secret
+
+        opt = CommandOption("value")
+        opt.data_type = Secret(show_first=3, show_last=4)
+        assert opt.secret_config == (3, 4)
+
+        opt2 = CommandOption("value")
+        opt2.data_type = str
+        assert opt2.secret_config == (0, 0)
+
+    @pytest.mark.parametrize(
+        "secret_type, value",
+        [
+            pytest.param(Secret(), "abc123", id="full_mask"),
+            pytest.param(Secret(show_first=3), "sk-12345678", id="show_first"),
+            pytest.param(Secret(show_last=4), "4111111111111234", id="show_last"),
+        ],
+    )
+    def test_validate_value_with_secret(self, secret_type, value):
+        """Test validate_value handles Secret types."""
+        from piou.utils import validate_value
+
+        result = validate_value(secret_type, value)
+        assert result == value
+        assert isinstance(result, str)
+
+
+class TestMaybePath:
+    """Tests for MaybePath type that skips existence checking."""
+
+    def test_optional_path_skips_existence_check(self):
+        """MaybePath should not raise FileNotFoundError for missing files."""
+        from piou.utils import MaybePath, validate_value
+
+        # This should not raise FileNotFoundError
+        result = validate_value(MaybePath, "/nonexistent/path/file.txt")
+        assert result == Path("/nonexistent/path/file.txt")
+
+    def test_path_raises_for_missing_file(self):
+        """Regular Path should raise FileNotFoundError for missing files."""
+        from piou.utils import validate_value
+
+        with pytest.raises(FileNotFoundError, match="File not found"):
+            validate_value(Path, "/nonexistent/path/file.txt")
+
+    def test_command_option_is_optional_path(self):
+        """Test is_optional_path property on CommandOption."""
+        from piou.utils import CommandOption, MaybePath
+
+        opt = CommandOption("value")
+        opt.data_type = MaybePath  # type: ignore[assignment]
+        assert opt.is_optional_path is True
+
+        opt2 = CommandOption("value")
+        opt2.data_type = Path  # type: ignore[assignment]
+        assert opt2.is_optional_path is False
+
+    def test_command_option_validate_skips_existence_check(self):
+        """Test CommandOption.validate() auto-skips existence check for MaybePath."""
+        from piou.utils import CommandOption, MaybePath
+
+        opt = CommandOption("/nonexistent/file.txt")
+        opt.data_type = MaybePath  # type: ignore[assignment]
+
+        # Should not raise
+        result = opt.validate("/another/nonexistent/file.txt")
+        assert result == Path("/another/nonexistent/file.txt")
+
+    def test_cli_with_optional_path(self):
+        """Test MaybePath works in a CLI command."""
+        from piou import Cli, Option, MaybePath
+
+        cli = Cli(description="Test CLI")
+        result = {}
+
+        @cli.command()
+        def test(config: MaybePath = Option(..., "--config")):
+            result["config"] = config
+
+        cli.run_with_args("test", "--config", "/some/nonexistent/config.yaml")
+        assert result["config"] == Path("/some/nonexistent/config.yaml")
 
 
 @pytest.mark.parametrize(
