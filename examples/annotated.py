@@ -1,6 +1,6 @@
 from typing import Literal
 
-from piou import Annotated, Cli, Derived, Option, Password, Secret
+from piou import Annotated, Cli, Derived, Option
 
 cli = Cli(description="A CLI tool using Annotated syntax")
 
@@ -39,24 +39,6 @@ def derived_main(
     ```
     """
     print(f"value={value}, mode={mode}")
-
-
-@cli.command(cmd="secrets", help="Run secrets command with Annotated syntax")
-def secrets_main(
-    password: Annotated[Password, Option("my-password", "--password", help="Password (fully masked)")],
-    # Type annotation-style masking: Secret(show_first=N) or Secret(show_last=N)
-    api_key: Annotated[Secret(show_first=3), Option("sk-abcdefgh", "--api-key", help="API key (first 3 visible)")],
-    card: Annotated[Secret(show_last=4), Option("4111111111111234", "--card", help="Card number (last 4 visible)")],
-):
-    """
-    Example using Password and Secret types with Annotated syntax.
-    You can run it with:
-    ```bash
-     python -m examples.annotated secrets --help
-     python -m examples.annotated secrets --api-key sk-secret123 --card 9876543210
-    ```
-    """
-    print(f"password={password}, api_key={api_key}, card={card}")
 
 
 if __name__ == "__main__":

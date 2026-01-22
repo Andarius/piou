@@ -164,4 +164,39 @@ class MyFormatter(Formatter):
         ...
 ```
 
-The `Password` type is supported by both formatters to hide default values in help output.
+## Secret and Password Types
+
+Piou provides special types for handling sensitive values that should be masked in help output.
+
+### Password (Full Masking)
+
+Use `Password` when values should be completely hidden:
+
+```python
+from piou import Cli, Option, Password
+
+@cli.command()
+def connect(
+    password: Password = Option("secret123", "--password", help="Database password"),
+):
+    pass
+```
+
+### Secret (Partial Masking)
+
+Use `Secret` with `show_first` or `show_last` on the Option to reveal part of the value:
+
+```python
+from piou import Cli, Option, Secret
+
+@cli.command()
+def auth(
+    # Show first 3 chars: "sk-******"
+    api_key: Secret = Option("sk-12345678", "--api-key", help="API key", show_first=3),
+    # Show last 4 chars: "******1234"
+    card: Secret = Option("4111111111111234", "--card", help="Card number", show_last=4),
+):
+    pass
+```
+
+Both `Password` and `Secret` types are supported by all formatters to hide or partially mask default values in help output.

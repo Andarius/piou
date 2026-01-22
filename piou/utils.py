@@ -59,10 +59,6 @@ class Secret(_SecretBase):
     Examples:
         # Full mask (use directly as type)
         token: Secret = Option("abc123", "--token")
-        # Show first 3 chars: "sk-******"
-        api_key: Secret(show_first=3) = Option("sk-12345678", "--api-key")
-        # Show last 4 chars: "******1234"
-        card: Secret(show_last=4) = Option("4111111111111234", "--card")
     """
 
     def __new__(
