@@ -12,6 +12,13 @@ from piou import Cli, Option, TuiContext, TuiOption, get_tui_context
 cli = Cli(description="Interactive CLI Demo", tui=True)
 
 
+@cli.on_tui_ready
+def processor():
+    """Processor that runs before each command to demonstrate TUI notifications."""
+    ctx = get_tui_context()
+    ctx.notify("TUI Ready!")
+
+
 @cli.command(cmd="hello", help="Say hello to someone")
 def hello(
     name: str = Option(..., help="Name to greet"),

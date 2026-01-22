@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 from textual.suggester import Suggester
 
+from .utils import get_command_for_path
 from ..command import Command, CommandGroup
 
 if TYPE_CHECKING:
@@ -34,13 +35,13 @@ class CommandSuggester(Suggester):
         # Handle path ending with : (e.g., "/stats:")
         if cmd_path.endswith(":"):
             parent_path = cmd_path[:-1]
-            cmd = self.app.get_command_for_path(parent_path)
+            cmd = get_command_for_path(self.cli._group, parent_path)
             if isinstance(cmd, CommandGroup) and cmd.commands:
                 first_sub = next(iter(cmd.commands.values()))
                 return f"{value}{first_sub.name}"
             return None
 
-        cmd = self.app.get_command_for_path(cmd_path)
+        cmd = get_command_for_path(self.cli._group, cmd_path)
         if cmd is None:
             return None
 

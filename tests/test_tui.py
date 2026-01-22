@@ -288,8 +288,8 @@ class TestTuiApp:
             await pilot.press("ctrl+c")
             await pilot.pause()
 
-            exit_hint = app.query_one("#exit-hint", Static)
-            assert exit_hint.display is True
+            hint = app.query_one("#hint", Static)
+            assert hint.display is True
             assert app.exit_pending is True
 
     async def test_history_navigation(self, sample_cli, temp_history_file):

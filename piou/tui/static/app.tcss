@@ -8,11 +8,6 @@ Screen {
     }
 }
 
-#main {
-    background: transparent;
-    scrollbar-size: 0 0;
-}
-
 #name {
     background: transparent;
     color: white;
@@ -37,20 +32,15 @@ Rule {
     padding: 0;
 }
 
-.command {
-    background: transparent;
-    padding: 0;
-    margin: 0;
-    height: 1;
+Rule.bash-mode {
+    color: #cc6666;
 }
 
 #suggestions {
     background: transparent;
-    padding: 0;
-    margin: 1 0 0 0;
+    margin-bottom: 1;
     height: auto;
-    max-height: 10;
-    overflow-y: auto;
+    display: none;
 }
 
 .suggestion {
@@ -136,7 +126,13 @@ Input > .input--suggestion {
     color: red;
 }
 
-#exit-hint {
+#context-panel {
+    background: transparent;
+    min-height: 2;
+    height: auto;
+}
+
+#hint {
     background: transparent;
     color: grey;
     padding: 0;
@@ -145,10 +141,13 @@ Input > .input--suggestion {
     display: none;
 }
 
+#hint.bash-mode {
+    color: #cc6666;
+}
+
 #command-help {
     background: transparent;
     color: grey;
-    padding: 0 0 1 0;
-    margin: 1 0 0 0;
-    height: auto;
+    margin-bottom: 1;
+    display: none;
 }

@@ -26,7 +26,7 @@ except ImportError as e:
 if TYPE_CHECKING:
     from ..cli import Cli
 
-from ..command import Command, CommandGroup, ShowHelpError
+from ..command import CommandGroup, ShowHelpError
 from ..exceptions import (
     CommandException,
     CommandNotFoundError,
@@ -38,6 +38,7 @@ from .context import TuiContext, set_tui_context
 from ..formatter.rich_formatter import RichFormatter
 from .history import History
 from .suggester import CommandSuggester
+from .utils import get_command_for_path, get_command_help
 
 
 class CssClass:
@@ -85,99 +86,23 @@ class TuiApp(App):
         self.command_queue: asyncio.Queue[str] = asyncio.Queue()
         self.command_processor_task: asyncio.Task[None] | None = None
 
-    def get_command_for_path(self, path: str) -> Command | CommandGroup | None:
-        """Get command/group for a path like 'stats' or 'stats:uploads'"""
-        parts = path.split(":")
-        current = self.cli._group
-        for part in parts:
-            found = None
-            for cmd in current.commands.values():
-                if cmd.name.lower() == part.lower():
-                    found = cmd
-                    break
-            if found is None:
-                return None
-            if isinstance(found, CommandGroup):
-                current = found
-            else:
-                return found
-        return current
-
-    def _format_command_help(self, cmd: Command | CommandGroup) -> Text:
-        """Format command help for display in the help widget."""
-        lines: list[str] = []
-
-        # Usage line with arguments
-        if isinstance(cmd, Command):
-            args_parts = []
-            for opt in cmd.positional_args:
-                args_parts.append(f"<{opt.name}>")
-            for opt in cmd.keyword_args:
-                arg_name = sorted(opt.keyword_args)[-1]
-                if opt.is_required:
-                    args_parts.append(f"{arg_name} <value>")
-                else:
-                    args_parts.append(f"[{arg_name}]")
-            if args_parts:
-                lines.append(f"[bold]Usage:[/bold] /{cmd.name} {' '.join(args_parts)}")
-            else:
-                lines.append(f"[bold]Usage:[/bold] /{cmd.name}")
-
-            # Arguments section
-            if cmd.positional_args:
-                lines.append("")
-                lines.append("[bold]Arguments:[/bold]")
-                for opt in cmd.positional_args:
-                    type_name = getattr(opt.data_type, "__name__", str(opt.data_type))
-                    help_text = f" - {opt.help}" if opt.help else ""
-                    lines.append(f"  [cyan]<{opt.name}>[/cyan] ({type_name}){help_text}")
-
-            # Options section
-            if cmd.keyword_args:
-                lines.append("")
-                lines.append("[bold]Options:[/bold]")
-                for opt in cmd.keyword_args:
-                    arg_display = ", ".join(sorted(opt.keyword_args))
-                    type_name = getattr(opt.data_type, "__name__", str(opt.data_type))
-                    required = " [red]*required[/red]" if opt.is_required else ""
-                    default = f" (default: {opt.default})" if not opt.is_required and opt.default is not None else ""
-                    help_text = f" - {opt.help}" if opt.help else ""
-                    lines.append(f"  [cyan]{arg_display}[/cyan] ({type_name}){required}{default}{help_text}")
-        else:
-            # CommandGroup
-            lines.append(f"[bold]Usage:[/bold] /{cmd.name}:<subcommand>")
-            if cmd.commands:
-                lines.append("")
-                lines.append("[bold]Subcommands:[/bold]")
-                for subcmd in cmd.commands.values():
-                    help_text = f" - {subcmd.help}" if subcmd.help else ""
-                    lines.append(f"  [cyan]{subcmd.name}[/cyan]{help_text}")
-
-        # Render with Rich markup
-        console = Console(force_terminal=True, markup=True, highlight=False)
-        with console.capture() as capture:
-            for line in lines:
-                console.print(line)
-        return Text.from_ansi(capture.get().rstrip())
-
     def _update_command_help(self, cmd_path: str | None) -> None:
         """Update the command help widget based on selected command."""
         help_widget = self.query_one("#command-help", Static)
 
         if cmd_path is None or cmd_path == "/help":
             help_widget.update("")
+            help_widget.display = False
             return
-
-        # Strip leading / and get command
-        path = cmd_path.lstrip("/")
-        cmd = self.get_command_for_path(path)
-
+        cmd = get_command_for_path(self.cli._group, cmd_path)
         if cmd is None:
             help_widget.update("")
+            help_widget.display = False
             return
 
-        help_text = self._format_command_help(cmd)
+        help_text = get_command_help(cmd)
         help_widget.update(help_text)
+        help_widget.display = True
 
     def _suggest_subcommands(self, query: str, suggestions: Vertical) -> None:
         """Suggest subcommands for a command path like 'stats:' or 'stats:up'"""
@@ -221,7 +146,7 @@ class TuiApp(App):
         │─────────────────────────────────│
         │ > [input                      ] │
         │─────────────────────────────────│
-        │ Press Ctrl+C again to exit      │
+        │ #hint                           │
         │ #suggestions                    │
         │ #command-help                   │
         └─────────────────────────────────┘
@@ -235,9 +160,10 @@ class TuiApp(App):
             yield Static("> ", id="prompt")
             yield Input(suggester=CommandSuggester(self))
         yield Rule()
-        yield Static("Press Ctrl+C again to exit", id="exit-hint")
-        yield Vertical(id="suggestions")
-        yield Static(id="command-help")
+        with Vertical(id="context-panel"):
+            yield Static(id="hint")
+            yield Vertical(id="suggestions")
+            yield Static(id="command-help")
 
     def on_mount(self) -> None:
         """Called when the app is mounted. Prefill input if initial_input is set."""
@@ -248,6 +174,11 @@ class TuiApp(App):
         # Start command processor task
         self.command_processor_task = asyncio.create_task(self._process_command_queue())
 
+    def on_ready(self) -> None:
+        """Called when the app is fully ready. Triggers user's on_tui_ready callback."""
+        if self.cli._on_tui_ready:
+            self.cli._on_tui_ready()
+
     def on_input_changed(self, event: Input.Changed) -> None:
         """Show command suggestions when input starts with /"""
         if self.suppress_input_change:
@@ -257,15 +188,21 @@ class TuiApp(App):
         # Reset exit hint when user starts typing
         if event.value and self.exit_pending:
             self.exit_pending = False
-            self.query_one("#exit-hint", Static).display = False
+            self._set_hint(None)
 
         suggestions = self.query_one("#suggestions", Vertical)
         suggestions.remove_children()
+        suggestions.display = False
         self.current_suggestions = []
         self.suggestion_index = -1
 
         value = event.value.strip()
-        if value.startswith("/"):
+        if value.startswith("!"):
+            # Bash mode - show hint with reddish styling
+            self._set_hint("Shell command - press Enter to execute", bash_mode=True)
+            self._update_command_help(None)
+        elif value.startswith("/"):
+            self._set_hint(None)
             query = value[1:].lower()
 
             # Check if query contains : for subcommand navigation
@@ -290,10 +227,12 @@ class TuiApp(App):
 
             if self.current_suggestions:
                 self.suggestion_index = 0
+                suggestions.display = True
                 self._update_command_help(self.current_suggestions[0])
             else:
                 self._update_command_help(None)
         else:
+            self._set_hint(None)
             self._update_command_help(None)
 
     def on_key(self, event: Key) -> None:
@@ -354,16 +293,34 @@ class TuiApp(App):
         """Clear input field and suggestions"""
         inp = self.query_one(Input)
         inp.value = ""
-        self.query_one("#suggestions", Vertical).remove_children()
+        suggestions = self.query_one("#suggestions", Vertical)
+        suggestions.remove_children()
+        suggestions.display = False
         self.current_suggestions = []
         self.suggestion_index = -1
         self.history.reset_index()
         self._update_command_help(None)
 
+    def _set_hint(self, text: str | None, bash_mode: bool = False) -> None:
+        """Update hint widget and Rule styling."""
+        hint = self.query_one("#hint", Static)
+        rules = self.query(Rule)
+        if text:
+            hint.update(text)
+            hint.display = True
+            hint.set_class(bash_mode, "bash-mode")
+            for rule in rules:
+                rule.set_class(bash_mode, "bash-mode")
+        else:
+            hint.update("")
+            hint.display = False
+            hint.remove_class("bash-mode")
+            for rule in rules:
+                rule.remove_class("bash-mode")
+
     def handle_ctrl_c(self) -> None:
         """Handle Ctrl+C: cancel running command, clear input, show exit hint, or exit"""
         inp = self.query_one(Input)
-        exit_hint = self.query_one("#exit-hint", Static)
 
         # If commands are queued or running, cancel the processor
         if not self.command_queue.empty():
@@ -372,12 +329,12 @@ class TuiApp(App):
                 # Restart the processor for future commands
                 self.command_processor_task = asyncio.create_task(self._process_command_queue())
             self.exit_pending = False
-            exit_hint.display = False
+            self._set_hint(None)
         elif inp.value:
             # Input has content: clear it and reset exit state
             self.clear_input()
             self.exit_pending = False
-            exit_hint.display = False
+            self._set_hint(None)
         elif self.exit_pending:
             # Input empty and already showed hint: exit
             self.history.save()
@@ -385,13 +342,15 @@ class TuiApp(App):
         else:
             # Input empty, first Ctrl+C: show hint
             self.exit_pending = True
-            exit_hint.display = True
+            self._set_hint("Press Ctrl+C again to exit")
 
     def on_tab(self) -> None:
         """Confirm selection and show first argument placeholder"""
         self.suppress_input_change = True
         # Clear suggestions
-        self.query_one("#suggestions", Vertical).remove_children()
+        suggestions = self.query_one("#suggestions", Vertical)
+        suggestions.remove_children()
+        suggestions.display = False
         # Get selected command and show first arg placeholder
         cmd_name = self.current_suggestions[self.suggestion_index]
         cmd = self.commands_map.get(cmd_name)
@@ -418,14 +377,17 @@ class TuiApp(App):
         messages.mount(Static(f"> {value}", classes=CssClass.MESSAGE))
         self._autoscroll()
         event.input.value = ""
-        # Clear suggestions and help
-        self.query_one("#suggestions", Vertical).remove_children()
+        # Clear suggestions, help, and hint
+        suggestions = self.query_one("#suggestions", Vertical)
+        suggestions.remove_children()
+        suggestions.display = False
         self.current_suggestions = []
         self.suggestion_index = -1
         self._update_command_help(None)
+        self._set_hint(None)
 
-        # Queue command for execution if it starts with /
-        if value.startswith("/"):
+        # Queue command for execution if it starts with / or !
+        if value.startswith("/") or value.startswith("!"):
             self.command_queue.put_nowait(value)
             # Show queued indicator if there are already commands in queue
             if self.command_queue.qsize() > 1:
@@ -460,8 +422,36 @@ class TuiApp(App):
                 # Processor is being shut down
                 break
 
+    async def _execute_bash(self, cmd: str) -> None:
+        """Execute a bash command and display output."""
+        messages = self.query_one("#messages", Vertical)
+        try:
+            proc = await asyncio.create_subprocess_shell(
+                cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, stderr = await proc.communicate()
+
+            if stdout:
+                messages.mount(Static(Text.from_ansi(stdout.decode()), classes=CssClass.OUTPUT))
+            if stderr:
+                messages.mount(Static(Text.from_ansi(stderr.decode()), classes=f"{CssClass.OUTPUT} {CssClass.ERROR}"))
+            if stdout or stderr:
+                self._autoscroll()
+        except Exception as e:
+            messages.mount(Static(str(e), classes=f"{CssClass.OUTPUT} {CssClass.ERROR}"))
+            self._autoscroll()
+
     async def execute_command(self, value: str) -> None:
         """Parse and execute a command, capturing and displaying output"""
+        # Handle bash commands starting with !
+        if value.startswith("!"):
+            bash_cmd = value[1:].strip()
+            if bash_cmd:
+                await self._execute_bash(bash_cmd)
+            return
+
         try:
             parts = shlex.split(value)
         except ValueError:

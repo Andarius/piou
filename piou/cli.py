@@ -38,6 +38,8 @@ class Cli:
     """
     tui: bool = os.getenv("PIOU_TUI", "0") == "1"
     """Run in interactive TUI mode instead of CLI mode. Requires piou[tui]."""
+    _on_tui_ready: Callable[[], None] | None = field(default=None, repr=False)
+    """Internal: Callback called when the TUI is ready."""
     hide_internal_errors: bool = True
     """Hide piou internal frames from exception tracebacks. Set to False to show full tracebacks."""
     _group: CommandGroup = field(init=False, default_factory=CommandGroup)
@@ -144,6 +146,11 @@ class Cli:
     def processor(self):
         """Decorator to mark a function as a processor for options"""
         return self._group.processor()
+
+    def on_tui_ready(self, fn: Callable[[], None]) -> Callable[[], None]:
+        """Decorator to register a callback when the TUI is ready."""
+        self._on_tui_ready = fn
+        return fn
 
     def add_option(self, *args, help: str | None = None, data_type: Any = bool, default: Any = False):
         """Add an option to the CLI application."""

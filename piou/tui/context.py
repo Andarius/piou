@@ -2,29 +2,16 @@ from __future__ import annotations
 
 from contextvars import ContextVar
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Literal, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Literal
 
 from ..utils import Derived
 
 if TYPE_CHECKING:
     from textual.widget import Widget
 
+    from .cli import TuiApp
+
 SeverityLevel = Literal["information", "warning", "error"]
-
-
-@runtime_checkable
-class TuiInterface(Protocol):
-    """Protocol for TUI interface that TuiApp implements."""
-
-    def notify(
-        self,
-        message: str,
-        *,
-        title: str = "",
-        severity: SeverityLevel = "information",
-    ) -> None: ...
-
-    def mount_widget(self, widget: Widget) -> None: ...
 
 
 @dataclass
@@ -42,7 +29,7 @@ class TuiContext:
             ctx.notify(f"Hello, {name}!")
     """
 
-    tui: TuiInterface | None = field(default=None, init=False)
+    tui: TuiApp | None = field(default=None, init=False)
 
     @property
     def is_tui(self) -> bool:

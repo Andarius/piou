@@ -36,9 +36,10 @@
 .terminal-r2 { fill: #ffffff;font-weight: bold }
 .terminal-r3 { fill: #808080 }
 .terminal-r4 { fill: #ffffff }
-.terminal-r5 { fill: #ffffff;text-decoration: underline; }
-.terminal-r6 { fill: #68a0b3 }
-.terminal-r7 { fill: #000000 }
+.terminal-r5 { fill: #68a0b3 }
+.terminal-r6 { fill: #003054 }
+.terminal-r7 { fill: #292929 }
+.terminal-r8 { fill: #000000 }
     </style>
 
     <defs>
@@ -124,28 +125,28 @@
             </g>
         
     <g transform="translate(9, 41)" clip-path="url(#terminal-clip-terminal)">
-    <rect fill="#333333" x="24.4" y="50.3" width="85.4" height="24.65" shape-rendering="crispEdges"/><rect fill="#333333" x="109.8" y="50.3" width="841.8" height="24.65" shape-rendering="crispEdges"/><rect fill="#ffffff" x="48.8" y="440.7" width="12.2" height="24.65" shape-rendering="crispEdges"/>
+    <rect fill="#000000" x="927.2" y="50.3" width="24.4" height="24.65" shape-rendering="crispEdges"/><rect fill="#000000" x="927.2" y="74.7" width="24.4" height="24.65" shape-rendering="crispEdges"/><rect fill="#000000" x="927.2" y="99.1" width="24.4" height="24.65" shape-rendering="crispEdges"/><rect fill="#003054" x="927.2" y="123.5" width="24.4" height="24.65" shape-rendering="crispEdges"/><rect fill="#003054" x="927.2" y="147.9" width="24.4" height="24.65" shape-rendering="crispEdges"/><rect fill="#003054" x="927.2" y="172.3" width="24.4" height="24.65" shape-rendering="crispEdges"/><rect fill="#003054" x="927.2" y="196.7" width="24.4" height="24.65" shape-rendering="crispEdges"/><rect fill="#ffffff" x="48.8" y="294.3" width="12.2" height="24.65" shape-rendering="crispEdges"/>
     <g class="terminal-matrix">
     <text class="terminal-r2" x="24.4" y="20" textLength="146.4" clip-path="url(#terminal-line-0)">snapshot_app</text><text class="terminal-r1" x="976" y="20" textLength="12.2" clip-path="url(#terminal-line-0)">
 </text><text class="terminal-r3" x="24.4" y="44.4" textLength="268.4" clip-path="url(#terminal-line-1)">Test&#160;CLI&#160;for&#160;Snapshots</text><text class="terminal-r1" x="976" y="44.4" textLength="12.2" clip-path="url(#terminal-line-1)">
-</text><text class="terminal-r4" x="24.4" y="68.8" textLength="85.4" clip-path="url(#terminal-line-2)">&gt;&#160;/help</text><text class="terminal-r1" x="976" y="68.8" textLength="12.2" clip-path="url(#terminal-line-2)">
-</text><text class="terminal-r1" x="976" y="93.2" textLength="12.2" clip-path="url(#terminal-line-3)">
-</text><text class="terminal-r2" x="24.4" y="117.6" textLength="61" clip-path="url(#terminal-line-4)">USAGE</text><text class="terminal-r1" x="976" y="117.6" textLength="12.2" clip-path="url(#terminal-line-4)">
-</text><text class="terminal-r5" x="36.6" y="142" textLength="183" clip-path="url(#terminal-line-5)">snapshot_app.py</text><text class="terminal-r4" x="219.6" y="142" textLength="732" clip-path="url(#terminal-line-5)">&#160;&lt;command&gt;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;</text><text class="terminal-r1" x="976" y="142" textLength="12.2" clip-path="url(#terminal-line-5)">
+</text><text class="terminal-r2" x="24.4" y="68.8" textLength="219.6" clip-path="url(#terminal-line-2)">AVAILABLE&#160;COMMANDS</text><text class="terminal-r1" x="976" y="68.8" textLength="12.2" clip-path="url(#terminal-line-2)">
+</text><text class="terminal-r5" x="85.4" y="93.2" textLength="36.6" clip-path="url(#terminal-line-3)">add</text><text class="terminal-r4" x="122" y="93.2" textLength="585.6" clip-path="url(#terminal-line-3)">&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;Add&#160;two&#160;numbers&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;</text><text class="terminal-r1" x="976" y="93.2" textLength="12.2" clip-path="url(#terminal-line-3)">
+</text><text class="terminal-r5" x="85.4" y="117.6" textLength="48.8" clip-path="url(#terminal-line-4)">echo</text><text class="terminal-r4" x="134.2" y="117.6" textLength="573.4" clip-path="url(#terminal-line-4)">&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;Echo&#160;a&#160;message&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;</text><text class="terminal-r6" x="927.2" y="117.6" textLength="24.4" clip-path="url(#terminal-line-4)">▁▁</text><text class="terminal-r1" x="976" y="117.6" textLength="12.2" clip-path="url(#terminal-line-4)">
+</text><text class="terminal-r5" x="85.4" y="142" textLength="61" clip-path="url(#terminal-line-5)">hello</text><text class="terminal-r4" x="146.4" y="142" textLength="561.2" clip-path="url(#terminal-line-5)">&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;Say&#160;hello&#160;to&#160;someone&#160;&#160;&#160;&#160;</text><text class="terminal-r1" x="976" y="142" textLength="12.2" clip-path="url(#terminal-line-5)">
 </text><text class="terminal-r1" x="976" y="166.4" textLength="12.2" clip-path="url(#terminal-line-6)">
-</text><text class="terminal-r2" x="24.4" y="190.8" textLength="219.6" clip-path="url(#terminal-line-7)">AVAILABLE&#160;COMMANDS</text><text class="terminal-r1" x="976" y="190.8" textLength="12.2" clip-path="url(#terminal-line-7)">
-</text><text class="terminal-r6" x="85.4" y="215.2" textLength="36.6" clip-path="url(#terminal-line-8)">add</text><text class="terminal-r4" x="122" y="215.2" textLength="585.6" clip-path="url(#terminal-line-8)">&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;Add&#160;two&#160;numbers&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;</text><text class="terminal-r1" x="976" y="215.2" textLength="12.2" clip-path="url(#terminal-line-8)">
-</text><text class="terminal-r6" x="85.4" y="239.6" textLength="48.8" clip-path="url(#terminal-line-9)">echo</text><text class="terminal-r4" x="134.2" y="239.6" textLength="573.4" clip-path="url(#terminal-line-9)">&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;Echo&#160;a&#160;message&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;</text><text class="terminal-r1" x="976" y="239.6" textLength="12.2" clip-path="url(#terminal-line-9)">
-</text><text class="terminal-r6" x="85.4" y="264" textLength="61" clip-path="url(#terminal-line-10)">hello</text><text class="terminal-r4" x="146.4" y="264" textLength="561.2" clip-path="url(#terminal-line-10)">&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;Say&#160;hello&#160;to&#160;someone&#160;&#160;&#160;&#160;</text><text class="terminal-r1" x="976" y="264" textLength="12.2" clip-path="url(#terminal-line-10)">
-</text><text class="terminal-r1" x="976" y="288.4" textLength="12.2" clip-path="url(#terminal-line-11)">
-</text><text class="terminal-r2" x="24.4" y="312.8" textLength="134.2" clip-path="url(#terminal-line-12)">DESCRIPTION</text><text class="terminal-r1" x="976" y="312.8" textLength="12.2" clip-path="url(#terminal-line-12)">
-</text><text class="terminal-r4" x="24.4" y="337.2" textLength="280.6" clip-path="url(#terminal-line-13)">&#160;Test&#160;CLI&#160;for&#160;Snapshots</text><text class="terminal-r1" x="976" y="337.2" textLength="12.2" clip-path="url(#terminal-line-13)">
+</text><text class="terminal-r2" x="24.4" y="190.8" textLength="134.2" clip-path="url(#terminal-line-7)">DESCRIPTION</text><text class="terminal-r1" x="976" y="190.8" textLength="12.2" clip-path="url(#terminal-line-7)">
+</text><text class="terminal-r4" x="24.4" y="215.2" textLength="280.6" clip-path="url(#terminal-line-8)">&#160;Test&#160;CLI&#160;for&#160;Snapshots</text><text class="terminal-r1" x="976" y="215.2" textLength="12.2" clip-path="url(#terminal-line-8)">
+</text><text class="terminal-r1" x="976" y="239.6" textLength="12.2" clip-path="url(#terminal-line-9)">
+</text><text class="terminal-r1" x="976" y="264" textLength="12.2" clip-path="url(#terminal-line-10)">
+</text><text class="terminal-r3" x="24.4" y="288.4" textLength="927.2" clip-path="url(#terminal-line-11)">────────────────────────────────────────────────────────────────────────────</text><text class="terminal-r1" x="976" y="288.4" textLength="12.2" clip-path="url(#terminal-line-11)">
+</text><text class="terminal-r4" x="24.4" y="312.8" textLength="24.4" clip-path="url(#terminal-line-12)">&gt;&#160;</text><text class="terminal-r1" x="976" y="312.8" textLength="12.2" clip-path="url(#terminal-line-12)">
+</text><text class="terminal-r3" x="24.4" y="337.2" textLength="927.2" clip-path="url(#terminal-line-13)">────────────────────────────────────────────────────────────────────────────</text><text class="terminal-r1" x="976" y="337.2" textLength="12.2" clip-path="url(#terminal-line-13)">
 </text><text class="terminal-r1" x="976" y="361.6" textLength="12.2" clip-path="url(#terminal-line-14)">
 </text><text class="terminal-r1" x="976" y="386" textLength="12.2" clip-path="url(#terminal-line-15)">
 </text><text class="terminal-r1" x="976" y="410.4" textLength="12.2" clip-path="url(#terminal-line-16)">
-</text><text class="terminal-r3" x="24.4" y="434.8" textLength="927.2" clip-path="url(#terminal-line-17)">────────────────────────────────────────────────────────────────────────────</text><text class="terminal-r1" x="976" y="434.8" textLength="12.2" clip-path="url(#terminal-line-17)">
-</text><text class="terminal-r4" x="24.4" y="459.2" textLength="24.4" clip-path="url(#terminal-line-18)">&gt;&#160;</text><text class="terminal-r1" x="976" y="459.2" textLength="12.2" clip-path="url(#terminal-line-18)">
-</text><text class="terminal-r3" x="24.4" y="483.6" textLength="927.2" clip-path="url(#terminal-line-19)">────────────────────────────────────────────────────────────────────────────</text><text class="terminal-r1" x="976" y="483.6" textLength="12.2" clip-path="url(#terminal-line-19)">
+</text><text class="terminal-r1" x="976" y="434.8" textLength="12.2" clip-path="url(#terminal-line-17)">
+</text><text class="terminal-r1" x="976" y="459.2" textLength="12.2" clip-path="url(#terminal-line-18)">
+</text><text class="terminal-r1" x="976" y="483.6" textLength="12.2" clip-path="url(#terminal-line-19)">
 </text><text class="terminal-r1" x="976" y="508" textLength="12.2" clip-path="url(#terminal-line-20)">
 </text><text class="terminal-r1" x="976" y="532.4" textLength="12.2" clip-path="url(#terminal-line-21)">
 </text><text class="terminal-r1" x="976" y="556.8" textLength="12.2" clip-path="url(#terminal-line-22)">
