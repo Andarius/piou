@@ -42,23 +42,18 @@ from .exceptions import (
 )
 
 
-class Password(str):
-    pass
-
-
 class _SecretBase(str):
     """Base class for secret types with configurable masking."""
 
-    _show_first: int = 0
-    _show_last: int = 0
+    show_first: int = 0
+    show_last: int = 0
+    replacement: str = "*"
 
 
-def Secret(show_first: int = 0, show_last: int = 0) -> type[str]:
+def Secret(show_first: int = 0, show_last: int = 0, replacement: str = "*") -> type[str]:
     """Create a Secret type with configurable masking.
 
-    Args:
-        show_first: Number of characters to show at the beginning
-        show_last: Number of characters to show at the end
+    Keeps `show_first` characters visible at the beginning and `show_last` at the end.
 
     Examples:
         # Full mask (like Password)
@@ -70,10 +65,17 @@ def Secret(show_first: int = 0, show_last: int = 0) -> type[str]:
     """
 
     class SecretType(_SecretBase):
-        _show_first = show_first
-        _show_last = show_last
+        pass
+
+    SecretType.show_first = show_first
+    SecretType.show_last = show_last
+    SecretType.replacement = replacement
 
     return SecretType
+
+
+# Backward compatibility alias for Password
+Password = _SecretBase
 
 
 class MaybePath(Path):
@@ -102,7 +104,7 @@ def Regex(pattern: str, flags: int = 0) -> re.Pattern[str]:
     return re.compile(pattern, flags)
 
 
-T = TypeVar("T", str, int, float, dt.date, dt.datetime, Path, dict, list, Password, EllipsisType, None)
+T = TypeVar("T", str, int, float, dt.date, dt.datetime, Path, dict, list, _SecretBase, EllipsisType, None)
 
 
 def extract_optional_type(t: Any):
@@ -129,16 +131,11 @@ def get_literals_union_args(literal: Any):
 
 
 def extract_annotated_option(type_hint: Any) -> tuple[Any, CommandOption | CommandDerivedOption | None]:
-    """
-    Extract the base type and CommandOption/CommandDerivedOption from an Annotated type hint.
+    """Extract the base type and CommandOption/CommandDerivedOption from an Annotated type hint.
 
-    Args:
-        type_hint: A type hint that may be Annotated[T, Option(...)] or a regular type
-
-    Returns:
-        A tuple of (base_type, option) where:
-        - base_type: The actual type (e.g., int, str) extracted from Annotated or the original type
-        - option: The CommandOption/CommandDerivedOption if found in annotations, None otherwise
+    Returns a tuple of (base_type, option) where base_type is the actual type
+    extracted from Annotated (or the original type), and option is the
+    CommandOption/CommandDerivedOption if found in annotations.
 
     Examples:
         >>> extract_annotated_option(Annotated[int, Option(...)])
@@ -346,22 +343,8 @@ class CommandOption(Generic[T]):
         self._data_type = v
 
     @property
-    def is_password(self):
-        return self.data_type == Password
-
-    @property
     def is_secret(self) -> bool:
-        try:
-            return isinstance(self.data_type, type) and issubclass(self.data_type, _SecretBase)
-        except TypeError:
-            return False
-
-    @property
-    def secret_config(self) -> tuple[int, int]:
-        if self.is_secret:
-            dt = cast(type[_SecretBase], self.data_type)
-            return (dt._show_first, dt._show_last)
-        return (0, 0)
+        return issubclass(self.data_type, _SecretBase)
 
     @property
     def is_optional_path(self) -> bool:
@@ -542,20 +525,9 @@ def get_default_args(func) -> list[CommandOption]:
 def parse_input_args(
     args: tuple[Any, ...], commands: set[str], global_option_names: set[str] | None = None
 ) -> tuple[str | None, list[str], list[str]]:
-    """
-    Split command-line arguments into global options, command name, and command options.
+    """Split command-line arguments into global options, command name, and command options.
 
-    Args:
-        args: Command-line arguments (typically from sys.argv[1:])
-        commands: Valid command names (may include "__main__" for single-command CLIs)
-        global_option_names: Global option names (e.g., {'-q', '--quiet'}). When provided,
-                           these options are treated as global regardless of position.
-
-    Returns:
-        (command_name, global_options, command_options)
-        - command_name: Command to execute or None if not found ("__main__" for single-command CLIs)
-        - global_options: Arguments that are global options (includes values)
-        - command_options: Arguments that are command-specific options
+    Returns (command_name, global_options, command_options).
 
     Rules:
         - Global options can appear before or after the command

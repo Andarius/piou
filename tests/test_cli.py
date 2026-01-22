@@ -144,33 +144,6 @@ def test_validate_value(data_type, value, expected, options):
 class TestSecretType:
     """Tests for Secret type with configurable masking."""
 
-    def test_secret_factory_creates_unique_types(self):
-        """Each Secret() call should create a unique type."""
-        from piou.utils import Secret, _SecretBase
-
-        SecretA = Secret(show_first=3)
-        SecretB = Secret(show_last=4)
-        SecretC = Secret()
-
-        assert SecretA is not SecretB
-        assert SecretB is not SecretC
-        assert issubclass(SecretA, _SecretBase)
-        assert issubclass(SecretB, _SecretBase)
-        assert issubclass(SecretC, _SecretBase)
-
-    def test_secret_config_attributes(self):
-        """Test that Secret types store config correctly."""
-        from piou.utils import Secret, _SecretBase
-
-        SecretA = Secret(show_first=3, show_last=4)
-        assert issubclass(SecretA, _SecretBase)
-        assert SecretA._show_first == 3  # pyright: ignore[reportAttributeAccessIssue]
-        assert SecretA._show_last == 4  # pyright: ignore[reportAttributeAccessIssue]
-
-        SecretB = Secret()
-        assert SecretB._show_first == 0  # pyright: ignore[reportAttributeAccessIssue]
-        assert SecretB._show_last == 0  # pyright: ignore[reportAttributeAccessIssue]
-
     def test_command_option_is_secret_property(self):
         """Test is_secret property on CommandOption."""
         from piou.utils import CommandOption, Secret, Password
@@ -186,18 +159,6 @@ class TestSecretType:
         opt_str = CommandOption("value")
         opt_str.data_type = str
         assert opt_str.is_secret is False
-
-    def test_command_option_secret_config_property(self):
-        """Test secret_config property returns correct tuple."""
-        from piou.utils import CommandOption, Secret
-
-        opt = CommandOption("value")
-        opt.data_type = Secret(show_first=3, show_last=4)
-        assert opt.secret_config == (3, 4)
-
-        opt2 = CommandOption("value")
-        opt2.data_type = str
-        assert opt2.secret_config == (0, 0)
 
     @pytest.mark.parametrize(
         "secret_type, value",

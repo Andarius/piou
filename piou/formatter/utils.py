@@ -4,8 +4,9 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import Literal, TYPE_CHECKING
+from typing import Literal, TYPE_CHECKING, cast
 
+from ..utils import _SecretBase
 from ..command import CommandOption
 
 if TYPE_CHECKING:
@@ -14,39 +15,28 @@ if TYPE_CHECKING:
 FormatterType = Literal["raw", "rich"]
 
 
-def mask_secret(value: str, show_first: int = 0, show_last: int = 0) -> str:
-    """Mask a secret value, optionally showing first/last characters.
+def mask_secret(value: str, show_first: int = 0, show_last: int = 0, replacement: str = "*") -> str:
+    """Mask a secret value by replacing hidden characters with `replacement`.
 
-    Args:
-        value: The secret value to mask
-        show_first: Number of characters to show at the beginning
-        show_last: Number of characters to show at the end
-
-    Returns:
-        Masked string with asterisks replacing hidden characters
+    Optionally keeps `show_first` characters visible at the beginning
+    and `show_last` characters at the end.
     """
     if not value:
-        return "******"
+        return replacement * 6
     total_len = len(value)
     if show_first + show_last >= total_len:
         return value
     prefix = value[:show_first] if show_first > 0 else ""
     suffix = value[-show_last:] if show_last > 0 else ""
     hidden_len = total_len - show_first - show_last
-    mask = "*" * min(hidden_len, 6)
+    mask = replacement * min(hidden_len, 6)
     return f"{prefix}{mask}{suffix}"
 
 
 def get_formatter(formatter_type: FormatterType | None = None) -> Formatter:
-    """
-    Return a formatter based on the specified type.
+    """Return a Formatter instance based on `formatter_type`.
 
-    Args:
-        formatter_type: The formatter to use. If None, uses PIOU_FORMATTER env var
-                       or defaults to 'rich' if available.
-
-    Returns:
-        Formatter instance (RichFormatter or base Formatter)
+    If None, uses PIOU_FORMATTER env var or defaults to 'rich' if available.
     """
     from .base import Formatter
 
@@ -134,11 +124,9 @@ def fmt_help(
     _markdown_open, _markdown_close = markdown_open or "", markdown_close or ""
 
     if show_default and option.default is not None and not option.is_required:
-        if option.is_password:
-            default_str = "******"
-        elif option.is_secret:
-            show_first, show_last = option.secret_config
-            default_str = mask_secret(str(option.default), show_first, show_last)
+        if option.is_secret:
+            _secret = cast(type[_SecretBase], option.data_type)
+            default_str = mask_secret(str(option.default), _secret.show_first, _secret.show_last)
         else:
             default_str = option.default
         default_str = f"{_markdown_open}(default: {default_str}){_markdown_close}"
