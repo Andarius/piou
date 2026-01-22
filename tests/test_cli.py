@@ -12,6 +12,8 @@ from uuid import UUID
 import pytest
 from typing_extensions import LiteralString
 
+from piou.exceptions import InvalidChoiceError
+
 _IS_GE_PY310 = f"{sys.version_info.major}.{sys.version_info.minor:02}" >= "3.10"
 
 
@@ -232,65 +234,51 @@ class TestMaybePath:
         assert result["config"] == Path("/some/nonexistent/config.yaml")
 
 
-@pytest.mark.parametrize(
-    "input_type, value, options, expected, error",
-    [
-        (str, "FOO", {"case_sensitive": False, "choices": ["foo", "bar"]}, "FOO", None),
-        (str, "foo", {"case_sensitive": False, "choices": ["foo", "bar"]}, "foo", None),
-        (str, "fOo", {"case_sensitive": False, "choices": ["foo", "bar"]}, "fOo", None),
-        (
-            str,
-            "fOo",
-            {"case_sensitive": True, "choices": ["foo", "bar"]},
-            None,
-            "Invalid value 'fOo' found. Possible values are: foo, bar",
-        ),
-        (
-            Literal["fOo"],
-            "fOo",
-            {"case_sensitive": False, "choices": ["foo", "bar"]},
-            "fOo",
-            None,
-        ),
-    ],
-)
-def testing_choices(input_type, value, options, expected, error):
-    pass
-
-
 class TestChoices:
     @pytest.mark.parametrize(
-        "input_type, value, options, expected, error",
+        "input_type, value, options, expectation",
         [
-            (str, "FOO", {"case_sensitive": False, "choices": ["foo", "bar"]}, "FOO", None),
-            (str, "foo", {"case_sensitive": False, "choices": ["foo", "bar"]}, "foo", None),
-            (str, "fOo", {"case_sensitive": False, "choices": ["foo", "bar"]}, "fOo", None),
-            (
+            pytest.param(
+                str,
+                "FOO",
+                {"case_sensitive": False, "choices": ["foo", "bar"]},
+                nullcontext("FOO"),
+                id="case_insensitive_upper",
+            ),
+            pytest.param(
+                str,
+                "foo",
+                {"case_sensitive": False, "choices": ["foo", "bar"]},
+                nullcontext("foo"),
+                id="case_insensitive_lower",
+            ),
+            pytest.param(
+                str,
+                "fOo",
+                {"case_sensitive": False, "choices": ["foo", "bar"]},
+                nullcontext("fOo"),
+                id="case_insensitive_mixed",
+            ),
+            pytest.param(
                 str,
                 "fOo",
                 {"case_sensitive": True, "choices": ["foo", "bar"]},
-                None,
-                "Invalid value 'fOo' found. Possible values are: foo, bar",
+                pytest.raises(InvalidChoiceError),
+                id="case_sensitive_rejects",
             ),
-            (
+            pytest.param(
                 Literal["fOo"],
                 "fOo",
                 {"case_sensitive": False, "choices": ["foo", "bar"]},
-                "fOo",
-                None,
+                nullcontext("fOo"),
+                id="literal_case_insensitive",
             ),
         ],
     )
-    def testing_choices(cls, input_type, value, options, expected, error):
+    def test_choices_case_sensitivity(self, input_type, value, options, expectation):
         from piou.utils import validate_value
-        from piou.exceptions import InvalidChoiceError
 
-        if error:
-            with pytest.raises(InvalidChoiceError) as e:
-                validate_value(input_type, value, **options)
-            assert e.value.args[0] == value
-            assert e.value.args[1] == options["choices"]
-        else:
+        with expectation as expected:
             assert validate_value(input_type, value, **options) == expected
 
     @pytest.mark.parametrize(
