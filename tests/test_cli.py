@@ -2,7 +2,7 @@ import asyncio
 import datetime as dt
 import re
 import sys
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from enum import Enum
 from functools import partial
 from pathlib import Path
@@ -184,43 +184,38 @@ class TestSecretType:
 class TestMaybePath:
     """Tests for MaybePath type that skips existence checking."""
 
-    def test_optional_path_skips_existence_check(self):
-        """MaybePath should not raise FileNotFoundError for missing files."""
+    @pytest.mark.parametrize(
+        "path_type, expectation",
+        [
+            pytest.param("MaybePath", nullcontext(), id="maybe_path_skips_existence_check"),
+            pytest.param(
+                "Path", pytest.raises(FileNotFoundError, match="File not found"), id="path_raises_for_missing_file"
+            ),
+        ],
+    )
+    def test_validate_value_path_existence(self, path_type, expectation):
+        """Test validate_value behavior for Path vs MaybePath with missing files."""
         from piou.utils import MaybePath, validate_value
 
-        # This should not raise FileNotFoundError
-        result = validate_value(MaybePath, "/nonexistent/path/file.txt")
-        assert result == Path("/nonexistent/path/file.txt")
+        dtype = MaybePath if path_type == "MaybePath" else Path
+        with expectation:
+            result = validate_value(dtype, "/nonexistent/path/file.txt")
+            assert result == Path("/nonexistent/path/file.txt")
 
-    def test_path_raises_for_missing_file(self):
-        """Regular Path should raise FileNotFoundError for missing files."""
-        from piou.utils import validate_value
-
-        with pytest.raises(FileNotFoundError, match="File not found"):
-            validate_value(Path, "/nonexistent/path/file.txt")
-
-    def test_command_option_is_optional_path(self):
+    @pytest.mark.parametrize(
+        "path_type, expected",
+        [
+            pytest.param("MaybePath", True, id="maybe_path_is_optional"),
+            pytest.param("Path", False, id="path_is_not_optional"),
+        ],
+    )
+    def test_command_option_is_optional_path(self, path_type, expected):
         """Test is_optional_path property on CommandOption."""
         from piou.utils import CommandOption, MaybePath
 
         opt = CommandOption("value")
-        opt.data_type = MaybePath  # type: ignore[assignment]
-        assert opt.is_optional_path is True
-
-        opt2 = CommandOption("value")
-        opt2.data_type = Path  # type: ignore[assignment]
-        assert opt2.is_optional_path is False
-
-    def test_command_option_validate_skips_existence_check(self):
-        """Test CommandOption.validate() auto-skips existence check for MaybePath."""
-        from piou.utils import CommandOption, MaybePath
-
-        opt = CommandOption("/nonexistent/file.txt")
-        opt.data_type = MaybePath  # type: ignore[assignment]
-
-        # Should not raise
-        result = opt.validate("/another/nonexistent/file.txt")
-        assert result == Path("/another/nonexistent/file.txt")
+        opt.data_type = MaybePath if path_type == "MaybePath" else Path  # type: ignore[assignment]
+        assert opt.is_optional_path is expected
 
     def test_cli_with_optional_path(self):
         """Test MaybePath works in a CLI command."""
