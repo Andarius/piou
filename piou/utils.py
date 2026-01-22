@@ -273,7 +273,7 @@ class CommandOption(Generic[T]):
     help: str | None = None
     keyword_args: tuple[str, ...] = field(default_factory=tuple)
 
-    choices: list[T] | Callable[[], list[T]] | None = None
+    choices: list[T] | Callable[[], list[T]] | Callable[[], Coroutine[Any, Any, list[T]]] | None = None
 
     _name: str | None = field(init=False, default=None)
     _data_type: type[T] = field(init=False, default=Any)  # pyright: ignore[reportAssignmentType]
@@ -332,7 +332,10 @@ class CommandOption(Generic[T]):
         return len(self.keyword_args) == 0
 
     def get_choices(self) -> list[T] | None:
-        _choices = self.choices() if callable(self.choices) else self.choices
+        if callable(self.choices):
+            _choices = run_function(self.choices)
+        else:
+            _choices = self.choices
         return self.literal_values or _choices
 
     def validate(self, value: str) -> T:
