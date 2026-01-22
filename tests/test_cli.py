@@ -149,12 +149,12 @@ class TestSecretType:
         from piou.utils import CommandOption, Secret, Password
 
         opt_secret = CommandOption("value")
-        opt_secret.data_type = Secret(show_first=3)
+        opt_secret.data_type = Secret
         assert opt_secret.is_secret is True
 
         opt_password = CommandOption("value")
         opt_password.data_type = Password
-        assert opt_password.is_secret is False  # Password is not a Secret
+        assert opt_password.is_secret is True  # Password is also a secret type
 
         opt_str = CommandOption("value")
         opt_str.data_type = str

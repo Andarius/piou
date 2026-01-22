@@ -123,8 +123,12 @@ async def _async_main():
 @cli.command(cmd="secrets", help="Run secrets command")
 def secrets_main(
     password: Password = Option("my-password", "--password", help="Password (fully masked)"),
-    token: Secret(show_first=3) = Option("sk-12345678", "--token", help="API token (shows first 3 chars)"),
-    card: Secret(show_last=4) = Option("4111111111111234", "--card", help="Card number (shows last 4 chars)"),
+    # Option-style masking configuration
+    token: Secret = Option("sk-12345678", "--token", help="API token (shows first 3 chars)", show_first=3),
+    card: Secret = Option("4111111111111234", "--card", help="Card number (shows last 4 chars)", show_last=4),
+    # Type annotation-style masking configuration
+    api_key: Secret(show_first=3) = Option("sk-abcdefgh", "--api-key", help="API key (type annotation style)"),
+    account: Secret(show_last=4) = Option("9876543210", "--account", help="Account (type annotation style)"),
 ):
     """
     Example using Password and Secret types.
@@ -134,7 +138,7 @@ def secrets_main(
      python -m examples secrets --password secret123 --token sk-abcdef --card 1234567890
     ```
     """
-    print(f"password={password}, token={token}, card={card}")
+    print(f"password={password}, token={token}, card={card}, api_key={api_key}, account={account}")
 
 
 if __name__ == "__main__":

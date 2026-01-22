@@ -50,31 +50,43 @@ class _SecretBase(str):
     replacement: str = "*"
 
 
-def Secret(show_first: int = 0, show_last: int = 0, replacement: str = "*") -> type[str]:
-    """Create a Secret type with configurable masking.
+class Secret(_SecretBase):
+    """Secret type with configurable masking.
 
+    Can be used directly as a type or called with parameters to configure masking.
     Keeps `show_first` characters visible at the beginning and `show_last` at the end.
 
     Examples:
-        # Full mask (like Password)
-        token: Secret() = Option("abc123", "--token")
+        # Full mask (use directly as type)
+        token: Secret = Option("abc123", "--token")
         # Show first 3 chars: "sk-******"
         api_key: Secret(show_first=3) = Option("sk-12345678", "--api-key")
         # Show last 4 chars: "******1234"
         card: Secret(show_last=4) = Option("4111111111111234", "--card")
     """
 
-    class SecretType(_SecretBase):
-        pass
+    def __new__(
+        cls,
+        value: str | None = None,
+        *,
+        show_first: int = 0,
+        show_last: int = 0,
+        replacement: str = "*",
+    ):
+        # If value is a string, we're creating an instance
+        if isinstance(value, str):
+            return str.__new__(cls, value)
 
-    SecretType.show_first = show_first
-    SecretType.show_last = show_last
-    SecretType.replacement = replacement
+        # Otherwise, we're creating a configured type
+        class ConfiguredSecret(_SecretBase):
+            pass
 
-    return SecretType
+        ConfiguredSecret.show_first = show_first
+        ConfiguredSecret.show_last = show_last
+        ConfiguredSecret.replacement = replacement
+        return ConfiguredSecret
 
 
-# Backward compatibility alias for Password
 Password = _SecretBase
 
 
@@ -328,6 +340,11 @@ class CommandOption(Generic[T]):
     # Only for Path
     raise_path_does_not_exist: bool = True
 
+    # Secret masking options
+    show_first: int | None = None
+    show_last: int | None = None
+    replacement: str = "*"
+
     @property
     def data_type(self):
         return self._data_type
@@ -344,7 +361,7 @@ class CommandOption(Generic[T]):
 
     @property
     def is_secret(self) -> bool:
-        return issubclass(self.data_type, _SecretBase)
+        return isinstance(self.data_type, type) and issubclass(self.data_type, _SecretBase)
 
     @property
     def is_optional_path(self) -> bool:
@@ -402,6 +419,10 @@ def Option(
     choices: Any | None = None,
     # Only for Path
     raise_path_does_not_exist: bool = True,
+    # Secret masking options
+    show_first: int | None = None,
+    show_last: int | None = None,
+    replacement: str = "*",
 ) -> Any:
     return CommandOption(
         default=default,
@@ -411,6 +432,9 @@ def Option(
         arg_name=arg_name,
         choices=choices,
         raise_path_does_not_exist=raise_path_does_not_exist,
+        show_first=show_first,
+        show_last=show_last,
+        replacement=replacement,
     )
 
 

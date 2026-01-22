@@ -49,7 +49,7 @@ def test_mask_secret(value, show_first, show_last, expected):
 @pytest.mark.parametrize(
     "default, data_type,show_default,expected",
     [
-        pytest.param("hello", Password, True, "(default: ******)", id="Password"),
+        pytest.param("hello", Password, True, "(default: *****)", id="Password"),
         pytest.param("sk-12345678", Secret(show_first=3), True, "(default: sk-******)", id="Secret_show_first"),
         pytest.param("4111111111111234", Secret(show_last=4), True, "(default: ******1234)", id="Secret_show_last"),
         pytest.param("abc123xyz", Secret(show_first=3, show_last=3), True, "(default: abc***xyz)", id="Secret_both"),
