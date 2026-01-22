@@ -5,7 +5,7 @@ from typing import Literal
 
 from typing_extensions import LiteralString
 
-from piou import Cli, Option
+from piou import Cli, Option, Password, Secret
 from piou.utils import Regex
 from piou.exceptions import CommandError
 from piou.formatter import RichFormatter
@@ -118,6 +118,24 @@ async def _async_main():
     async with asyncio.TaskGroup() as tg:
         for i in range(3):
             tg.create_task(_task(i))
+
+
+@cli.command(cmd="secrets", help="Run secrets command")
+def secrets_main(
+    password: Password = Option("my-password", "--password", help="Password (fully masked)"),
+    # Option-style masking configuration
+    token: Secret = Option("sk-12345678", "--token", help="API token (shows first 3 chars)", show_first=3),
+    card: Secret = Option("4111111111111234", "--card", help="Card number (shows last 4 chars)", show_last=4),
+):
+    """
+    Example using Password and Secret types.
+    You can run it with:
+    ```bash
+     python -m examples secrets --help
+     python -m examples secrets --password secret123 --token sk-abcdef --card 1234567890
+    ```
+    """
+    print(f"password={password}, token={token}, card={card}")
 
 
 if __name__ == "__main__":

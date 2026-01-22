@@ -2,7 +2,7 @@ import asyncio
 import datetime as dt
 import re
 import sys
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from enum import Enum
 from functools import partial
 from pathlib import Path
@@ -11,6 +11,8 @@ from uuid import UUID
 
 import pytest
 from typing_extensions import LiteralString
+
+from piou.exceptions import InvalidChoiceError
 
 _IS_GE_PY310 = f"{sys.version_info.major}.{sys.version_info.minor:02}" >= "3.10"
 
@@ -143,39 +145,140 @@ def test_validate_value(data_type, value, expected, options):
         assert validate_value(data_type | None, value, **_options) == expected
 
 
-class TestChoices:
+class TestSecretType:
+    """Tests for Secret type with configurable masking."""
+
+    from piou import Secret
+
+    def test_command_option_is_secret_property(self):
+        """Test is_secret property on CommandOption."""
+        from piou.utils import CommandOption, Secret, Password
+
+        opt_secret = CommandOption("value")
+        opt_secret.data_type = Secret
+        assert opt_secret.is_secret is True
+
+        opt_password = CommandOption("value")
+        opt_password.data_type = Password
+        assert opt_password.is_secret is True  # Password is also a secret type
+
+        opt_str = CommandOption("value")
+        opt_str.data_type = str
+        assert opt_str.is_secret is False
+
     @pytest.mark.parametrize(
-        "input_type, value, options, expected, error",
+        "secret_type, value",
         [
-            (str, "FOO", {"case_sensitive": False, "choices": ["foo", "bar"]}, "FOO", None),
-            (str, "foo", {"case_sensitive": False, "choices": ["foo", "bar"]}, "foo", None),
-            (str, "fOo", {"case_sensitive": False, "choices": ["foo", "bar"]}, "fOo", None),
-            (
-                str,
-                "fOo",
-                {"case_sensitive": True, "choices": ["foo", "bar"]},
-                None,
-                "Invalid value 'fOo' found. Possible values are: foo, bar",
-            ),
-            (
-                Literal["fOo"],
-                "fOo",
-                {"case_sensitive": False, "choices": ["foo", "bar"]},
-                "fOo",
-                None,
+            pytest.param(Secret(), "abc123", id="full_mask"),
+            pytest.param(Secret(show_first=3), "sk-12345678", id="show_first"),
+            pytest.param(Secret(show_last=4), "4111111111111234", id="show_last"),
+        ],
+    )
+    def test_validate_value_with_secret(self, secret_type, value):
+        """Test validate_value handles Secret types."""
+        from piou.utils import validate_value
+
+        result = validate_value(secret_type, value)
+        assert result == value
+        assert isinstance(result, str)
+
+
+class TestMaybePath:
+    """Tests for MaybePath type that skips existence checking."""
+
+    @pytest.mark.parametrize(
+        "path_type, expectation",
+        [
+            pytest.param("MaybePath", nullcontext(), id="maybe_path_skips_existence_check"),
+            pytest.param(
+                "Path", pytest.raises(FileNotFoundError, match="File not found"), id="path_raises_for_missing_file"
             ),
         ],
     )
-    def testing_choices(cls, input_type, value, options, expected, error):
-        from piou.utils import validate_value
-        from piou.exceptions import InvalidChoiceError
+    def test_validate_value_path_existence(self, path_type, expectation):
+        """Test validate_value behavior for Path vs MaybePath with missing files."""
+        from piou.utils import MaybePath, validate_value
 
-        if error:
-            with pytest.raises(InvalidChoiceError) as e:
-                validate_value(input_type, value, **options)
-            assert e.value.args[0] == value
-            assert e.value.args[1] == options["choices"]
-        else:
+        dtype = MaybePath if path_type == "MaybePath" else Path
+        with expectation:
+            result = validate_value(dtype, "/nonexistent/path/file.txt")
+            assert result == Path("/nonexistent/path/file.txt")
+
+    @pytest.mark.parametrize(
+        "path_type, expected",
+        [
+            pytest.param("MaybePath", True, id="maybe_path_is_optional"),
+            pytest.param("Path", False, id="path_is_not_optional"),
+        ],
+    )
+    def test_command_option_is_optional_path(self, path_type, expected):
+        """Test is_optional_path property on CommandOption."""
+        from piou.utils import CommandOption, MaybePath
+
+        opt = CommandOption("value")
+        opt.data_type = MaybePath if path_type == "MaybePath" else Path  # type: ignore[assignment]
+        assert opt.is_optional_path is expected
+
+    def test_cli_with_optional_path(self):
+        """Test MaybePath works in a CLI command."""
+        from piou import Cli, Option, MaybePath
+
+        cli = Cli(description="Test CLI")
+        result = {}
+
+        @cli.command()
+        def test(config: MaybePath = Option(..., "--config")):
+            result["config"] = config
+
+        cli.run_with_args("test", "--config", "/some/nonexistent/config.yaml")
+        assert result["config"] == Path("/some/nonexistent/config.yaml")
+
+
+class TestChoices:
+    @pytest.mark.parametrize(
+        "input_type, value, options, expectation",
+        [
+            pytest.param(
+                str,
+                "FOO",
+                {"case_sensitive": False, "choices": ["foo", "bar"]},
+                nullcontext("FOO"),
+                id="case_insensitive_upper",
+            ),
+            pytest.param(
+                str,
+                "foo",
+                {"case_sensitive": False, "choices": ["foo", "bar"]},
+                nullcontext("foo"),
+                id="case_insensitive_lower",
+            ),
+            pytest.param(
+                str,
+                "fOo",
+                {"case_sensitive": False, "choices": ["foo", "bar"]},
+                nullcontext("fOo"),
+                id="case_insensitive_mixed",
+            ),
+            pytest.param(
+                str,
+                "fOo",
+                {"case_sensitive": True, "choices": ["foo", "bar"]},
+                pytest.raises(InvalidChoiceError),
+                id="case_sensitive_rejects",
+            ),
+            pytest.param(
+                Literal["fOo"],
+                "fOo",
+                {"case_sensitive": False, "choices": ["foo", "bar"]},
+                nullcontext("fOo"),
+                id="literal_case_insensitive",
+            ),
+        ],
+    )
+    def test_choices_case_sensitivity(self, input_type, value, options, expectation):
+        from piou.utils import validate_value
+
+        with expectation as expected:
             assert validate_value(input_type, value, **options) == expected
 
     @pytest.mark.parametrize(

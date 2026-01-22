@@ -2,7 +2,7 @@ from typing import Literal
 
 import pytest
 
-from piou.utils import Password
+from piou.utils import Password, Secret
 
 
 @pytest.mark.parametrize(
@@ -28,9 +28,32 @@ def test_rich_formatting_options(options, input, expected, capsys):
 
 
 @pytest.mark.parametrize(
+    "value, show_first, show_last, expected",
+    [
+        pytest.param("", 0, 0, "******", id="empty_string"),
+        pytest.param("abc123", 0, 0, "******", id="full_mask"),
+        pytest.param("sk-12345678", 3, 0, "sk-******", id="show_first_3"),
+        pytest.param("4111111111111234", 0, 4, "******1234", id="show_last_4"),
+        pytest.param("abc123xyz", 3, 3, "abc***xyz", id="show_both"),
+        pytest.param("short", 3, 3, "short", id="too_short_to_mask"),
+        pytest.param("abcdef", 3, 3, "abcdef", id="exact_length_no_mask"),
+        pytest.param("a]", 0, 0, "**", id="short_value"),
+    ],
+)
+def test_mask_secret(value, show_first, show_last, expected):
+    from piou.formatter.utils import mask_secret
+
+    assert mask_secret(value, show_first, show_last) == expected
+
+
+@pytest.mark.parametrize(
     "default, data_type,show_default,expected",
     [
-        pytest.param("hello", Password, True, "(default: ******)", id="Password"),
+        pytest.param("hello", Password, True, "(default: *****)", id="Password"),
+        pytest.param("sk-12345678", Secret(show_first=3), True, "(default: sk-******)", id="Secret_show_first"),
+        pytest.param("4111111111111234", Secret(show_last=4), True, "(default: ******1234)", id="Secret_show_last"),
+        pytest.param("abc123xyz", Secret(show_first=3, show_last=3), True, "(default: abc***xyz)", id="Secret_both"),
+        pytest.param("token123", Secret(), True, "(default: ******)", id="Secret_full_mask"),
         pytest.param(
             None,
             Literal["foo", "bar"],
