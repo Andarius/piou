@@ -12,9 +12,11 @@ from uuid import UUID
 import pytest
 from typing_extensions import LiteralString
 
-from piou.utils import Secret
-
 _IS_GE_PY310 = f"{sys.version_info.major}.{sys.version_info.minor:02}" >= "3.10"
+
+
+async def _async_foo_bar():
+    return ["foo", "bar"]
 
 
 class MyEnum(Enum):
@@ -144,6 +146,8 @@ def test_validate_value(data_type, value, expected, options):
 class TestSecretType:
     """Tests for Secret type with configurable masking."""
 
+    from piou import Secret
+
     def test_command_option_is_secret_property(self):
         """Test is_secret property on CommandOption."""
         from piou.utils import CommandOption, Secret, Password
@@ -256,67 +260,121 @@ class TestMaybePath:
     ],
 )
 def testing_choices(input_type, value, options, expected, error):
-    from piou.utils import validate_value
-    from piou.exceptions import InvalidChoiceError
-
-    if error:
-        with pytest.raises(InvalidChoiceError) as e:
-            validate_value(input_type, value, **options)
-        assert e.value.args[0] == value
-        assert e.value.args[1] == options["choices"]
-    else:
-        assert validate_value(input_type, value, **options) == expected
+    pass
 
 
-@pytest.mark.parametrize(
-    "value, choices, case_sensitive, expected_valid",
-    [
-        # Regex pattern matching
-        pytest.param("dev-123", [re.compile(r"dev-\d+")], True, True, id="regex_match"),
-        pytest.param("dev-abc", [re.compile(r"dev-\d+")], True, False, id="regex_no_match"),
-        pytest.param("prod", [re.compile(r"dev-\d+")], True, False, id="regex_literal_no_match"),
-        # Mixed literal and regex
-        pytest.param("prod", ["prod", re.compile(r"dev-\d+")], True, True, id="mixed_literal_match"),
-        pytest.param("dev-456", ["prod", re.compile(r"dev-\d+")], True, True, id="mixed_regex_match"),
-        pytest.param("staging", ["prod", re.compile(r"dev-\d+")], True, False, id="mixed_no_match"),
-        # Multiple regex patterns
-        pytest.param(
-            "test-123.db", [re.compile(r"test-\d+\.db"), re.compile(r"dev-\d+")], True, True, id="multi_regex_first"
-        ),
-        pytest.param(
-            "dev-999", [re.compile(r"test-\d+\.db"), re.compile(r"dev-\d+")], True, True, id="multi_regex_second"
-        ),
-        pytest.param(
-            "invalid", [re.compile(r"test-\d+\.db"), re.compile(r"dev-\d+")], True, False, id="multi_regex_no_match"
-        ),
-        # Regex with fullmatch (must match entire string)
-        pytest.param("dev-123-extra", [re.compile(r"dev-\d+")], True, False, id="fullmatch_suffix"),
-        pytest.param("prefix-dev-123", [re.compile(r"dev-\d+")], True, False, id="fullmatch_prefix"),
-        # case_sensitive only affects literals, not regex
-        pytest.param("DEV-123", [re.compile(r"DEV-\d+")], False, True, id="regex_case_insensitive_flag_ignored"),
-        pytest.param("dev-123", [re.compile(r"DEV-\d+")], False, False, id="regex_case_mismatch"),
-        # Use re.IGNORECASE for case-insensitive regex
-        pytest.param("DEV-123", [re.compile(r"dev-\d+", re.IGNORECASE)], True, True, id="regex_ignorecase_upper"),
-        pytest.param("dev-123", [re.compile(r"dev-\d+", re.IGNORECASE)], True, True, id="regex_ignorecase_lower"),
-        # Mixed: literal with case_sensitive=False, regex with IGNORECASE
-        pytest.param("PROD", ["prod", re.compile(r"dev-\d+")], False, True, id="mixed_literal_case_insensitive"),
-        pytest.param(
-            "DEV-999", ["prod", re.compile(r"dev-\d+", re.IGNORECASE)], False, True, id="mixed_regex_ignorecase"
-        ),
-    ],
-)
-def test_regex_choices(value, choices, case_sensitive, expected_valid):
-    from piou.utils import validate_value
-    from piou.exceptions import InvalidChoiceError
+class TestChoices:
+    @pytest.mark.parametrize(
+        "input_type, value, options, expected, error",
+        [
+            (str, "FOO", {"case_sensitive": False, "choices": ["foo", "bar"]}, "FOO", None),
+            (str, "foo", {"case_sensitive": False, "choices": ["foo", "bar"]}, "foo", None),
+            (str, "fOo", {"case_sensitive": False, "choices": ["foo", "bar"]}, "fOo", None),
+            (
+                str,
+                "fOo",
+                {"case_sensitive": True, "choices": ["foo", "bar"]},
+                None,
+                "Invalid value 'fOo' found. Possible values are: foo, bar",
+            ),
+            (
+                Literal["fOo"],
+                "fOo",
+                {"case_sensitive": False, "choices": ["foo", "bar"]},
+                "fOo",
+                None,
+            ),
+        ],
+    )
+    def testing_choices(cls, input_type, value, options, expected, error):
+        from piou.utils import validate_value
+        from piou.exceptions import InvalidChoiceError
 
-    if expected_valid:
-        result = validate_value(str, value, case_sensitive=case_sensitive, choices=choices)
-        assert result == value
-    else:
-        with pytest.raises(InvalidChoiceError) as e:
-            validate_value(str, value, case_sensitive=case_sensitive, choices=choices)
-        assert e.value.value == value
-        assert e.value.choices == choices
+        if error:
+            with pytest.raises(InvalidChoiceError) as e:
+                validate_value(input_type, value, **options)
+            assert e.value.args[0] == value
+            assert e.value.args[1] == options["choices"]
+        else:
+            assert validate_value(input_type, value, **options) == expected
+
+    @pytest.mark.parametrize(
+        "value, choices, case_sensitive, expected_valid",
+        [
+            # Regex pattern matching
+            pytest.param("dev-123", [re.compile(r"dev-\d+")], True, True, id="regex_match"),
+            pytest.param("dev-abc", [re.compile(r"dev-\d+")], True, False, id="regex_no_match"),
+            pytest.param("prod", [re.compile(r"dev-\d+")], True, False, id="regex_literal_no_match"),
+            # Mixed literal and regex
+            pytest.param("prod", ["prod", re.compile(r"dev-\d+")], True, True, id="mixed_literal_match"),
+            pytest.param("dev-456", ["prod", re.compile(r"dev-\d+")], True, True, id="mixed_regex_match"),
+            pytest.param("staging", ["prod", re.compile(r"dev-\d+")], True, False, id="mixed_no_match"),
+            # Multiple regex patterns
+            pytest.param(
+                "test-123.db", [re.compile(r"test-\d+\.db"), re.compile(r"dev-\d+")], True, True, id="multi_regex_first"
+            ),
+            pytest.param(
+                "dev-999", [re.compile(r"test-\d+\.db"), re.compile(r"dev-\d+")], True, True, id="multi_regex_second"
+            ),
+            pytest.param(
+                "invalid", [re.compile(r"test-\d+\.db"), re.compile(r"dev-\d+")], True, False, id="multi_regex_no_match"
+            ),
+            # Regex with fullmatch (must match entire string)
+            pytest.param("dev-123-extra", [re.compile(r"dev-\d+")], True, False, id="fullmatch_suffix"),
+            pytest.param("prefix-dev-123", [re.compile(r"dev-\d+")], True, False, id="fullmatch_prefix"),
+            # case_sensitive only affects literals, not regex
+            pytest.param("DEV-123", [re.compile(r"DEV-\d+")], False, True, id="regex_case_insensitive_flag_ignored"),
+            pytest.param("dev-123", [re.compile(r"DEV-\d+")], False, False, id="regex_case_mismatch"),
+            # Use re.IGNORECASE for case-insensitive regex
+            pytest.param("DEV-123", [re.compile(r"dev-\d+", re.IGNORECASE)], True, True, id="regex_ignorecase_upper"),
+            pytest.param("dev-123", [re.compile(r"dev-\d+", re.IGNORECASE)], True, True, id="regex_ignorecase_lower"),
+            # Mixed: literal with case_sensitive=False, regex with IGNORECASE
+            pytest.param("PROD", ["prod", re.compile(r"dev-\d+")], False, True, id="mixed_literal_case_insensitive"),
+            pytest.param(
+                "DEV-999", ["prod", re.compile(r"dev-\d+", re.IGNORECASE)], False, True, id="mixed_regex_ignorecase"
+            ),
+        ],
+    )
+    def test_regex_choices(self, value, choices, case_sensitive, expected_valid):
+        from piou.utils import validate_value
+        from piou.exceptions import InvalidChoiceError
+
+        if expected_valid:
+            result = validate_value(str, value, case_sensitive=case_sensitive, choices=choices)
+            assert result == value
+        else:
+            with pytest.raises(InvalidChoiceError) as e:
+                validate_value(str, value, case_sensitive=case_sensitive, choices=choices)
+            assert e.value.value == value
+            assert e.value.choices == choices
+
+    @staticmethod
+    async def _test_invalid():
+        return [1, 2, 3]
+
+    @pytest.mark.parametrize(
+        "choices",
+        [[1, 2, 3], lambda: [1, 2, 3], _test_invalid],
+    )
+    def test_invalid_command_options_choices(self, choices):
+        from piou.command import CommandOption
+
+        opt = CommandOption(None, choices=choices)
+        with pytest.raises(ValueError, match="Pick either a Literal type or choices"):
+            opt.data_type = Literal["foo"]  # type: ignore[assignment]
+
+    def test_choices(self):
+        """Test that choices can be an async function."""
+        from piou.command import CommandOption
+
+        async def get_choices() -> list[str]:
+            return ["foo", "bar", "baz"]
+
+        opt = CommandOption("", choices=get_choices)
+        # get_choices should work with async functions
+        assert opt.get_choices() == ["foo", "bar", "baz"]
+        # validate should work with async choices
+        assert opt.validate("foo") == "foo"
 
 
 def test_regex_helper():
@@ -467,21 +525,6 @@ def test_command_options():
 
     cmd = Command(name="", fn=fn, options=[opt4, opt5, opt3, opt2, opt1])
     assert [x.name for x in cmd.options_sorted] == ["z", "a", "b", "c", "d"]
-
-
-@pytest.mark.parametrize(
-    "choices",
-    [
-        [1, 2, 3],
-        lambda: [1, 2, 3],
-    ],
-)
-def test_invalid_command_options_choices(choices):
-    from piou.command import CommandOption
-
-    opt = CommandOption(None, choices=choices)
-    with pytest.raises(ValueError, match="Pick either a Literal type or choices"):
-        opt.data_type = Literal["foo"]  # type: ignore[assignment]
 
 
 def test_command_async():
