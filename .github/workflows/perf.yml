@@ -44,6 +44,7 @@ jobs:
           name: Import Performance
           tool: customSmallerIsBetter
           output-file-path: benchmark-results.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           # Comment on PR with diff vs base branch
           comment-on-alert: true
           comment-always: ${{ github.event_name == 'pull_request' }}
