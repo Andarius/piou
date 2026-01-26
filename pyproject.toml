@@ -1,6 +1,6 @@
 [project]
 name = "piou"
-version = "0.25.2"
+version = "0.27.0"
 description = "A CLI toolkit"
 authors = [{ name = "Julien Brayere", email = "julien.brayere@obitrain.com" }]
 license = "MIT"
@@ -52,6 +52,7 @@ dev = [
     "pytest-cov>=6.2.1",
     "pytest-textual-snapshot>=1.0.0",
     "ruff>=0.14.4",
+    "prek>=0.3.0",
 ]
 
 docs = [
@@ -113,9 +114,11 @@ target-version = "py312"
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-version = "0.25.2"
+version = "0.27.0"
 tag_format = "$version"
 version_files = [
     "pyproject.toml:version"
 ]
 bump_message = "release $current_version → $new_version [skip ci]"
+update_changelog_on_bump = true
+changelog_file = "CHANGELOG.md"

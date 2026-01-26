@@ -36,6 +36,10 @@ Rule.bash-mode {
     color: #cc6666;
 }
 
+Rule.chat-mode {
+    color: #87ceeb;
+}
+
 #suggestions {
     background: transparent;
     margin-bottom: 1;
@@ -65,10 +69,14 @@ Rule.bash-mode {
 #prompt {
     background: transparent;
     color: white;
-    width: 2;
+    width: auto;
     height: 1;
     padding: 0;
     margin: 0;
+}
+
+#prompt.chat-mode {
+    color: #87ceeb;
 }
 
 Input {

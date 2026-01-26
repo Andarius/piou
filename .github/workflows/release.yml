@@ -42,6 +42,10 @@ jobs:
       - name: Build package
         run: uv build
 
+      - name: Extract release notes
+        run: |
+          awk '/^## /{if(p) exit; p=1} p' CHANGELOG.md > RELEASE_NOTES.md
+
       - name: Push changes
         run: git push origin master --tags
 
@@ -49,7 +53,7 @@ jobs:
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
         with:
           tag_name: ${{ steps.get_version.outputs.VERSION }}
-          body_path: CHANGELOG.md
+          body_path: RELEASE_NOTES.md
           files: dist/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

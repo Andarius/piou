@@ -4,8 +4,9 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import Literal, TYPE_CHECKING
+from typing import Literal, TYPE_CHECKING, cast
 
+from ..utils import _SecretBase
 from ..command import CommandOption
 
 if TYPE_CHECKING:
@@ -14,16 +15,28 @@ if TYPE_CHECKING:
 FormatterType = Literal["raw", "rich"]
 
 
-def get_formatter(formatter_type: FormatterType | None = None) -> Formatter:
+def mask_secret(value: str, show_first: int = 0, show_last: int = 0, replacement: str = "*") -> str:
+    """Mask a secret value by replacing hidden characters with `replacement`.
+
+    Optionally keeps `show_first` characters visible at the beginning
+    and `show_last` characters at the end.
     """
-    Return a formatter based on the specified type.
+    if not value:
+        return replacement * 6
+    total_len = len(value)
+    if show_first + show_last >= total_len:
+        return value
+    prefix = value[:show_first] if show_first > 0 else ""
+    suffix = value[-show_last:] if show_last > 0 else ""
+    hidden_len = total_len - show_first - show_last
+    mask = replacement * min(hidden_len, 6)
+    return f"{prefix}{mask}{suffix}"
 
-    Args:
-        formatter_type: The formatter to use. If None, uses PIOU_FORMATTER env var
-                       or defaults to 'rich' if available.
 
-    Returns:
-        Formatter instance (RichFormatter or base Formatter)
+def get_formatter(formatter_type: FormatterType | None = None) -> Formatter:
+    """Return a Formatter instance based on `formatter_type`.
+
+    If None, uses PIOU_FORMATTER env var or defaults to 'rich' if available.
     """
     from .base import Formatter
 
@@ -112,7 +125,19 @@ def fmt_help(
     _markdown_open, _markdown_close = markdown_open or "", markdown_close or ""
 
     if show_default and option.default is not None and not option.is_required:
-        default_str = option.default if not option.is_password else "******"
+        if option.is_secret:
+            if option.show_first is not None or option.show_last is not None:
+                _show_first, _show_last, _replacement = (
+                    option.show_first or 0,
+                    option.show_last or 0,
+                    option.replacement,
+                )
+            else:
+                _secret = cast(type[_SecretBase], option.data_type)
+                _show_first, _show_last, _replacement = _secret.show_first, _secret.show_last, _secret.replacement
+            default_str = mask_secret(str(option.default), _show_first, _show_last, _replacement)
+        else:
+            default_str = option.default
         default_str = f"{_markdown_open}(default: {default_str}){_markdown_close}"
         return option.help + f" {default_str}" if option.help else default_str
     elif _choices is not None and not option.hide_choices:

@@ -17,7 +17,7 @@ def foo_main(
     ```
     And you are good to go!
     """
-    pass
+    print(f"bar={bar}, baz={baz}, foo={foo}")
 
 
 if __name__ == "__main__":

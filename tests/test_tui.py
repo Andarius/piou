@@ -5,6 +5,7 @@ from __future__ import annotations
 import tempfile
 from typing import TYPE_CHECKING, cast
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -19,25 +20,6 @@ from piou.tui.cli import History, CssClass
 
 if TYPE_CHECKING:
     from textual.widget import Widget
-
-
-# ============================================================================
-# Mock TUI for context tests
-# ============================================================================
-
-
-class MockTui:
-    """Mock TUI interface for testing."""
-
-    def __init__(self) -> None:
-        self.notifications: list[tuple[str, str, str]] = []
-        self.mounted: list[Widget] = []
-
-    def notify(self, message: str, *, title: str = "", severity: str = "information") -> None:
-        self.notifications.append((message, title, severity))
-
-    def mount_widget(self, widget: Widget) -> None:
-        self.mounted.append(widget)
 
 
 @pytest.fixture
@@ -353,6 +335,56 @@ class TestTuiApp:
             errors = app.query(f".{CssClass.ERROR}")
             assert len(errors) >= 1
 
+    async def test_initial_input(self, sample_cli, temp_history_file):
+        """Test that initial_input pre-fills the input field."""
+        app = TuiApp(sample_cli, history_file=temp_history_file, initial_input="/hello world")
+        async with app.run_test():
+            from textual.widgets import Input
+
+            inp = app.query_one(Input)
+            assert inp.value == "/hello world"
+
+    @pytest.mark.parametrize(
+        "method,rule_id",
+        [
+            pytest.param("set_rule_above", "rule-above", id="rule-above"),
+            pytest.param("set_rule_below", "rule-below", id="rule-below"),
+        ],
+    )
+    async def test_set_rule_returns_previous_class(self, sample_cli, temp_history_file, method, rule_id):
+        """Test that set_rule_* returns the previous CSS class."""
+        from textual.widgets import Rule
+
+        app = TuiApp(sample_cli, history_file=temp_history_file)
+        async with app.run_test():
+            rule = app.query_one(f"#{rule_id}", Rule)
+            rule.set_classes("original-class")
+
+            set_rule = getattr(app, method)
+            previous = set_rule(css_class="new-class")
+
+            assert previous == "original-class"
+            assert "new-class" in rule.classes
+
+    @pytest.mark.parametrize(
+        "method,rule_id",
+        [
+            pytest.param("set_rule_above", "rule-above", id="rule-above"),
+            pytest.param("set_rule_below", "rule-below", id="rule-below"),
+        ],
+    )
+    async def test_set_rule_changes_line_style(self, sample_cli, temp_history_file, method, rule_id):
+        """Test that set_rule_* changes the line style."""
+        from textual.widgets import Rule
+
+        app = TuiApp(sample_cli, history_file=temp_history_file)
+        async with app.run_test():
+            rule = app.query_one(f"#{rule_id}", Rule)
+            set_rule = getattr(app, method)
+            set_rule(line_style="double")
+
+            assert rule.line_style == "double"
+
 
 # ============================================================================
 # TuiContext tests
@@ -378,7 +410,7 @@ class TestTuiContext:
 
     def test_context_with_tui(self):
         """Context with TUI interface should report is_tui=True."""
-        tui = MockTui()
+        tui: TuiApp = MagicMock(spec=TuiApp)
         ctx = TuiContext()
         ctx.tui = tui
         assert ctx.is_tui is True
@@ -394,12 +426,12 @@ class TestTuiContext:
     @pytest.mark.parametrize("severity", ["information", "warning", "error"])
     def test_notify_with_tui(self, severity: SeverityLevel):
         """notify() should call TUI's notify method."""
-        tui = MockTui()
+        tui: TuiApp = MagicMock(spec=TuiApp)
         ctx = TuiContext()
         ctx.tui = tui
         ctx.notify("Hello", title="Alert", severity=severity)
 
-        assert tui.notifications == [("Hello", "Alert", severity)]
+        tui.notify.assert_called_once_with("Hello", title="Alert", severity=severity)
 
     def test_mount_widget_no_tui(self):
         """mount_widget() should be a no-op when not in TUI mode."""
@@ -409,13 +441,13 @@ class TestTuiContext:
 
     def test_mount_widget_with_tui(self):
         """mount_widget() should call TUI's mount_widget method."""
-        tui = MockTui()
+        tui: TuiApp = MagicMock(spec=TuiApp)
         widget = cast("Widget", object())
         ctx = TuiContext()
         ctx.tui = tui
         ctx.mount_widget(widget)
 
-        assert tui.mounted == [widget]
+        tui.mount_widget.assert_called_once_with(widget)
 
 
 class TestGetTuiContext:
@@ -430,7 +462,7 @@ class TestGetTuiContext:
     def test_set_and_get_tui_context(self, reset_context):
         """set_tui_context() should update the current context."""
         custom_ctx = TuiContext()
-        custom_ctx.tui = MockTui()
+        custom_ctx.tui = MagicMock(spec=TuiApp)
         set_tui_context(custom_ctx)
 
         ctx = get_tui_context()
@@ -469,7 +501,7 @@ class TestTuiOption:
 
         # Set a TUI context before running
         tui_ctx = TuiContext()
-        tui_ctx.tui = MockTui()
+        tui_ctx.tui = MagicMock(spec=TuiApp)
         set_tui_context(tui_ctx)
 
         cli._group.run_with_args("test")

@@ -49,6 +49,30 @@ class CssClass:
     ERROR = "error"
 
 
+@dataclass
+class PromptStyle:
+    """Style configuration for the input prompt.
+
+    Use this to customize the prompt appearance when borrowing user input.
+    """
+
+    text: str = "> "
+    css_class: str | None = None
+
+    def apply(self, app: TuiApp) -> PromptStyle:
+        """Apply this style to the app's prompt. Returns the previous style for restoration."""
+        prompt_widget = app.query_one("#prompt", Static)
+        # Get current text via render() since renderable isn't typed
+        current_text = str(getattr(prompt_widget, "renderable", "> "))
+        previous = PromptStyle(
+            text=current_text,
+            css_class=next(iter(prompt_widget.classes), None),
+        )
+        prompt_widget.update(self.text)
+        prompt_widget.set_classes({self.css_class} if self.css_class else set())
+        return previous
+
+
 class TuiApp(App):
     BINDINGS = [("escape", "quit", "Quit")]
     CSS_PATH = "static/app.tcss"
@@ -85,6 +109,7 @@ class TuiApp(App):
         self.exit_pending = False
         self.command_queue: asyncio.Queue[str] = asyncio.Queue()
         self.command_processor_task: asyncio.Task[None] | None = None
+        self._input_future: asyncio.Future[str] | None = None
 
     def _update_command_help(self, cmd_path: str | None) -> None:
         """Update the command help widget based on selected command."""
@@ -106,10 +131,7 @@ class TuiApp(App):
 
     def _suggest_subcommands(self, query: str, suggestions: Vertical) -> None:
         """Suggest subcommands for a command path like 'stats:' or 'stats:up'"""
-        parts = query.split(":")
-        prefix_parts = parts[:-1]  # e.g., ["stats"] for "stats:up"
-        subquery = parts[-1]  # e.g., "up" for "stats:up"
-
+        *prefix_parts, subquery = query.split(":")  # e.g., ["stats"] for "stats:up" and "up"
         # Navigate to the command group
         current = self.cli._group
         for part in prefix_parts:
@@ -123,12 +145,12 @@ class TuiApp(App):
             current = found
 
         # Build the prefix string for suggestions
-        prefix = ":".join(prefix_parts)
+        _prefix = ":".join(prefix_parts)
 
         # Suggest subcommands
         for cmd in current.commands.values():
             if subquery == "" or cmd.name.lower().startswith(subquery):
-                full_path = f"/{prefix}:{cmd.name}"
+                full_path = f"/{_prefix}:{cmd.name}"
                 self.current_suggestions.append(full_path)
                 text = f"{full_path:<20}{cmd.help or ''}"
                 is_first = len(self.current_suggestions) == 1
@@ -155,11 +177,11 @@ class TuiApp(App):
         if self.cli.description:
             yield Static(self.cli.description, id="description")
         yield Vertical(id="messages")
-        yield Rule()
+        yield Rule(id="rule-above")
         with Horizontal(id="input-row"):
             yield Static("> ", id="prompt")
             yield Input(suggester=CommandSuggester(self))
-        yield Rule()
+        yield Rule(id="rule-below")
         with Vertical(id="context-panel"):
             yield Static(id="hint")
             yield Vertical(id="suggestions")
@@ -183,6 +205,10 @@ class TuiApp(App):
         """Show command suggestions when input starts with /"""
         if self.suppress_input_change:
             self.suppress_input_change = False
+            return
+
+        # In borrow mode, skip all suggestion/hint logic
+        if self.input_borrowed:
             return
 
         # Reset exit hint when user starts typing
@@ -301,6 +327,28 @@ class TuiApp(App):
         self.history.reset_index()
         self._update_command_help(None)
 
+    def set_hint(self, text: str | None) -> None:
+        """Set or clear the hint text displayed below the input."""
+        self._set_hint(text)
+
+    def set_rule_above(self, line_style: str | None = None, css_class: str | None = None) -> str:
+        """Set the style of the rule above the input. Returns previous CSS class."""
+        return self._set_rule("rule-above", line_style, css_class)
+
+    def set_rule_below(self, line_style: str | None = None, css_class: str | None = None) -> str:
+        """Set the style of the rule below the input. Returns previous CSS class."""
+        return self._set_rule("rule-below", line_style, css_class)
+
+    def _set_rule(self, rule_id: str, line_style: str | None, css_class: str | None) -> str:
+        """Update a rule's line style and/or CSS class. Returns previous CSS class."""
+        rule = self.query_one(f"#{rule_id}", Rule)
+        previous_class = " ".join(rule.classes)
+        if line_style is not None:
+            rule.line_style = line_style  # type: ignore[assignment]
+        if css_class is not None:
+            rule.set_classes(css_class)
+        return previous_class
+
     def _set_hint(self, text: str | None, bash_mode: bool = False) -> None:
         """Update hint widget and Rule styling."""
         hint = self.query_one("#hint", Static)
@@ -321,6 +369,12 @@ class TuiApp(App):
     def handle_ctrl_c(self) -> None:
         """Handle Ctrl+C: cancel running command, clear input, show exit hint, or exit"""
         inp = self.query_one(Input)
+
+        # If awaiting input from a command, cancel it
+        if self._input_future is not None:
+            self._input_future.cancel()
+            self.clear_input()
+            return
 
         # If commands are queued or running, cancel the processor
         if not self.command_queue.empty():
@@ -368,6 +422,12 @@ class TuiApp(App):
         """Show user input in messages area and queue command for execution"""
         value = event.value.strip()
         if not value:
+            return
+
+        # If awaiting input from a command, resolve the future
+        if self._input_future is not None:
+            self._input_future.set_result(value)
+            event.input.value = ""
             return
 
         # Add to history
@@ -513,6 +573,22 @@ class TuiApp(App):
 
         if stdout_output or stderr_output:
             self._autoscroll()
+
+    @property
+    def input_borrowed(self) -> bool:
+        """True when a command is awaiting user input via prompt_input."""
+        return self._input_future is not None
+
+    async def prompt_input(self) -> str | None:
+        """Wait for user input. Returns None on Ctrl+C."""
+        loop = asyncio.get_running_loop()
+        self._input_future = loop.create_future()
+        try:
+            return await self._input_future
+        except asyncio.CancelledError:
+            return None
+        finally:
+            self._input_future = None
 
     # TuiInterface implementation - App.notify handles the actual display
     def mount_widget(self, widget: Widget) -> None:

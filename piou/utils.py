@@ -42,11 +42,60 @@ from .exceptions import (
 )
 
 
-class Password(str):
-    pass
+class _SecretBase(str):
+    """Base class for secret types with configurable masking."""
+
+    show_first: int = 0
+    show_last: int = 0
+    replacement: str = "*"
 
 
-class Secret(str):
+class Secret(_SecretBase):
+    """Secret type with configurable masking.
+
+    Can be used directly as a type or called with parameters to configure masking.
+    Keeps `show_first` characters visible at the beginning and `show_last` at the end.
+
+    Examples:
+        # Full mask (use directly as type)
+        token: Secret = Option("abc123", "--token")
+    """
+
+    def __new__(
+        cls,
+        value: str | None = None,
+        *,
+        show_first: int = 0,
+        show_last: int = 0,
+        replacement: str = "*",
+    ):
+        # If value is a string, we're creating an instance
+        if isinstance(value, str):
+            return str.__new__(cls, value)
+
+        # Otherwise, we're creating a configured type
+        class ConfiguredSecret(_SecretBase):
+            pass
+
+        ConfiguredSecret.show_first = show_first
+        ConfiguredSecret.show_last = show_last
+        ConfiguredSecret.replacement = replacement
+        return ConfiguredSecret
+
+
+Password = _SecretBase
+
+
+class MaybePath(Path):
+    """Path type that skips existence checking.
+
+    Use this for path arguments where the file may not exist yet.
+    This is simpler than `Path = Option(..., raise_path_does_not_exist=False)`.
+
+    Example:
+        config: MaybePath = Option(..., "--config")
+    """
+
     pass
 
 
@@ -63,7 +112,7 @@ def Regex(pattern: str, flags: int = 0) -> re.Pattern[str]:
     return re.compile(pattern, flags)
 
 
-T = TypeVar("T", str, int, float, dt.date, dt.datetime, Path, dict, list, Password, EllipsisType, None)
+T = TypeVar("T", str, int, float, dt.date, dt.datetime, Path, dict, list, _SecretBase, EllipsisType, None)
 
 
 def extract_optional_type(t: Any):
@@ -90,16 +139,11 @@ def get_literals_union_args(literal: Any):
 
 
 def extract_annotated_option(type_hint: Any) -> tuple[Any, CommandOption | CommandDerivedOption | None]:
-    """
-    Extract the base type and CommandOption/CommandDerivedOption from an Annotated type hint.
+    """Extract the base type and CommandOption/CommandDerivedOption from an Annotated type hint.
 
-    Args:
-        type_hint: A type hint that may be Annotated[T, Option(...)] or a regular type
-
-    Returns:
-        A tuple of (base_type, option) where:
-        - base_type: The actual type (e.g., int, str) extracted from Annotated or the original type
-        - option: The CommandOption/CommandDerivedOption if found in annotations, None otherwise
+    Returns a tuple of (base_type, option) where base_type is the actual type
+    extracted from Annotated (or the original type), and option is the
+    CommandOption/CommandDerivedOption if found in annotations.
 
     Examples:
         >>> extract_annotated_option(Annotated[int, Option(...)])
@@ -207,6 +251,8 @@ def validate_value(
         return value
     elif _data_type is str or _data_type is Password:
         return str(value)
+    elif isinstance(_data_type, type) and issubclass(_data_type, _SecretBase):
+        return str(value)
     elif _data_type is LiteralString:
         return cast(LiteralString, str(value))
     elif _data_type is int:
@@ -234,9 +280,11 @@ def validate_value(
             return dt.datetime.fromisoformat(value)
         except ValueError:
             raise InvalidValueError(value, "datetime", "must be in ISO format")
-    elif _data_type is Path:
+    elif _data_type is Path or _data_type is MaybePath:
         p = Path(value)
-        if raise_path_does_not_exist and not p.exists():
+        # MaybePath auto-skips existence check
+        should_raise = raise_path_does_not_exist and _data_type is not MaybePath
+        if should_raise and not p.exists():
             raise FileNotFoundError(f'File not found: "{value}"')
         return p
     elif _data_type is dict:
@@ -273,7 +321,7 @@ class CommandOption(Generic[T]):
     help: str | None = None
     keyword_args: tuple[str, ...] = field(default_factory=tuple)
 
-    choices: list[T] | Callable[[], list[T]] | None = None
+    choices: list[T] | Callable[[], list[T]] | Callable[[], Coroutine[Any, Any, list[T]]] | None = None
 
     _name: str | None = field(init=False, default=None)
     _data_type: type[T] = field(init=False, default=Any)  # pyright: ignore[reportAssignmentType]
@@ -287,6 +335,11 @@ class CommandOption(Generic[T]):
 
     # Only for Path
     raise_path_does_not_exist: bool = True
+
+    # Secret masking options
+    show_first: int | None = None
+    show_last: int | None = None
+    replacement: str = "*"
 
     @property
     def data_type(self):
@@ -303,8 +356,12 @@ class CommandOption(Generic[T]):
         self._data_type = v
 
     @property
-    def is_password(self):
-        return self.data_type == Password
+    def is_secret(self) -> bool:
+        return isinstance(self.data_type, type) and issubclass(self.data_type, _SecretBase)
+
+    @property
+    def is_optional_path(self) -> bool:
+        return self.data_type is MaybePath
 
     @property
     def name(self):
@@ -332,16 +389,21 @@ class CommandOption(Generic[T]):
         return len(self.keyword_args) == 0
 
     def get_choices(self) -> list[T] | None:
-        _choices = self.choices() if callable(self.choices) else self.choices
+        if callable(self.choices):
+            _choices = run_function(self.choices)
+        else:
+            _choices = self.choices
         return self.literal_values or _choices
 
     def validate(self, value: str) -> T:
+        # Auto-disable existence check for MaybePath
+        _raise_path = self.raise_path_does_not_exist and not self.is_optional_path
         _value = validate_value(
             self.data_type,
             value,
             case_sensitive=self.case_sensitive,
             choices=self.get_choices(),
-            raise_path_does_not_exist=self.raise_path_does_not_exist,
+            raise_path_does_not_exist=_raise_path,
         )
         return _value  # type: ignore
 
@@ -356,6 +418,10 @@ def Option(
     choices: Any | None = None,
     # Only for Path
     raise_path_does_not_exist: bool = True,
+    # Secret masking options
+    show_first: int | None = None,
+    show_last: int | None = None,
+    replacement: str = "*",
 ) -> Any:
     return CommandOption(
         default=default,
@@ -365,6 +431,9 @@ def Option(
         arg_name=arg_name,
         choices=choices,
         raise_path_does_not_exist=raise_path_does_not_exist,
+        show_first=show_first,
+        show_last=show_last,
+        replacement=replacement,
     )
 
 
@@ -474,20 +543,9 @@ def get_cmd_args(cmd: str, types: dict[str, Any]) -> tuple[list[str], dict[str, 
 def parse_input_args(
     args: tuple[Any, ...], commands: set[str], global_option_names: set[str] | None = None
 ) -> tuple[str | None, list[str], list[str]]:
-    """
-    Split command-line arguments into global options, command name, and command options.
+    """Split command-line arguments into global options, command name, and command options.
 
-    Args:
-        args: Command-line arguments (typically from sys.argv[1:])
-        commands: Valid command names (may include "__main__" for single-command CLIs)
-        global_option_names: Global option names (e.g., {'-q', '--quiet'}). When provided,
-                           these options are treated as global regardless of position.
-
-    Returns:
-        (command_name, global_options, command_options)
-        - command_name: Command to execute or None if not found ("__main__" for single-command CLIs)
-        - global_options: Arguments that are global options (includes values)
-        - command_options: Arguments that are command-specific options
+    Returns (command_name, global_options, command_options).
 
     Rules:
         - Global options can appear before or after the command

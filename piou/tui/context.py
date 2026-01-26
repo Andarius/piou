@@ -9,7 +9,7 @@ from ..utils import Derived
 if TYPE_CHECKING:
     from textual.widget import Widget
 
-    from .cli import TuiApp
+    from .cli import PromptStyle, TuiApp
 
 SeverityLevel = Literal["information", "warning", "error"]
 
@@ -35,6 +35,11 @@ class TuiContext:
     def is_tui(self) -> bool:
         """Return True if running in TUI mode."""
         return self.tui is not None
+
+    @property
+    def input_borrowed(self) -> bool:
+        """Return True if a command is currently borrowing user input."""
+        return self.tui is not None and self.tui.input_borrowed
 
     def notify(
         self,
@@ -67,6 +72,51 @@ class TuiContext:
         """
         if self.tui is not None:
             self.tui.mount_widget(widget)
+
+    async def prompt(self, message: str = "") -> str | None:
+        """Prompt for user input and wait for their response.
+
+        In TUI mode, waits for user to submit input. Returns None if cancelled (Ctrl+C).
+        In CLI mode, uses standard input().
+        """
+        if self.tui is not None:
+            return await self.tui.prompt_input()
+        return input(message)
+
+    def set_prompt_style(self, style: PromptStyle) -> PromptStyle | None:
+        """Set the input prompt style. Returns the previous style for restoration.
+
+        In CLI mode, returns None (no-op).
+        """
+        if self.tui is not None:
+            return style.apply(self.tui)
+        return None
+
+    def set_hint(self, text: str | None) -> None:
+        """Set or clear the hint text displayed below the input.
+
+        In CLI mode, this is a no-op.
+        """
+        if self.tui is not None:
+            self.tui.set_hint(text)
+
+    def set_rule_above(self, line_style: str | None = None, css_class: str | None = None) -> str:
+        """Set the style of the rule above the input. Returns previous CSS class.
+
+        In CLI mode, returns empty string.
+        """
+        if self.tui is not None:
+            return self.tui.set_rule_above(line_style, css_class)
+        return ""
+
+    def set_rule_below(self, line_style: str | None = None, css_class: str | None = None) -> str:
+        """Set the style of the rule below the input. Returns previous CSS class.
+
+        In CLI mode, returns empty string.
+        """
+        if self.tui is not None:
+            return self.tui.set_rule_below(line_style, css_class)
+        return ""
 
 
 _current_tui_context: ContextVar[TuiContext] = ContextVar("piou_tui_context", default=TuiContext())
