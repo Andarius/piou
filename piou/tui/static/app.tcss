@@ -36,10 +36,6 @@ Rule.bash-mode {
     color: #cc6666;
 }
 
-Rule.chat-mode {
-    color: #87ceeb;
-}
-
 #suggestions {
     background: transparent;
     margin-bottom: 1;

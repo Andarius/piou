@@ -88,10 +88,14 @@ class TuiApp(App):
         ansi_color: bool = True,
         history_file: Path | None = None,
         initial_input: str | None = None,
+        css: str | None = None,
+        css_path: str | Path | list[str | Path] | None = None,
     ):
-        super().__init__(ansi_color=ansi_color)
+        super().__init__(ansi_color=ansi_color, css_path=css_path)
         self.cli = cli
         self.initial_input = initial_input
+        if css:
+            self.stylesheet.add_source(css, read_from="<custom>", is_default_css=False)
         # Set up TUI context for commands to access
         ctx = TuiContext()
         ctx.tui = self
@@ -257,7 +261,8 @@ class TuiApp(App):
                 self._update_command_help(self.current_suggestions[0])
             else:
                 self._update_command_help(None)
-        else:
+        elif value:
+            # Only clear hint when user is typing something (not for empty input)
             self._set_hint(None)
             self._update_command_help(None)
 
@@ -331,23 +336,39 @@ class TuiApp(App):
         """Set or clear the hint text displayed below the input."""
         self._set_hint(text)
 
-    def set_rule_above(self, line_style: str | None = None, css_class: str | None = None) -> str:
-        """Set the style of the rule above the input. Returns previous CSS class."""
-        return self._set_rule("rule-above", line_style, css_class)
+    def set_rule_above(
+        self,
+        line_style: str | None = None,
+        add_class: str | None = None,
+        remove_class: str | None = None,
+    ) -> None:
+        """Set the style of the rule above the input."""
+        self._set_rule("rule-above", line_style, add_class, remove_class)
 
-    def set_rule_below(self, line_style: str | None = None, css_class: str | None = None) -> str:
-        """Set the style of the rule below the input. Returns previous CSS class."""
-        return self._set_rule("rule-below", line_style, css_class)
+    def set_rule_below(
+        self,
+        line_style: str | None = None,
+        add_class: str | None = None,
+        remove_class: str | None = None,
+    ) -> None:
+        """Set the style of the rule below the input."""
+        self._set_rule("rule-below", line_style, add_class, remove_class)
 
-    def _set_rule(self, rule_id: str, line_style: str | None, css_class: str | None) -> str:
-        """Update a rule's line style and/or CSS class. Returns previous CSS class."""
+    def _set_rule(
+        self,
+        rule_id: str,
+        line_style: str | None,
+        add_class: str | None,
+        remove_class: str | None,
+    ) -> None:
+        """Update a rule's line style and/or CSS class."""
         rule = self.query_one(f"#{rule_id}", Rule)
-        previous_class = " ".join(rule.classes)
         if line_style is not None:
             rule.line_style = line_style  # type: ignore[assignment]
-        if css_class is not None:
-            rule.set_classes(css_class)
-        return previous_class
+        if add_class is not None:
+            rule.add_class(add_class)
+        if remove_class is not None:
+            rule.remove_class(remove_class)
 
     def _set_hint(self, text: str | None, bash_mode: bool = False) -> None:
         """Update hint widget and Rule styling."""
@@ -605,14 +626,13 @@ class TuiCli:
     cli: Cli
     inline: bool = field(default_factory=lambda: os.getenv("PIOU_TUI_INLINE", "0") == "1")
     """Run TUI in inline mode (uses native terminal scrolling). Supports PIOU_TUI_INLINE env var."""
+    css: str | None = None
+    """Additional inline CSS to apply to the TUI."""
+    css_path: str | Path | list[str | Path] | None = None
+    """Path to additional CSS file(s) to load."""
 
     def run(self, *args: str) -> None:
-        """Run the TUI app.
-
-        Args:
-            *args: Command-line arguments to prefill in the input field.
-                   Will be formatted as "/<cmd> <args...>" if provided.
-        """
+        """Run the TUI app, optionally pre-filling the input field with formatted args."""
         initial_input = None
         if args:
             # Format args as TUI command: first arg is command name, rest are arguments
@@ -622,4 +642,4 @@ class TuiCli:
                 initial_input = f"/{cmd_name} {shlex.join(cmd_args)}"
             else:
                 initial_input = f"/{cmd_name}"
-        TuiApp(self.cli, initial_input=initial_input).run(inline=self.inline)
+        TuiApp(self.cli, initial_input=initial_input, css=self.css, css_path=self.css_path).run(inline=self.inline)

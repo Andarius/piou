@@ -100,23 +100,25 @@ class TuiContext:
         if self.tui is not None:
             self.tui.set_hint(text)
 
-    def set_rule_above(self, line_style: str | None = None, css_class: str | None = None) -> str:
-        """Set the style of the rule above the input. Returns previous CSS class.
-
-        In CLI mode, returns empty string.
-        """
+    def set_rule_above(
+        self,
+        line_style: str | None = None,
+        add_class: str | None = None,
+        remove_class: str | None = None,
+    ) -> None:
+        """Set the style of the rule above the input."""
         if self.tui is not None:
-            return self.tui.set_rule_above(line_style, css_class)
-        return ""
+            self.tui.set_rule_above(line_style, add_class, remove_class)
 
-    def set_rule_below(self, line_style: str | None = None, css_class: str | None = None) -> str:
-        """Set the style of the rule below the input. Returns previous CSS class.
-
-        In CLI mode, returns empty string.
-        """
+    def set_rule_below(
+        self,
+        line_style: str | None = None,
+        add_class: str | None = None,
+        remove_class: str | None = None,
+    ) -> None:
+        """Set the style of the rule below the input."""
         if self.tui is not None:
-            return self.tui.set_rule_below(line_style, css_class)
-        return ""
+            self.tui.set_rule_below(line_style, add_class, remove_class)
 
 
 _current_tui_context: ContextVar[TuiContext] = ContextVar("piou_tui_context", default=TuiContext())

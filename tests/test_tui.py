@@ -351,20 +351,41 @@ class TestTuiApp:
             pytest.param("set_rule_below", "rule-below", id="rule-below"),
         ],
     )
-    async def test_set_rule_returns_previous_class(self, sample_cli, temp_history_file, method, rule_id):
-        """Test that set_rule_* returns the previous CSS class."""
+    async def test_set_rule_add_class_preserves_existing(self, sample_cli, temp_history_file, method, rule_id):
+        """Test that set_rule_* add_class preserves existing classes."""
         from textual.widgets import Rule
 
         app = TuiApp(sample_cli, history_file=temp_history_file)
         async with app.run_test():
             rule = app.query_one(f"#{rule_id}", Rule)
-            rule.set_classes("original-class")
+            rule.add_class("original-class")
 
             set_rule = getattr(app, method)
-            previous = set_rule(css_class="new-class")
+            set_rule(add_class="new-class")
 
-            assert previous == "original-class"
+            assert "original-class" in rule.classes
             assert "new-class" in rule.classes
+
+    @pytest.mark.parametrize(
+        "method,rule_id",
+        [
+            pytest.param("set_rule_above", "rule-above", id="rule-above"),
+            pytest.param("set_rule_below", "rule-below", id="rule-below"),
+        ],
+    )
+    async def test_set_rule_remove_class(self, sample_cli, temp_history_file, method, rule_id):
+        """Test that set_rule_* remove_class removes the class."""
+        from textual.widgets import Rule
+
+        app = TuiApp(sample_cli, history_file=temp_history_file)
+        async with app.run_test():
+            rule = app.query_one(f"#{rule_id}", Rule)
+            rule.add_class("to-remove")
+
+            set_rule = getattr(app, method)
+            set_rule(remove_class="to-remove")
+
+            assert "to-remove" not in rule.classes
 
     @pytest.mark.parametrize(
         "method,rule_id",
@@ -384,6 +405,18 @@ class TestTuiApp:
             set_rule(line_style="double")
 
             assert rule.line_style == "double"
+
+    async def test_custom_css_injection(self, sample_cli, temp_history_file):
+        """Test that custom CSS is applied to the app."""
+        custom_css = "Rule.custom-test { color: red; }"
+        app = TuiApp(sample_cli, history_file=temp_history_file, css=custom_css)
+        async with app.run_test():
+            from textual.widgets import Rule
+
+            rule = app.query_one("#rule-above", Rule)
+            rule.set_classes("custom-test")
+            # The CSS should be loaded and applied
+            assert "custom-test" in rule.classes
 
 
 # ============================================================================

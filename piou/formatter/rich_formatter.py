@@ -2,12 +2,8 @@ from dataclasses import dataclass, field
 from difflib import get_close_matches
 
 from rich.console import Console, RenderableType
-from rich.markdown import Markdown
 from rich.padding import Padding
 from rich.table import Table
-from rich.traceback import Traceback
-
-import piou
 
 from .base import Formatter, Titles
 from .utils import get_program_name, fmt_help as _fmt_help_base
@@ -120,6 +116,9 @@ class RichFormatter(Formatter):
             self._console.print()
             self._console.print(RichTitles.DESCRIPTION)
             if self.use_markdown:
+                # Lazy import: rich.markdown pulls in pygments (~23ms startup cost)
+                from rich.markdown import Markdown
+
                 _max_width = max(len(x) for x in description.split("\n"))
                 self._console.print(
                     pad(
@@ -307,11 +306,17 @@ class RichFormatter(Formatter):
     def print_exception(self, exc: BaseException, *, hide_internals: bool = True) -> None:
         """Print an exception traceback with Rich formatting.
 
-        Args:
-            exc: The exception to print
-            hide_internals: If True, hide piou internal frames from the traceback
+        The hide_internals parameter controls whether piou internal frames are
+        hidden from the traceback.
         """
-        suppress = [piou] if hide_internals else []
+        # Lazy imports: saves ~11ms startup cost
+        from rich.traceback import Traceback
+
+        suppress: list = []
+        if hide_internals:
+            import piou
+
+            suppress = [piou]
         tb = Traceback.from_exception(
             type(exc),
             exc,

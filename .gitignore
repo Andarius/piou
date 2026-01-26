@@ -115,6 +115,8 @@ snapshot_report.html
 scratch/
 site/
 
+.scratch/
+
 # LLMS
 CLAUDE.md
 GEMINI.md
