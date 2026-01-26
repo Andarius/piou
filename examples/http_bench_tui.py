@@ -20,7 +20,8 @@ from rich.text import Text
 from textual.containers import Horizontal
 from textual.widgets import DataTable, Static
 
-from piou import Cli, Option, TuiContext, TuiOption
+from piou import Cli, Option
+from piou.tui import TuiContext, TuiOption
 
 cli = Cli(description="HTTP Library Benchmark", tui=True)
 

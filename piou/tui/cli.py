@@ -7,7 +7,7 @@ import shlex
 import sys
 from contextlib import redirect_stdout, redirect_stderr
 from dataclasses import dataclass, field
-from pathlib import Path
+from pathlib import Path, PurePath
 from typing import TYPE_CHECKING
 
 from rich.console import Console
@@ -89,13 +89,13 @@ class TuiApp(App):
         history_file: Path | None = None,
         initial_input: str | None = None,
         css: str | None = None,
-        css_path: str | Path | list[str | Path] | None = None,
+        css_path: str | PurePath | list[str | PurePath] | None = None,
     ):
         super().__init__(ansi_color=ansi_color, css_path=css_path)
         self.cli = cli
         self.initial_input = initial_input
         if css:
-            self.stylesheet.add_source(css, read_from="<custom>", is_default_css=False)
+            self.stylesheet.add_source(css, read_from=("<custom>", ""), is_default_css=False)
         # Set up TUI context for commands to access
         ctx = TuiContext()
         ctx.tui = self
@@ -628,7 +628,7 @@ class TuiCli:
     """Run TUI in inline mode (uses native terminal scrolling). Supports PIOU_TUI_INLINE env var."""
     css: str | None = None
     """Additional inline CSS to apply to the TUI."""
-    css_path: str | Path | list[str | Path] | None = None
+    css_path: str | PurePath | list[str | PurePath] | None = None
     """Path to additional CSS file(s) to load."""
 
     def run(self, *args: str) -> None:

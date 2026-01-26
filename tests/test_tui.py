@@ -9,14 +9,13 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from piou import Cli, Option, TuiContext, TuiOption, get_tui_context
-from piou.tui.context import SeverityLevel, set_tui_context
+from piou import Cli, Option
+from piou.tui import TuiContext, TuiOption, get_tui_context, TuiApp, SeverityLevel, set_tui_context, History, CssClass
+
 
 # Check if textual is available
 pytest.importorskip("textual")
 
-from piou.tui import TuiApp
-from piou.tui.cli import History, CssClass
 
 if TYPE_CHECKING:
     from textual.widget import Widget

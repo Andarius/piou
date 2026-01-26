@@ -7,7 +7,8 @@ Run with:
 import time
 from typing import Literal
 
-from piou import Cli, Option, TuiContext, TuiOption, get_tui_context
+from piou import Cli, Option
+from piou.tui import TuiContext, TuiOption, get_tui_context
 
 cli = Cli(description="Interactive CLI Demo", tui=True)
 

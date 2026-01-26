@@ -27,11 +27,11 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Create temp files and venv
-NORICH_JSON=$(mktemp)
 CORE_JSON=$(mktemp)
+RICH_JSON=$(mktemp)
 TUI_JSON=$(mktemp)
 TEMP_VENV=$(mktemp -d)
-trap "rm -f $NORICH_JSON $CORE_JSON $TUI_JSON; rm -rf $TEMP_VENV" EXIT
+trap "rm -f $CORE_JSON $RICH_JSON $TUI_JSON; rm -rf $TEMP_VENV" EXIT
 
 # Create temp venv without rich for baseline
 uv venv "$TEMP_VENV" -q
@@ -41,40 +41,40 @@ uv pip uninstall --python "$TEMP_VENV/bin/python" rich -q 2>/dev/null || true
 # Run benchmarks
 hyperfine --warmup "$WARMUP" --min-runs "$RUNS" \
     "$TEMP_VENV/bin/python -c \"from piou import Cli, Option\"" \
-    --export-json "$NORICH_JSON" >/dev/null 2>&1
-
-hyperfine --warmup "$WARMUP" --min-runs "$RUNS" \
-    'python -c "from piou import Cli, Option"' \
     --export-json "$CORE_JSON" >/dev/null 2>&1
 
 hyperfine --warmup "$WARMUP" --min-runs "$RUNS" \
-    'python -c "from piou.tui import TuiContext"' \
+    'uv run python -c "from piou import Cli, Option"' \
+    --export-json "$RICH_JSON" >/dev/null 2>&1
+
+hyperfine --warmup "$WARMUP" --min-runs "$RUNS" \
+    'uv run python -c "from piou.tui import TuiContext"' \
     --export-json "$TUI_JSON" >/dev/null 2>&1
 
 # Extract results
-NORICH_MEAN=$(jq '.results[0].mean * 1000' "$NORICH_JSON")
-NORICH_STD=$(jq '.results[0].stddev * 1000' "$NORICH_JSON")
 CORE_MEAN=$(jq '.results[0].mean * 1000' "$CORE_JSON")
 CORE_STD=$(jq '.results[0].stddev * 1000' "$CORE_JSON")
+RICH_MEAN=$(jq '.results[0].mean * 1000' "$RICH_JSON")
+RICH_STD=$(jq '.results[0].stddev * 1000' "$RICH_JSON")
 TUI_MEAN=$(jq '.results[0].mean * 1000' "$TUI_JSON")
 TUI_STD=$(jq '.results[0].stddev * 1000' "$TUI_JSON")
 
 if $JSON_OUTPUT; then
     cat <<EOF
 [
-  {"name": "piou (no rich)", "unit": "ms", "value": $NORICH_MEAN, "range": $NORICH_STD},
   {"name": "piou (core)", "unit": "ms", "value": $CORE_MEAN, "range": $CORE_STD},
+  {"name": "piou (rich)", "unit": "ms", "value": $RICH_MEAN, "range": $RICH_STD},
   {"name": "piou.tui", "unit": "ms", "value": $TUI_MEAN, "range": $TUI_STD}
 ]
 EOF
 else
     printf "\n📊 Import Benchmark Results:\n"
     printf "============================================================\n"
-    printf "  %-30s %9.3fms (±%.3fms)\n" "piou (no rich)" "$NORICH_MEAN" "$NORICH_STD"
     printf "  %-30s %9.3fms (±%.3fms)\n" "piou (core)" "$CORE_MEAN" "$CORE_STD"
+    printf "  %-30s %9.3fms (±%.3fms)\n" "piou (rich)" "$RICH_MEAN" "$RICH_STD"
     printf "  %-30s %9.3fms (±%.3fms)\n" "piou.tui" "$TUI_MEAN" "$TUI_STD"
     printf "============================================================\n"
-    printf "  rich overhead:    +%.3fms\n" "$(echo "$CORE_MEAN - $NORICH_MEAN" | bc)"
-    printf "  textual overhead: +%.3fms\n" "$(echo "$TUI_MEAN - $CORE_MEAN" | bc)"
+    printf "  rich overhead:    +%.3fms\n" "$(echo "$RICH_MEAN - $CORE_MEAN" | bc)"
+    printf "  textual overhead: +%.3fms\n" "$(echo "$TUI_MEAN - $RICH_MEAN" | bc)"
     printf "============================================================\n"
 fi
