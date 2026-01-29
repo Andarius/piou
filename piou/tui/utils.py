@@ -1,35 +1,14 @@
-from types import UnionType, NoneType
-from typing import get_origin, Union, get_args
+from types import NoneType, UnionType
+from typing import Union, get_args, get_origin
 
 from rich.console import Console
 from rich.text import Text
 
 from ..command import Command, CommandGroup
 
-__all__ = ("get_command_for_path", "get_command_help")
+__all__ = ("get_command_help",)
 
 _RENDER_CONSOLE = Console(force_terminal=True, markup=True, highlight=False)
-
-
-def get_command_for_path(group: CommandGroup, path: str) -> Command | CommandGroup | None:
-    """
-    Get command/group for a command paths like 'stats' or 'stats:uploads'
-    """
-    parts = path.lstrip("/").split(":")
-    current = group
-    for part in parts:
-        found = None
-        for cmd in current.commands.values():
-            if cmd.name.lower() == part.lower():
-                found = cmd
-                break
-        if found is None:
-            return None
-        if isinstance(found, CommandGroup):
-            current = found
-        else:
-            return found
-    return current
 
 
 def _format_type_name(t: type) -> str:
@@ -70,7 +49,6 @@ def get_command_help(cmd: Command | CommandGroup, console: Console = _RENDER_CON
     """
     lines: list[str] = []
 
-    # Usage line with arguments
     if isinstance(cmd, Command):
         args_parts = []
         for opt in cmd.positional_args:
@@ -86,7 +64,6 @@ def get_command_help(cmd: Command | CommandGroup, console: Console = _RENDER_CON
         else:
             lines.append(f"[bold]Usage:[/bold] /{cmd.name}")
 
-        # Arguments section
         if cmd.positional_args:
             lines.append("")
             lines.append("[bold]Arguments:[/bold]")
@@ -95,7 +72,6 @@ def get_command_help(cmd: Command | CommandGroup, console: Console = _RENDER_CON
                 help_text = f" - {opt.help}" if opt.help else ""
                 lines.append(f"  [cyan]<{opt.name}>[/cyan] ({type_name}){help_text}")
 
-        # Options section
         if cmd.keyword_args:
             lines.append("")
             lines.append("[bold]Options:[/bold]")
@@ -107,7 +83,6 @@ def get_command_help(cmd: Command | CommandGroup, console: Console = _RENDER_CON
                 help_text = f" - {opt.help}" if opt.help else ""
                 lines.append(f"  [cyan]{arg_display}[/cyan] ({type_name}){required}{default}{help_text}")
     else:
-        # CommandGroup
         lines.append(f"[bold]Usage:[/bold] /{cmd.name}:<subcommand>")
         if cmd.commands:
             lines.append("")
@@ -116,44 +91,7 @@ def get_command_help(cmd: Command | CommandGroup, console: Console = _RENDER_CON
                 help_text = f" - {subcmd.help}" if subcmd.help else ""
                 lines.append(f"  [cyan]{subcmd.name}[/cyan]{help_text}")
 
-    # Render with Rich markup
     with console.capture() as capture:
         for line in lines:
             console.print(line)
     return Text.from_ansi(capture.get().rstrip())
-
-
-def get_subcommand_suggestions(group: CommandGroup, query: str) -> list[tuple[str, str]]:
-    """Get subcommand suggestions for a command path like 'stats:' or 'stats:up'.
-
-    Args:
-        group: The root CommandGroup to search from.
-        query: The query string (e.g., "stats:" or "stats:up").
-
-    Returns:
-        List of (full_path, help_text) tuples for matching subcommands.
-
-    Example:
-
-    ```python
-    get_subcommand_suggestions(root_group, "stats:")
-    # [("/stats:uploads", "Show upload statistics"), ("/stats:downloads", "")]
-    ```
-    """
-    parts = query.split(":")
-    prefix = ":".join(parts[:-1])  # e.g., "stats" for "stats:up"
-    subquery = parts[-1].lower()  # e.g., "up" for "stats:up"
-
-    # Get the parent CommandGroup using existing helper
-    parent = get_command_for_path(group, prefix)
-    if not isinstance(parent, CommandGroup):
-        return []
-
-    # Collect matching subcommands
-    suggestions = []
-    for cmd in parent.commands.values():
-        if subquery == "" or cmd.name.lower().startswith(subquery):
-            full_path = f"/{prefix}:{cmd.name}"
-            suggestions.append((full_path, cmd.help or ""))
-
-    return suggestions

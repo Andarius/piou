@@ -4,7 +4,8 @@ import tempfile
 from pathlib import Path
 
 from piou import Cli, Option
-from piou.tui import TuiApp
+from piou.tui import TuiApp, TuiState, History
+from piou.tui.runner import CommandRunner
 
 # Create a sample CLI for snapshot testing
 cli = Cli(description="Test CLI for Snapshots")
@@ -38,7 +39,24 @@ def echo(
 # Use a temp file for history to avoid polluting user's home
 _temp_history = Path(tempfile.gettempdir()) / ".piou_test_snapshot_history"
 
-app = TuiApp(cli, history_file=_temp_history)
+# Create TuiState
+commands = list(cli.commands.values())
+state = TuiState(
+    cli_name="snapshot-test",
+    description=cli.description,
+    group=cli.group,
+    commands=commands,
+    commands_map={f"/{cmd.name}": cmd for cmd in commands},
+    history=History(file=_temp_history),
+    runner=CommandRunner(
+        group=cli.group,
+        formatter=cli.formatter,
+        hide_internal_errors=True,
+    ),
+    on_ready=None,
+)
+
+app = TuiApp(state=state)
 
 if __name__ == "__main__":
     app.run()

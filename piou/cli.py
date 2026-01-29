@@ -51,6 +51,11 @@ class Cli:
         self._group.on_cmd_run = self.on_cmd_run
 
     @property
+    def group(self) -> CommandGroup:
+        """The root command group."""
+        return self._group
+
+    @property
     def commands(self):
         return self._group.commands
 
@@ -75,7 +80,9 @@ class Cli:
             self.formatter.print_error("TUI mode requires textual. Install piou\\[tui] or 'textual' package.")
             sys.exit(1)
 
-        TuiCli(self).run(*args)
+        _inline = os.getenv("PIOU_TUI_INLINE", "0") == "1"
+
+        TuiCli(self, inline=_inline).run(*args)
 
     def run_with_args(self, *args):
         """Run the CLI application with the given arguments."""

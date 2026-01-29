@@ -9,7 +9,7 @@ from ..utils import Derived
 if TYPE_CHECKING:
     from textual.widget import Widget
 
-    from .cli import PromptStyle, TuiApp
+    from .app import PromptStyle, TuiApp
 
 SeverityLevel = Literal["information", "warning", "error"]
 

@@ -4,11 +4,11 @@ from typing import TYPE_CHECKING
 
 from textual.suggester import Suggester
 
-from .utils import get_command_for_path
+from .suggestions import get_command_for_path
 from ..command import Command, CommandGroup
 
 if TYPE_CHECKING:
-    from .cli import TuiApp
+    from .app import TuiApp
 
 
 class CommandSuggester(Suggester):
@@ -35,13 +35,13 @@ class CommandSuggester(Suggester):
         # Handle path ending with : (e.g., "/stats:")
         if cmd_path.endswith(":"):
             parent_path = cmd_path[:-1]
-            cmd = get_command_for_path(self.app.cli._group, parent_path)
+            cmd = get_command_for_path(self.app.state.group, parent_path)
             if isinstance(cmd, CommandGroup) and cmd.commands:
                 first_sub = next(iter(cmd.commands.values()))
                 return f"{value}{first_sub.name}"
             return None
 
-        cmd = get_command_for_path(self.app.cli._group, cmd_path)
+        cmd = get_command_for_path(self.app.state.group, cmd_path)
         if cmd is None:
             return None
 

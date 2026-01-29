@@ -10,7 +10,18 @@ from unittest.mock import MagicMock
 import pytest
 
 from piou import Cli, Option
-from piou.tui import TuiContext, TuiOption, get_tui_context, TuiApp, SeverityLevel, set_tui_context, History, CssClass
+from piou.tui import (
+    TuiContext,
+    TuiOption,
+    get_tui_context,
+    TuiApp,
+    TuiState,
+    SeverityLevel,
+    set_tui_context,
+    History,
+    CssClass,
+)
+from piou.tui.runner import CommandRunner
 
 
 # Check if textual is available
@@ -57,6 +68,26 @@ def sample_cli():
         print(msg.upper() if loud else msg)
 
     return cli
+
+
+@pytest.fixture
+def tui_state(sample_cli, temp_history_file):
+    """Create a TuiState for testing."""
+    commands = list(sample_cli.commands.values())
+    return TuiState(
+        cli_name="test-cli",
+        description=sample_cli.description,
+        group=sample_cli.group,
+        commands=commands,
+        commands_map={f"/{cmd.name}": cmd for cmd in commands},
+        history=History(file=temp_history_file),
+        runner=CommandRunner(
+            group=sample_cli.group,
+            formatter=sample_cli.formatter,
+            hide_internal_errors=True,
+        ),
+        on_ready=None,
+    )
 
 
 # ============================================================================
@@ -146,9 +177,9 @@ class TestHistory:
 
 
 class TestTuiApp:
-    async def test_app_compose(self, sample_cli, temp_history_file):
+    async def test_app_compose(self, tui_state):
         """Test that the app composes correctly."""
-        app = TuiApp(sample_cli, history_file=temp_history_file)
+        app = TuiApp(state=tui_state)
         async with app.run_test():
             # Check basic structure
             assert app.query_one("#name")
@@ -157,9 +188,38 @@ class TestTuiApp:
             assert app.query_one("#suggestions")
             assert app.query_one("#input-row")
 
-    async def test_command_suggestions_appear(self, sample_cli, temp_history_file):
+    async def test_on_tui_ready_called(self, temp_history_file):
+        """Test that on_tui_ready callback is called when app is ready."""
+        cli = Cli(description="Test CLI")
+        callback_called = False
+
+        @cli.on_tui_ready
+        def on_ready():
+            nonlocal callback_called
+            callback_called = True
+
+        commands = list(cli.commands.values())
+        state = TuiState(
+            cli_name="test-cli",
+            description=cli.description,
+            group=cli.group,
+            commands=commands,
+            commands_map={f"/{cmd.name}": cmd for cmd in commands},
+            history=History(file=temp_history_file),
+            runner=CommandRunner(
+                group=cli.group,
+                formatter=cli.formatter,
+                hide_internal_errors=True,
+            ),
+            on_ready=cli._on_tui_ready,
+        )
+        app = TuiApp(state=state)
+        async with app.run_test():
+            assert callback_called
+
+    async def test_command_suggestions_appear(self, tui_state):
         """Test that typing / shows command suggestions."""
-        app = TuiApp(sample_cli, history_file=temp_history_file)
+        app = TuiApp(state=tui_state)
         async with app.run_test() as pilot:
             await pilot.press("/")
             await pilot.pause()
@@ -168,9 +228,9 @@ class TestTuiApp:
             # Should have /help plus the 3 commands
             assert len(suggestions) >= 4
 
-    async def test_command_filter(self, sample_cli, temp_history_file):
+    async def test_command_filter(self, tui_state):
         """Test that suggestions are filtered by input."""
-        app = TuiApp(sample_cli, history_file=temp_history_file)
+        app = TuiApp(state=tui_state)
         async with app.run_test() as pilot:
             await pilot.press("/", "h")
             await pilot.pause()
@@ -179,9 +239,9 @@ class TestTuiApp:
             # Should match /help and /hello
             assert len(suggestions) == 2
 
-    async def test_suggestion_navigation(self, sample_cli, temp_history_file):
+    async def test_suggestion_navigation(self, tui_state):
         """Test navigating through suggestions with arrow keys."""
-        app = TuiApp(sample_cli, history_file=temp_history_file)
+        app = TuiApp(state=tui_state)
         async with app.run_test() as pilot:
             await pilot.press("/")
             await pilot.pause()
@@ -197,9 +257,9 @@ class TestTuiApp:
             # Check that selection moved
             assert app.suggestion_index == 1
 
-    async def test_tab_completes_command(self, sample_cli, temp_history_file):
+    async def test_tab_completes_command(self, tui_state):
         """Test that Tab completes the selected command."""
-        app = TuiApp(sample_cli, history_file=temp_history_file)
+        app = TuiApp(state=tui_state)
         async with app.run_test() as pilot:
             from textual.widgets import Input
 
@@ -213,9 +273,9 @@ class TestTuiApp:
             # Should complete to /add with first arg placeholder
             assert "/add" in inp.value
 
-    async def test_execute_command(self, sample_cli, temp_history_file):
+    async def test_execute_command(self, tui_state):
         """Test executing a command."""
-        app = TuiApp(sample_cli, history_file=temp_history_file)
+        app = TuiApp(state=tui_state)
         async with app.run_test() as pilot:
             from textual.widgets import Input
 
@@ -232,9 +292,9 @@ class TestTuiApp:
             output_text = str(outputs[-1].render())
             assert "5" in output_text
 
-    async def test_help_command(self, sample_cli, temp_history_file):
+    async def test_help_command(self, tui_state):
         """Test the /help command."""
-        app = TuiApp(sample_cli, history_file=temp_history_file)
+        app = TuiApp(state=tui_state)
         async with app.run_test() as pilot:
             from textual.widgets import Input
 
@@ -246,9 +306,9 @@ class TestTuiApp:
             outputs = app.query(f".{CssClass.OUTPUT}")
             assert len(outputs) >= 1
 
-    async def test_ctrl_c_clears_input(self, sample_cli, temp_history_file):
+    async def test_ctrl_c_clears_input(self, tui_state):
         """Test that Ctrl+C clears input when there's text."""
-        app = TuiApp(sample_cli, history_file=temp_history_file)
+        app = TuiApp(state=tui_state)
         async with app.run_test() as pilot:
             from textual.widgets import Input
 
@@ -260,9 +320,9 @@ class TestTuiApp:
 
             assert inp.value == ""
 
-    async def test_ctrl_c_shows_exit_hint(self, sample_cli, temp_history_file):
+    async def test_ctrl_c_shows_exit_hint(self, tui_state):
         """Test that Ctrl+C shows exit hint when input is empty."""
-        app = TuiApp(sample_cli, history_file=temp_history_file)
+        app = TuiApp(state=tui_state)
         async with app.run_test() as pilot:
             from textual.widgets import Static
 
@@ -273,12 +333,13 @@ class TestTuiApp:
             assert hint.display is True
             assert app.exit_pending is True
 
-    async def test_history_navigation(self, sample_cli, temp_history_file):
+    async def test_history_navigation(self, tui_state):
         """Test history navigation with up/down arrows."""
         # Pre-populate history
-        temp_history_file.write_text("/hello world\n/add 1 2\n")
+        tui_state.history.append("/hello world")
+        tui_state.history.append("/add 1 2")
 
-        app = TuiApp(sample_cli, history_file=temp_history_file)
+        app = TuiApp(state=tui_state)
         async with app.run_test() as pilot:
             from textual.widgets import Input
 
@@ -286,15 +347,17 @@ class TestTuiApp:
             await pilot.pause()
 
             inp = app.query_one(Input)
-            assert inp.value == "/hello world"
+            # Most recent entry first
+            assert inp.value == "/add 1 2"
 
             await pilot.press("up")
             await pilot.pause()
-            assert inp.value == "/add 1 2"
+            # Then older entries
+            assert inp.value == "/hello world"
 
-    async def test_command_added_to_history(self, sample_cli, temp_history_file):
+    async def test_command_added_to_history(self, tui_state):
         """Test that executed commands are added to history."""
-        app = TuiApp(sample_cli, history_file=temp_history_file)
+        app = TuiApp(state=tui_state)
         async with app.run_test() as pilot:
             from textual.widgets import Input
 
@@ -305,9 +368,9 @@ class TestTuiApp:
 
             assert app.history.entries[0] == "/add 5 5"
 
-    async def test_message_displayed_on_submit(self, sample_cli, temp_history_file):
+    async def test_message_displayed_on_submit(self, tui_state):
         """Test that submitted input is shown in messages."""
-        app = TuiApp(sample_cli, history_file=temp_history_file)
+        app = TuiApp(state=tui_state)
         async with app.run_test() as pilot:
             from textual.widgets import Input
 
@@ -319,9 +382,9 @@ class TestTuiApp:
             messages = app.query(f".{CssClass.MESSAGE}")
             assert len(messages) >= 1
 
-    async def test_error_output(self, sample_cli, temp_history_file):
+    async def test_error_output(self, tui_state):
         """Test that errors are displayed with error class."""
-        app = TuiApp(sample_cli, history_file=temp_history_file)
+        app = TuiApp(state=tui_state)
         async with app.run_test() as pilot:
             from textual.widgets import Input
 
@@ -334,9 +397,9 @@ class TestTuiApp:
             errors = app.query(f".{CssClass.ERROR}")
             assert len(errors) >= 1
 
-    async def test_initial_input(self, sample_cli, temp_history_file):
+    async def test_initial_input(self, tui_state):
         """Test that initial_input pre-fills the input field."""
-        app = TuiApp(sample_cli, history_file=temp_history_file, initial_input="/hello world")
+        app = TuiApp(state=tui_state, initial_input="/hello world")
         async with app.run_test():
             from textual.widgets import Input
 
@@ -350,11 +413,11 @@ class TestTuiApp:
             pytest.param("set_rule_below", "rule-below", id="rule-below"),
         ],
     )
-    async def test_set_rule_add_class_preserves_existing(self, sample_cli, temp_history_file, method, rule_id):
+    async def test_set_rule_add_class_preserves_existing(self, tui_state, method, rule_id):
         """Test that set_rule_* add_class preserves existing classes."""
         from textual.widgets import Rule
 
-        app = TuiApp(sample_cli, history_file=temp_history_file)
+        app = TuiApp(state=tui_state)
         async with app.run_test():
             rule = app.query_one(f"#{rule_id}", Rule)
             rule.add_class("original-class")
@@ -372,11 +435,11 @@ class TestTuiApp:
             pytest.param("set_rule_below", "rule-below", id="rule-below"),
         ],
     )
-    async def test_set_rule_remove_class(self, sample_cli, temp_history_file, method, rule_id):
+    async def test_set_rule_remove_class(self, tui_state, method, rule_id):
         """Test that set_rule_* remove_class removes the class."""
         from textual.widgets import Rule
 
-        app = TuiApp(sample_cli, history_file=temp_history_file)
+        app = TuiApp(state=tui_state)
         async with app.run_test():
             rule = app.query_one(f"#{rule_id}", Rule)
             rule.add_class("to-remove")
@@ -393,11 +456,11 @@ class TestTuiApp:
             pytest.param("set_rule_below", "rule-below", id="rule-below"),
         ],
     )
-    async def test_set_rule_changes_line_style(self, sample_cli, temp_history_file, method, rule_id):
+    async def test_set_rule_changes_line_style(self, tui_state, method, rule_id):
         """Test that set_rule_* changes the line style."""
         from textual.widgets import Rule
 
-        app = TuiApp(sample_cli, history_file=temp_history_file)
+        app = TuiApp(state=tui_state)
         async with app.run_test():
             rule = app.query_one(f"#{rule_id}", Rule)
             set_rule = getattr(app, method)
@@ -405,10 +468,10 @@ class TestTuiApp:
 
             assert rule.line_style == "double"
 
-    async def test_custom_css_injection(self, sample_cli, temp_history_file):
+    async def test_custom_css_injection(self, tui_state):
         """Test that custom CSS is applied to the app."""
         custom_css = "Rule.custom-test { color: red; }"
-        app = TuiApp(sample_cli, history_file=temp_history_file, css=custom_css)
+        app = TuiApp(state=tui_state, css=custom_css)
         async with app.run_test():
             from textual.widgets import Rule
 
