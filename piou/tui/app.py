@@ -113,11 +113,30 @@ class TuiApp(App):
     # Compose & lifecycle
 
     def compose(self) -> ComposeResult:
-        """Build the TUI layout."""
-        yield Static(self.state.cli_name, id="name")
-        if self.state.description:
-            yield Static(self.state.description, id="description")
-        yield Vertical(id="messages")
+        """Build the TUI layout.
+
+        Layout:
+            ┌──────────────────────────────────┐
+            │ #name                            │
+            │ #description (optional)          │ scrollable
+            │ #messages (Vertical)             │
+            │   ...                            │
+            ├──────────────────────────────────┤
+            │ #rule-above                      │
+            │ #input-row (Horizontal)          │
+            │   #prompt  Input                 │
+            │ #rule-below                      │
+            ├──────────────────────────────────┤
+            │ #context-panel (Vertical)        │
+            │   #hint                          │
+            │   #suggestions (Vertical)        │
+            │   #command-help                  │
+            └──────────────────────────────────┘
+        """
+        with Vertical(id="messages"):
+            yield Static(self.state.cli_name, id="name")
+            if self.state.description:
+                yield Static(self.state.description, id="description")
         yield Rule(id="rule-above")
         with Horizontal(id="input-row"):
             yield Static("> ", id="prompt")
@@ -278,9 +297,7 @@ class TuiApp(App):
         self.history.append(value)
         self._notify_history_error()
 
-        messages = self.query_one("#messages", Vertical)
-        messages.mount(Static(f"> {value}", classes=CssClass.MESSAGE))
-        self._autoscroll()
+        self._add_message(f"> {value}", CssClass.MESSAGE)
         event.input.value = ""
 
         suggestions = self.query_one("#suggestions", Vertical)
@@ -294,8 +311,7 @@ class TuiApp(App):
         if value.startswith("/") or value.startswith("!"):
             self.runner.queue_command(value)
             if self.runner.has_pending_commands():
-                messages.mount(Static("(queued)", classes=f"{CssClass.OUTPUT}"))
-                self._autoscroll()
+                self._add_message("(queued)", CssClass.OUTPUT)
 
     def _handle_ctrl_c(self) -> None:
         """Handle Ctrl+C: cancel running command, clear input, show exit hint, or exit."""
@@ -327,25 +343,26 @@ class TuiApp(App):
 
     def _display_output(self, stdout: Text | None, stderr: Text | None) -> None:
         """Display command output in the messages area."""
-        messages = self.query_one("#messages", Vertical)
         if stdout:
-            messages.mount(Static(stdout, classes=CssClass.OUTPUT))
+            self._add_message(stdout, CssClass.OUTPUT)
         if stderr:
-            messages.mount(Static(stderr, classes=f"{CssClass.OUTPUT} {CssClass.ERROR}"))
-        if stdout or stderr:
-            self._autoscroll()
+            self._add_message(stderr, f"{CssClass.OUTPUT} {CssClass.ERROR}")
 
     def _on_process_error(self):
-        messages = self.query_one("#messages", Vertical)
-        messages.mount(Static("Interrupted", classes=f"{CssClass.OUTPUT} {CssClass.ERROR}"))
-        self._autoscroll()
+        self._add_message("Interrupted", f"{CssClass.OUTPUT} {CssClass.ERROR}")
 
     # -------------------------------------------------------------------------
     # UI helpers
     # -------------------------------------------------------------------------
 
-    def _autoscroll(self) -> None:
-        """Scroll to the bottom of the messages area."""
+    def _add_message(self, content: str | Text | Widget, classes: str | None = None) -> None:
+        """Add a message to the messages area and scroll to bottom."""
+        messages = self.query_one("#messages", Vertical)
+        if isinstance(content, Widget):
+            messages.mount(content)
+        else:
+            messages.mount(Static(content, classes=classes))
+        # """Scroll to the bottom of the messages area."""
         if self.is_inline:
             self.call_after_refresh(self.screen.scroll_end, animate=False)
         else:
@@ -451,6 +468,4 @@ class TuiApp(App):
 
     def mount_widget(self, widget: Widget) -> None:
         """Mount a widget to the messages area."""
-        messages = self.query_one("#messages", Vertical)
-        messages.mount(widget)
-        self._autoscroll()
+        self._add_message(widget)
