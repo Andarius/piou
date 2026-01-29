@@ -11,10 +11,10 @@ from typing import TYPE_CHECKING
 from .runner import CommandRunner
 
 if TYPE_CHECKING:
-    from textual.app import ReturnType
-
     from ..cli import Cli
     from ..command import CommandGroup
+
+from ..command import Command
 
 from .history import History
 
@@ -26,8 +26,8 @@ class TuiState:
     cli_name: str
     description: str | None
     group: CommandGroup
-    commands: list
-    commands_map: dict[str, object]
+    commands: list[Command | CommandGroup]
+    commands_map: dict[str, Command | CommandGroup]
     history: History
     runner: CommandRunner
     on_ready: Callable[[], None] | None = None
@@ -66,7 +66,7 @@ class TuiCli:
             on_ready=self.cli._on_tui_ready,
         )
 
-    def run(self, *args: str) -> ReturnType | None:
+    def run(self, *args: str) -> None:
         """Run the TUI app, optionally pre-filling the input field with formatted args."""
         from .app import TuiApp
 

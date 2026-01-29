@@ -9,6 +9,8 @@ from textual._path import CSSPathType
 if TYPE_CHECKING:
     from .cli import TuiState
 
+from ..command import Command
+
 try:
     from textual.app import App, ComposeResult
     from textual.containers import Horizontal, Vertical
@@ -108,9 +110,7 @@ class TuiApp(App):
         self._notify_history_error()
         await super().action_quit()
 
-    # -------------------------------------------------------------------------
     # Compose & lifecycle
-    # -------------------------------------------------------------------------
 
     def compose(self) -> ComposeResult:
         """Build the TUI layout."""
@@ -145,9 +145,7 @@ class TuiApp(App):
         if self.state.on_ready:
             self.state.on_ready()
 
-    # -------------------------------------------------------------------------
     # Input events
-    # -------------------------------------------------------------------------
 
     def on_input_changed(self, event: Input.Changed) -> None:
         """Show command suggestions when input starts with /"""
@@ -257,7 +255,7 @@ class TuiApp(App):
         cmd_name = self.current_suggestions[self.suggestion_index]
         cmd = self.state.commands_map.get(cmd_name)
         inp = self.query_one(Input)
-        if cmd and hasattr(cmd, "positional_args") and cmd.positional_args:
+        if isinstance(cmd, Command) and cmd.positional_args:
             first_arg = cmd.positional_args[0]
             inp.value = f"{cmd_name} <{first_arg.name}>"
         else:
@@ -423,9 +421,7 @@ class TuiApp(App):
             self.notify(self.history.last_error, title="History", severity="warning")
             self.history.last_error = None
 
-    # -------------------------------------------------------------------------
     # Public API (for TuiContext)
-    # -------------------------------------------------------------------------
 
     def set_hint(self, text: str | None) -> None:
         """Set or clear the hint text displayed below the input."""
