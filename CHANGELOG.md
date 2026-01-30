@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.28.3 (2026-01-30)
+
+### Fix
+
+- adding support for a cstum 'status-above' content (#33)
+
 ## 0.28.2 (2026-01-30)
 
 ### Fix
