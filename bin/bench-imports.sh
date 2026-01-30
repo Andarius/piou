@@ -51,13 +51,13 @@ hyperfine --warmup "$WARMUP" --min-runs "$RUNS" \
     'uv run python -c "from piou.tui import TuiContext"' \
     --export-json "$TUI_JSON" >/dev/null 2>&1
 
-# Extract results
-CORE_MEAN=$(jq '.results[0].mean * 1000' "$CORE_JSON")
-CORE_STD=$(jq '.results[0].stddev * 1000' "$CORE_JSON")
-RICH_MEAN=$(jq '.results[0].mean * 1000' "$RICH_JSON")
-RICH_STD=$(jq '.results[0].stddev * 1000' "$RICH_JSON")
-TUI_MEAN=$(jq '.results[0].mean * 1000' "$TUI_JSON")
-TUI_STD=$(jq '.results[0].stddev * 1000' "$TUI_JSON")
+# Extract results (rounded to 2 decimal places for cleaner output)
+CORE_MEAN=$(jq '.results[0].mean * 1000 | . * 100 | round / 100' "$CORE_JSON")
+CORE_STD=$(jq '.results[0].stddev * 1000 | . * 100 | round / 100' "$CORE_JSON")
+RICH_MEAN=$(jq '.results[0].mean * 1000 | . * 100 | round / 100' "$RICH_JSON")
+RICH_STD=$(jq '.results[0].stddev * 1000 | . * 100 | round / 100' "$RICH_JSON")
+TUI_MEAN=$(jq '.results[0].mean * 1000 | . * 100 | round / 100' "$TUI_JSON")
+TUI_STD=$(jq '.results[0].stddev * 1000 | . * 100 | round / 100' "$TUI_JSON")
 
 if $JSON_OUTPUT; then
     cat <<EOF

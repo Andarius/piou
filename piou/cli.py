@@ -189,11 +189,22 @@ class Cli:
         _inline = inline if inline is not None else os.getenv("PIOU_TUI_INLINE", "0") == "1"
         return TuiCli(self, inline=_inline)
 
-    def tui_app(self, initial_input: str | None = None):
+    def tui_app(
+        self,
+        initial_input: str | None = None,
+        css: str | None = None,
+        css_path: str | None = None,
+    ):
         """Create and return a TuiApp instance. Shortcut for tui_cli().get_app()."""
-        return self.tui_cli().get_app(initial_input=initial_input)
+        return self.tui_cli().get_app(initial_input=initial_input, css=css, css_path=css_path)
 
-    def tui_run(self, *args: str, inline: bool | None = None):
+    def tui_run(
+        self,
+        *args: str,
+        inline: bool | None = None,
+        css: str | None = None,
+        css_path: str | None = None,
+    ):
         """Run the CLI in interactive TUI mode. Requires piou[tui]."""
         try:
             tui = self.tui_cli(inline=inline)
@@ -201,4 +212,4 @@ class Cli:
             self.formatter.print_error("TUI mode requires textual. Install piou\\[tui] or 'textual' package.")
             sys.exit(1)
 
-        tui.run(*args)
+        tui.run(*args, css=css, css_path=css_path)
