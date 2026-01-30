@@ -460,16 +460,23 @@ class TestTuiApp:
             # The CSS should be loaded and applied
             assert "custom-test" in rule.classes
 
-    async def test_custom_css_via_cli(self, cli_with_subcommands):
-        """Test that custom CSS can be passed through Cli.tui_app()."""
-        custom_css = "Rule.via-cli { color: blue; }"
-        app = cli_with_subcommands.tui_app(css=custom_css)
+    @pytest.mark.parametrize(
+        "get_app",
+        [
+            pytest.param(lambda cli, css: cli.tui_app(css=css), id="tui_app"),
+            pytest.param(lambda cli, css: cli.tui_cli().get_app(css=css), id="tui_cli.get_app"),
+        ],
+    )
+    async def test_custom_css_via_cli(self, cli_with_subcommands, get_app):
+        """Test that custom CSS can be passed through Cli methods."""
+        custom_css = "Rule.custom { color: blue; }"
+        app = get_app(cli_with_subcommands, custom_css)
         async with app.run_test():
             from textual.widgets import Rule
 
             rule = app.query_one("#rule-above", Rule)
-            rule.set_classes("via-cli")
-            assert "via-cli" in rule.classes
+            rule.set_classes("custom")
+            assert "custom" in rule.classes
 
 
 @pytest.fixture
