@@ -19,7 +19,7 @@ class History:
         except (OSError, UnicodeDecodeError) as exc:
             self.last_error = f"Failed to read history file {self.file}: {exc}"
             return
-        self.entries = [line for line in lines if line]
+        self.entries = [line for line in reversed(lines) if line]
         self.last_error = None
 
     def append(self, entry: str) -> bool:

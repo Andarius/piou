@@ -85,7 +85,7 @@ class CommandRunner:
 
     def resolve_input(self, value: str) -> None:
         """Resolve the current input future with a value."""
-        if self._input_future is not None:
+        if self._input_future is not None and not self._input_future.done():
             self._input_future.set_result(value)
 
     async def borrow_input(self) -> str | None:

@@ -76,8 +76,8 @@ class TuiContext:
     async def prompt(self, message: str = "") -> str | None:
         """Prompt for user input and wait for their response.
 
-        In TUI mode, waits for user to submit input. Returns None if cancelled (Ctrl+C).
-        In CLI mode, uses standard input().
+        In TUI mode, awaits user input asynchronously. Returns None if cancelled (Ctrl+C).
+        In CLI mode, calls blocking input() synchronously which will block the event loop.
         """
         if self.tui is not None:
             return await self.tui.prompt_input()

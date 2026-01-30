@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from rich.text import Text
-from textual._path import CSSPathType
+from textual.types import CSSPathType
 
 if TYPE_CHECKING:
     from .cli import TuiState

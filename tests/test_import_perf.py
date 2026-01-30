@@ -38,7 +38,9 @@ def measure_import_time(import_statement: str, runs: int = 3) -> float:
                     cumulative_us = int(parts[1].strip())
                     times.append(cumulative_us / 1000)  # Convert to ms
                     break
-    return min(times) if times else 0
+    if not times:
+        raise ValueError(f"No timings parsed from import: {import_statement!r}")
+    return min(times)
 
 
 @pytest.mark.parametrize(

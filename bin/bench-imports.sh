@@ -74,7 +74,7 @@ else
     printf "  %-30s %9.3fms (±%.3fms)\n" "piou (rich)" "$RICH_MEAN" "$RICH_STD"
     printf "  %-30s %9.3fms (±%.3fms)\n" "piou.tui" "$TUI_MEAN" "$TUI_STD"
     printf "============================================================\n"
-    printf "  rich overhead:    +%.3fms\n" "$(echo "$RICH_MEAN - $CORE_MEAN" | bc)"
-    printf "  textual overhead: +%.3fms\n" "$(echo "$TUI_MEAN - $RICH_MEAN" | bc)"
+    printf "  rich overhead:    +%.3fms\n" "$(jq -n "$RICH_MEAN - $CORE_MEAN")"
+    printf "  textual overhead: +%.3fms\n" "$(jq -n "$TUI_MEAN - $RICH_MEAN")"
     printf "============================================================\n"
 fi

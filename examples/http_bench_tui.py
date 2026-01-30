@@ -69,7 +69,8 @@ async def bench_library(
                 await report_progress()
 
             before = time.perf_counter()
-            async with aiohttp.ClientSession() as session:
+            timeout = aiohttp.ClientTimeout(total=60)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
                 await asyncio.gather(*[_fetch(session, url) for _ in range(count)])
             result.elapsed = time.perf_counter() - before
 
@@ -81,7 +82,7 @@ async def bench_library(
                 await report_progress()
 
             before = time.perf_counter()
-            async with httpx.AsyncClient(http2=True) as client:
+            async with httpx.AsyncClient(http2=True, timeout=60) as client:
                 await asyncio.gather(*[_fetch(client, url) for _ in range(count)])
             result.elapsed = time.perf_counter() - before
 
@@ -93,8 +94,7 @@ async def bench_library(
                 await report_progress()
 
             before = time.perf_counter()
-
-            async with niquests.AsyncSession() as session:
+            async with niquests.AsyncSession(timeout=60) as session:
                 await asyncio.gather(*[_fetch(session, url) for _ in range(count)])
             result.elapsed = time.perf_counter() - before
         case _:
@@ -201,6 +201,9 @@ async def bench_raw(
 
     # Show results in a table
     sorted_results = sorted(best_results.values(), key=lambda r: r.elapsed)
+    if not sorted_results:
+        status.update("No successful results")
+        return
     slowest_time = sorted_results[-1].elapsed
 
     table = DataTable()
@@ -223,10 +226,13 @@ async def table_view(
     """Benchmark and display results in a DataTable widget."""
     ctx.notify("Running benchmark...", title="Table View")
 
+    status = Static("Starting...")
+    ctx.mount_widget(status)
+
     results: list[BenchResult] = []
 
     for lib in LIBRARIES:
-        print(f"Testing {lib}...")
+        status.update(f"Testing [cyan]{lib}[/]...")
         result = await bench_library(lib, url, count)
         results.append(result)
 
@@ -425,7 +431,7 @@ class SideBySideGrids(Horizontal):
                     is_winner = fastest is not None and result.library == fastest.library
                     pct_diff = 0.0
                     # Show how much faster than slowest (based on req/s)
-                    if slowest and result.error is None and result.library != slowest.library:
+                    if slowest and result.error is None and result.library != slowest.library and slowest.rps > 0:
                         pct_diff = ((result.rps / slowest.rps) - 1) * 100
                     grid.set_result(result, is_winner=is_winner, pct_diff=pct_diff)
                     break

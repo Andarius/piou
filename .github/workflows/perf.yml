@@ -31,9 +31,7 @@ jobs:
         run: uv sync --all-extras
 
       - name: Install hyperfine
-        run: |
-          wget https://github.com/sharkdp/hyperfine/releases/download/v1.20.0/hyperfine_1.20.0_amd64.deb
-          sudo dpkg -i hyperfine_1.20.0_amd64.deb
+        run: sudo apt-get install -y hyperfine
 
       - name: Run benchmarks
         run: ./bin/bench-imports.sh --json > benchmark-results.json

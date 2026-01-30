@@ -148,10 +148,10 @@ class TestHistory:
         assert history.index == -1
 
     def test_load_existing_history(self, temp_history_file):
-        """Test loading history from existing file."""
+        """Test loading history from existing file (newest first)."""
         temp_history_file.write_text("cmd1\ncmd2\ncmd3")
         history = History(file=temp_history_file)
-        assert history.entries == ["cmd1", "cmd2", "cmd3"]
+        assert history.entries == ["cmd3", "cmd2", "cmd1"]
 
     def test_append_entry(self, temp_history_file):
         """Test appending entries to history."""
