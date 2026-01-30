@@ -478,6 +478,25 @@ class TestTuiApp:
             rule.set_classes("custom")
             assert "custom" in rule.classes
 
+    @pytest.mark.parametrize(
+        "content,expected_display",
+        [
+            pytest.param("tokens: 100", True, id="string-shows"),
+            pytest.param(None, False, id="none-hides"),
+        ],
+    )
+    async def test_set_status_above(self, tui_state, content, expected_display):
+        """Test set_status_above shows/hides the status area based on content."""
+        from textual.widgets import Static
+
+        app = TuiApp(state=tui_state)
+        async with app.run_test() as pilot:
+            app.set_status_above(content)
+            await pilot.pause()
+
+            status = app.query_one("#status-above", Static)
+            assert status.display is expected_display
+
 
 @pytest.fixture
 def reset_context():
@@ -542,6 +561,25 @@ class TestTuiContext:
         if with_tui:
             assert tui is not None
             tui.mount_widget.assert_called_once_with(widget)
+
+    @pytest.mark.parametrize(
+        "with_tui,content",
+        [
+            pytest.param(False, "status text", id="no-tui-string"),
+            pytest.param(False, None, id="no-tui-none"),
+            pytest.param(True, "status text", id="with-tui-string"),
+            pytest.param(True, None, id="with-tui-none"),
+        ],
+    )
+    def test_set_status_above(self, with_tui: bool, content: str | None):
+        """Test set_status_above() is a no-op without TUI, delegates to TUI with TUI."""
+        ctx = TuiContext()
+        tui = MagicMock(spec=TuiApp) if with_tui else None
+        ctx.tui = tui
+        ctx.set_status_above(content)
+        if with_tui:
+            assert tui is not None
+            tui.set_status_above.assert_called_once_with(content)
 
     def test_get_tui_context_default(self, reset_context):
         """get_tui_context() should return a default context."""

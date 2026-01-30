@@ -159,3 +159,12 @@ Input > .input--suggestion {
     margin-bottom: 1;
     display: none;
 }
+
+#status-above {
+    background: transparent;
+    color: grey;
+    padding: 0;
+    margin: 0;
+    height: auto;
+    display: none;
+}

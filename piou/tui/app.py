@@ -121,6 +121,7 @@ class TuiApp(App):
             │ #messages (Vertical)             │
             │   ...                            │
             ├──────────────────────────────────┤
+            │ #status-above (hidden by default)│
             │ #rule-above                      │
             │ #input-row (Horizontal)          │
             │   #prompt  Input                 │
@@ -136,6 +137,7 @@ class TuiApp(App):
             yield Static(self.state.cli_name, id="name")
             if self.state.description:
                 yield Static(self.state.description, id="description")
+        yield Static(id="status-above")
         yield Rule(id="rule-above")
         with Horizontal(id="input-row"):
             yield Static("> ", id="prompt")
@@ -465,3 +467,20 @@ class TuiApp(App):
     def mount_widget(self, widget: Widget) -> None:
         """Mount a widget to the messages area."""
         self._add_message(widget)
+
+    def set_status_above(self, content: Widget | str | None) -> None:
+        """Set or clear the status area above the input.
+
+        Accepts a Widget for custom displays, a string for simple text,
+        or None to clear.
+        """
+        status = self.query_one("#status-above", Static)
+        if content is None:
+            status.update("")
+            status.display = False
+        elif isinstance(content, str):
+            status.update(content)
+            status.display = True
+        else:
+            status.update(content.render())
+            status.display = True
