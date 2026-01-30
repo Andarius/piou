@@ -59,7 +59,7 @@ class Cli:
     def commands(self):
         return self._group.commands
 
-    def run(self):
+    def run(self, **kwargs):
         """Run the CLI application, parsing the command line arguments."""
         try:
             _, *args = sys.argv
@@ -67,7 +67,7 @@ class Cli:
             args = []
 
         if self.tui:
-            self.tui_run(*args)
+            self.tui_run(*args, **kwargs)
             return
 
         self.run_with_args(*args)
