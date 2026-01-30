@@ -9,7 +9,7 @@ title: "TUI Mode"
 
 Piou includes an optional interactive TUI (Terminal User Interface) mode powered by [Textual](https://textual.textualize.io/){.highlight-link}. Instead of running commands one at a time, you get a persistent interface with command suggestions, history, and rich output.
 
-<img alt="TUI demo" src="../static/tui-demo.gif" width="800"/>
+<img alt="TUI demo" src="../static/tui-demo.gif" width="720"/>
 
 ## Installation
 

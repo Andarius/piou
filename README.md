@@ -150,13 +150,13 @@ PIOU_TUI=1 python my_cli.py
   - `Ctrl+C` - Clear input (press twice to exit)
   - `Escape` - Quit
 
-![TUI Demo](https://github.com/Andarius/piou/raw/master/docs/static/tui-demo.gif)
+<img alt="TUI Demo" src="https://github.com/Andarius/piou/raw/master/docs/static/tui-demo.gif" width="600"/>
 
 ### Advanced Example: HTTP Benchmark
 
 The TUI mode supports mounting custom Textual widgets for rich interactive displays. This example benchmarks HTTP libraries with live progress grids:
 
-![HTTP Benchmark TUI](https://github.com/Andarius/piou/raw/master/docs/static/bench_1000.gif)
+<img alt="HTTP Benchmark TUI" src="https://github.com/Andarius/piou/raw/master/docs/static/bench_1000.gif" width="700"/>
 
 See [examples/http_bench_tui.py](examples/http_bench_tui.py) for the full implementation using `TuiContext` and custom widgets.
 

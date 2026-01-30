@@ -6,8 +6,8 @@ Output docs/static/tui-help.gif
 
 Set Shell "zsh"
 Set FontSize 14
-Set Width 900
-Set Height 600
+Set Width 800
+Set Height 540
 Set Theme "Catppuccin Mocha"
 Set TypingSpeed 50ms
 

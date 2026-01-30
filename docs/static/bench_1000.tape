@@ -4,9 +4,9 @@
 Output docs/static/bench_1000.gif
 
 Set Shell "zsh"
-Set FontSize 14
-Set Width 1400
-Set Height 500
+Set FontSize 13
+Set Width 1000
+Set Height 400
 Set Theme "Catppuccin Mocha"
 Set TypingSpeed 50ms
 
