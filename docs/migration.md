@@ -1,5 +1,5 @@
 ---
-title: "Migration Guide"
+title: "Migrating from Argparse"
 ---
 
 ## Moving from `argparse`

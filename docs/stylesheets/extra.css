@@ -57,3 +57,8 @@
 .highlight-link:hover {
   color: #ff6b3d !important;
 }
+
+/* Add padding at the bottom of pages */
+.md-content__inner {
+  padding-bottom: 4rem;
+}

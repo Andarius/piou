@@ -150,6 +150,8 @@ PIOU_TUI=1 python my_cli.py
   - `Ctrl+C` - Clear input (press twice to exit)
   - `Escape` - Quit
 
+![TUI Demo](https://github.com/Andarius/piou/raw/master/docs/static/tui-demo.gif)
+
 ### Advanced Example: HTTP Benchmark
 
 The TUI mode supports mounting custom Textual widgets for rich interactive displays. This example benchmarks HTTP libraries with live progress grids:
