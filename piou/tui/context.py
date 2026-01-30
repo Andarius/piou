@@ -120,6 +120,15 @@ class TuiContext:
         if self.tui is not None:
             self.tui.set_rule_below(line_style, add_class, remove_class)
 
+    def set_status_above(self, content: Widget | str | None) -> None:
+        """Set or clear the status area above the input.
+
+        Accepts a Widget for custom displays, a string for simple text,
+        or None to clear. In CLI mode, this is a no-op.
+        """
+        if self.tui is not None:
+            self.tui.set_status_above(content)
+
 
 _current_tui_context: ContextVar[TuiContext] = ContextVar("piou_tui_context", default=TuiContext())
 
