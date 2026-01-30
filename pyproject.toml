@@ -29,22 +29,19 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-raw = []
 
 tui = [
     "textual>=0.40.0",
 ]
 
-tui-reload = [
+[dependency-groups]
+tui = [
     "textual>=0.40.0",
-    "watchfiles>=1.0.0",
 ]
 
-[dependency-groups]
 dev = [
-    "textual>=0.40.0",
+    { include-group = "tui" },
     "textual-dev>=1.0.0",
-    "watchfiles>=1.0.0",
     "pyright>=1.1.407",
     "pytest>=8.4.1",
     "pytest-asyncio>=0.24.0",
@@ -62,6 +59,7 @@ bump = [
     "commitizen>=4.9.1",
 ]
 examples = [
+    { include-group = "tui" },
     "aiohttp>=3.13.3",
     "httpx[http2]>=0.28.1",
     "niquests>=3.16.1",

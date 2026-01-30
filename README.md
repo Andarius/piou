@@ -59,15 +59,12 @@ Or with [conda](https://docs.conda.io/):
 conda install piou -c conda-forge
 ```
 
-### Without Rich (Raw Formatter)
+### Raw Formatter
 
-By default, Piou uses [Rich](https://github.com/Textualize/rich) for beautiful terminal output. If you prefer plain text output or want to minimize dependencies, you can use the raw formatter:
+By default, Piou uses [Rich](https://github.com/Textualize/rich) for beautiful terminal output. If you prefer plain text output, you can use the raw formatter:
 
 ```bash
-# Install without Rich formatting (Rich is still installed but not used)
-pip install piou[raw]
-
-# Or force raw output via environment variable
+# Force raw output via environment variable
 PIOU_FORMATTER=raw python your_cli.py --help
 ```
 

@@ -58,7 +58,7 @@
 
 ### Feat
 
-- make rich optional (#26)
+- add raw formatter (#26)
 
 ## 0.23.0 (2025-12-28)
 
@@ -368,8 +368,8 @@
 
 ### Features & Improvements
 
-  - add base `Formatter` class for plain text output without Rich styling (#26)
-  - add `PIOU_FORMATTER` environment variable to switch between raw and rich formatters
+  - add `Formatter` base class for plain text output (#26)
+  - add `PIOU_FORMATTER` environment variable to switch formatters
 
 ## 0.23.0 (2025-12-28)
 
