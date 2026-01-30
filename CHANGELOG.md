@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.28.2 (2026-01-30)
+
+### Fix
+
+- adding kwargs to run for tui params (#32)
+
 ## 0.28.1 (2026-01-30)
 
 ### Fix
