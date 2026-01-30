@@ -8,6 +8,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from textual.types import CSSPathType
+
 from .runner import CommandRunner
 
 if TYPE_CHECKING:
@@ -66,13 +68,23 @@ class TuiCli:
             on_ready=self.cli._on_tui_ready,
         )
 
-    def get_app(self, initial_input: str | None = None):
-        """Create and return a TuiApp instance."""
+    def get_app(
+        self,
+        initial_input: str | None = None,
+        css: str | None = None,
+        css_path: CSSPathType | None = None,
+    ):
+        """Create and return a TuiApp instance with optional custom CSS."""
         from .app import TuiApp
 
-        return TuiApp(state=self.state, initial_input=initial_input)
+        return TuiApp(state=self.state, initial_input=initial_input, css=css, css_path=css_path)
 
-    def run(self, *args: str) -> None:
+    def run(
+        self,
+        *args: str,
+        css: str | None = None,
+        css_path: CSSPathType | None = None,
+    ) -> None:
         """Run the TUI app, optionally pre-filling the input field with formatted args."""
         initial_input = None
         if args:
@@ -82,4 +94,6 @@ class TuiCli:
                 initial_input = f"/{cmd_name} {shlex.join(cmd_args)}"
             else:
                 initial_input = f"/{cmd_name}"
-        return self.get_app(initial_input=initial_input).run(inline=self.inline, loop=self.loop)
+        return self.get_app(initial_input=initial_input, css=css, css_path=css_path).run(
+            inline=self.inline, loop=self.loop
+        )
