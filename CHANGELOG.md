@@ -1,5 +1,20 @@
 # Changelog
 
+ ## 0.28.0 (2026-01-30)
+
+### Features & Improvements
+
+  - add interactive TUI mode powered by [Textual](https://textual.textualize.io/) (#31)
+    - enable via `Cli(tui=True)`, `PIOU_TUI=1` environment variable or `--tui`
+    - command suggestions with inline completion
+    - persistent command history
+    - `TuiContext` for commands to interact with the TUI (notifications, widgets)
+    - customizable styling via CSS
+    - requires `piou[tui]` extra
+
+> [!WARNING]
+> The TUI module is in **beta**. APIs may change in future releases.
+
 ## 0.27.0 (2026-01-22)
 
 ### Features & Improvements

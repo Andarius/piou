@@ -109,10 +109,13 @@ venv.bak/
 tmp/
 *-ignore.py
 tests/junit.xml
+snapshot_report.html
 
 # other
 scratch/
 site/
+
+.scratch/
 
 # LLMS
 CLAUDE.md

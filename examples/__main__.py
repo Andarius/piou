@@ -142,4 +142,4 @@ if __name__ == "__main__":
     try:
         cli.run()
     except KeyboardInterrupt:
-        print("Ctrl+C detected, exiting...")
+        print("Ctrl+c detected, exiting...")

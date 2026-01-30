@@ -2,7 +2,6 @@ from dataclasses import dataclass, field
 from difflib import get_close_matches
 
 from rich.console import Console, RenderableType
-from rich.markdown import Markdown
 from rich.padding import Padding
 from rich.table import Table
 
@@ -95,12 +94,12 @@ MIN_MARKDOWN_SIZE: int = 75
 
 @dataclass
 class RichFormatter(Formatter):
-    _console: Console = field(init=False, default_factory=lambda: Console(markup=True, highlight=False))
+    _console: Console = field(init=False, repr=False, default_factory=lambda: Console(markup=True, highlight=False))
     cmd_color: str = "cyan"
     option_color: str = "cyan"
     default_color: str = "white"
     show_default: bool = True
-    """Use Markdown object for the description, otherwise use 
+    """Use Markdown object for the description, otherwise use
     default str
     """
     use_markdown: bool = True
@@ -111,17 +110,17 @@ class RichFormatter(Formatter):
     def _color_cmd(self, cmd: str):
         return f"[{self.cmd_color}]{cmd}[/{self.cmd_color}]"
 
-    def __post_init__(self):
-        self.print_fn = self._console.print
-
     def _print_description(self, item: CommandGroup | Command):
         description = item.description or item.help
         if description:
-            self.print_fn()
-            self.print_fn(RichTitles.DESCRIPTION)
+            self._console.print()
+            self._console.print(RichTitles.DESCRIPTION)
             if self.use_markdown:
+                # Lazy import: rich.markdown pulls in pygments (~23ms startup cost)
+                from rich.markdown import Markdown
+
                 _max_width = max(len(x) for x in description.split("\n"))
-                self.print_fn(
+                self._console.print(
                     pad(
                         Markdown(
                             "  \n".join(description.split("\n")),
@@ -131,7 +130,7 @@ class RichFormatter(Formatter):
                     width=max(_max_width, MIN_MARKDOWN_SIZE),
                 )
             else:
-                self.print_fn(pad(description))
+                self._console.print(pad(description))
 
     def _fmt_help(self, option: CommandOption):
         return fmt_help(
@@ -158,19 +157,19 @@ class RichFormatter(Formatter):
         table.add_column()
         for row in rows:
             table.add_row(*row)
-        self.print_fn(table)
+        self._console.print(table)
 
     def print_cli_help(self, group: CommandGroup):
-        self.print_fn(RichTitles.USAGE)
-        self.print_fn(pad(get_usage(group.options)))
-        self.print_fn()
+        self._console.print(RichTitles.USAGE)
+        self._console.print(pad(get_usage(group.options)))
+        self._console.print()
 
         if group.options:
-            self.print_fn(RichTitles.GLOBAL_OPTIONS)
+            self._console.print(RichTitles.GLOBAL_OPTIONS)
             self._print_options(group.options)
-            self.print_fn()
+            self._console.print()
 
-        self.print_fn(RichTitles.AVAILABLE_CMDS)
+        self._console.print(RichTitles.AVAILABLE_CMDS)
         self.print_rows(
             [(f" {self._color_cmd(_command.name or '')}", _command.help) for _command in group.commands.values()]
         )
@@ -188,12 +187,12 @@ class RichFormatter(Formatter):
             command_options=command.options_sorted,
             parent_args=parent_args,
         )
-        self.print_fn(RichTitles.USAGE)
-        self.print_fn(pad(usage))
-        self.print_fn()
+        self._console.print(RichTitles.USAGE)
+        self._console.print(pad(usage))
+        self._console.print()
 
         if command.positional_args:
-            self.print_fn(RichTitles.ARGUMENTS)
+            self._console.print(RichTitles.ARGUMENTS)
             self.print_rows(
                 [
                     (
@@ -204,14 +203,14 @@ class RichFormatter(Formatter):
                 ]
             )
         if command.keyword_args:
-            self.print_fn("\n" + RichTitles.OPTIONS)
+            self._console.print("\n" + RichTitles.OPTIONS)
             self._print_options(command.keyword_args)
 
         global_options = options + [
             parent_option for parent_arg in (parent_args or []) for parent_option in parent_arg.options
         ]
         if global_options:
-            self.print_fn("\n" + RichTitles.GLOBAL_OPTIONS)
+            self._console.print("\n" + RichTitles.GLOBAL_OPTIONS)
             self._print_options(global_options)
 
         self._print_description(command)
@@ -230,17 +229,17 @@ class RichFormatter(Formatter):
             commands_str.append(_line)
         commands_str = "\n".join(commands_str)
 
-        self.print_fn(RichTitles.USAGE)
-        self.print_fn(commands_str)
+        self._console.print(RichTitles.USAGE)
+        self._console.print(commands_str)
 
-        self.print_fn()
+        self._console.print()
 
-        self.print_fn(RichTitles.COMMANDS)
+        self._console.print(RichTitles.COMMANDS)
         for cmd_name, cmd in group.commands.items():
-            self.print_fn(pad(f"[underline]{cmd_name}[/underline]", padding_left=2))
+            self._console.print(pad(f"[underline]{cmd_name}[/underline]", padding_left=2))
             if cmd.help:
-                self.print_fn(pad(cmd.help, padding_left=4))
-                self.print_fn()
+                self._console.print(pad(cmd.help, padding_left=4))
+                self._console.print()
             if cmd.options:
                 self.print_rows(
                     [
@@ -251,22 +250,22 @@ class RichFormatter(Formatter):
                         for opt in cmd.options_sorted
                     ]
                 )
-                self.print_fn()
+                self._console.print()
 
         if group.options:
-            self.print_fn(RichTitles.OPTIONS)
+            self._console.print(RichTitles.OPTIONS)
             self._print_options(group.options)
-            self.print_fn()
+            self._console.print()
 
         global_options = [parent_option for parent_arg in (parent_args or []) for parent_option in parent_arg.options]
         if global_options:
-            self.print_fn(RichTitles.GLOBAL_OPTIONS)
+            self._console.print(RichTitles.GLOBAL_OPTIONS)
             self._print_options(global_options)
 
         self._print_description(group)
 
     def print_error(self, message: str):
-        self.print_fn(f"[red]{message}[/red]")
+        self._console.print(f"[red]{message}[/red]")
 
     def print_invalid_command(self, available_commands: list[str], input_command: str | None = None) -> None:
         msg = "Unknown command"
@@ -303,3 +302,26 @@ class RichFormatter(Formatter):
         else:
             msg = f"Invalid value [bold]{value}[/bold] found."
         self.print_error(msg)
+
+    def print_exception(self, exc: BaseException, *, hide_internals: bool = True) -> None:
+        """Print an exception traceback with Rich formatting.
+
+        The hide_internals parameter controls whether piou internal frames are
+        hidden from the traceback.
+        """
+        # Lazy imports: saves ~11ms startup cost
+        from rich.traceback import Traceback
+
+        suppress: list = []
+        if hide_internals:
+            import piou
+
+            suppress = [piou]
+        tb = Traceback.from_exception(
+            type(exc),
+            exc,
+            exc.__traceback__,
+            suppress=suppress,
+            show_locals=False,
+        )
+        self._console.print(tb)

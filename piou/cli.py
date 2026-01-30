@@ -1,8 +1,9 @@
+import os
 import sys
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
-from .command import CommandGroup, ShowHelpError, clean_multiline, OnCommandRun
+from .command import CommandGroup, ShowHelpError, ShowTuiError, clean_multiline, OnCommandRun
 from .utils import cleanup_event_loop
 from .exceptions import (
     CommandNotFoundError,
@@ -35,6 +36,12 @@ class Cli:
     For instance, you can use this to get the arguments passed
     for monitoring
     """
+    tui: bool = os.getenv("PIOU_TUI", "0") == "1"
+    """Run in interactive TUI mode instead of CLI mode. Requires piou[tui]."""
+    _on_tui_ready: Callable[[], None] | None = field(default=None, repr=False)
+    """Internal: Callback called when the TUI is ready."""
+    hide_internal_errors: bool = True
+    """Hide piou internal frames from exception tracebacks. Set to False to show full tracebacks."""
     _group: CommandGroup = field(init=False, default_factory=CommandGroup)
     """The main command group that will contain all the commands and options"""
 
@@ -42,6 +49,11 @@ class Cli:
         self._group.description = clean_multiline(self.description) if self.description else None
         self._group.propagate_options = self.propagate_options
         self._group.on_cmd_run = self.on_cmd_run
+
+    @property
+    def group(self) -> CommandGroup:
+        """The root command group."""
+        return self._group
 
     @property
     def commands(self):
@@ -52,7 +64,12 @@ class Cli:
         try:
             _, *args = sys.argv
         except ValueError:
+            args = []
+
+        if self.tui:
+            self.tui_run(*args)
             return
+
         self.run_with_args(*args)
 
     def run_with_args(self, *args):
@@ -65,6 +82,8 @@ class Cli:
             sys.exit(1)
         except ShowHelpError as e:
             self.formatter.print_help(group=e.group, command=e.command, parent_args=e.parent_args)
+        except ShowTuiError as e:
+            self.tui_run(inline=e.inline)
         except KeywordParamNotFoundError as e:
             if not e.cmd:
                 raise
@@ -88,6 +107,9 @@ class Cli:
             sys.exit(1)
         except CommandError as e:
             self.formatter.print_error(e.message)
+            sys.exit(1)
+        except Exception as e:
+            self.formatter.print_exception(e, hide_internals=self.hide_internal_errors)
             sys.exit(1)
         finally:
             cleanup_event_loop()
@@ -152,3 +174,31 @@ class Cli:
         )
         self.add_command_group(group)
         return group
+
+    # TUI methods
+
+    def tui_on_ready(self, fn: Callable[[], None]) -> Callable[[], None]:
+        """Decorator to register a callback when the TUI is ready."""
+        self._on_tui_ready = fn
+        return fn
+
+    def tui_cli(self, inline: bool | None = None):
+        """Create and return a TuiCli instance."""
+        from .tui import TuiCli
+
+        _inline = inline if inline is not None else os.getenv("PIOU_TUI_INLINE", "0") == "1"
+        return TuiCli(self, inline=_inline)
+
+    def tui_app(self, initial_input: str | None = None):
+        """Create and return a TuiApp instance. Shortcut for tui_cli().get_app()."""
+        return self.tui_cli().get_app(initial_input=initial_input)
+
+    def tui_run(self, *args: str, inline: bool | None = None):
+        """Run the CLI in interactive TUI mode. Requires piou[tui]."""
+        try:
+            tui = self.tui_cli(inline=inline)
+        except ImportError:
+            self.formatter.print_error("TUI mode requires textual. Install piou\\[tui] or 'textual' package.")
+            sys.exit(1)
+
+        tui.run(*args)

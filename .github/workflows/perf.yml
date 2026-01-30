@@ -1,0 +1,56 @@
+name: Performance
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  benchmark:
+    name: Import time benchmark
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v4.2.2
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: uv sync --all-extras
+
+      - name: Install hyperfine
+        run: sudo apt-get install -y hyperfine
+
+      - name: Run benchmarks
+        run: ./bin/bench-imports.sh --json > benchmark-results.json
+
+      - name: Store benchmark result
+        uses: benchmark-action/github-action-benchmark@d48d326b4ca9ba73ca0cd0d59f108f9e02a381c7 # v1.20.4
+        with:
+          name: Import Performance
+          tool: customSmallerIsBetter
+          output-file-path: benchmark-results.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # Comment on PR with diff vs base branch
+          comment-on-alert: true
+          comment-always: ${{ github.event_name == 'pull_request' }}
+          summary-always: true
+          # Fail if 20% slower than previous
+          alert-threshold: "120%"
+          fail-on-alert: true
+          # Store results in gh-pages branch (only on main)
+          auto-push: ${{ github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' }}
+          gh-pages-branch: gh-pages
+          benchmark-data-dir-path: dev/bench

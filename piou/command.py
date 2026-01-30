@@ -1,7 +1,7 @@
 from __future__ import annotations
+import asyncio
 import textwrap
 from dataclasses import dataclass, field
-from functools import wraps
 from inspect import getdoc
 from typing import Any, NamedTuple, Callable
 
@@ -60,8 +60,8 @@ class Command:
         """
         return self.positional_args + self.keyword_args
 
-    def run(self, *args, **kwargs):
-        run_function(self.fn, *args, **kwargs)
+    def run(self, *args, loop: asyncio.AbstractEventLoop | None = None, **kwargs):
+        return run_function(self.fn, *args, loop=loop, **kwargs)
 
     def __post_init__(self):
         self.description = clean_multiline(self.description) if self.description else None
@@ -206,12 +206,8 @@ class CommandGroup:
         """Decorator to mark a function as a command."""
 
         def _command(f):
-            @wraps(f)
-            def wrapper(*args, **kwargs):
-                return f(*args, **kwargs)
-
             self.add_command(f, cmd=cmd, help=help, description=description, is_main=is_main)
-            return wrapper
+            return f
 
         return _command
 
@@ -219,19 +215,20 @@ class CommandGroup:
         """Decorator to mark a function as an option processor."""
 
         def _processor(f):
-            @wraps(f)
-            def wrapper(*args, **kwargs):
-                return f(*args, **kwargs)
-
             options, _ = extract_function_info(f)
             for option in options:
                 self._options.append(option)
             self.set_options_processor(f)
-            return wrapper
+            return f
 
         return _processor
 
-    def run_with_args(self, *args, parent_args: ParentArgs | None = None):
+    def run_with_args(
+        self,
+        *args,
+        parent_args: ParentArgs | None = None,
+        loop: asyncio.AbstractEventLoop | None = None,
+    ):
         """Runs the command with the given arguments."""
 
         # Collect all global option names from current group and parent args
@@ -269,11 +266,17 @@ class CommandGroup:
                     propagate_args=self.propagate_options,
                 )
             )
-            return command_group.run_with_args(*cmd_options, parent_args=parent_args)
+            return command_group.run_with_args(*cmd_options, parent_args=parent_args, loop=loop)
 
+        _all_options = set(global_options + cmd_options)
         # Checks if help was requested and raises a special exception to display help
-        if set(global_options + cmd_options) & {"-h", "--help"}:
+        if _all_options & {"-h", "--help"}:
             raise ShowHelpError(group=command_group or self, parent_args=parent_args, command=command)
+        # Checks if TUI mode was requested
+        if "--tui-inline" in _all_options:
+            raise ShowTuiError(inline=True)
+        if "--tui" in _all_options:
+            raise ShowTuiError()
 
         if not command:
             # When cmd is None (no valid command found), try to find the first
@@ -330,7 +333,7 @@ class CommandGroup:
             full_command_name = ".".join([x.cmd for x in parent_args] + [command.name])
             self.on_cmd_run(CommandMeta(full_command_name, fn_args=args_dict, cmd_args=cmd_args))
 
-        return command.run(**args_dict)
+        return command.run(loop=loop, **args_dict)
 
     def set_options_processor(self, fn: Callable):
         """Sets the options processor function for the command group."""
@@ -349,3 +352,10 @@ class ShowHelpError(Exception):
         self.command = command
         self.group = group
         self.parent_args = parent_args
+
+
+class ShowTuiError(Exception):
+    """Exception raised to run TUI mode."""
+
+    def __init__(self, inline: bool = False):
+        self.inline = inline

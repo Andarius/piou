@@ -44,8 +44,9 @@ nav:
   - Usage:
       - Getting Started: getting-started.md
       - Features: features.md
+      - TUI Mode: tui.md
       - Advanced: advanced.md
-      - Migration: migration.md
+      - Migrating from Argparse: migration.md
 
 plugins:
   - search

@@ -31,7 +31,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
           
       - name: Install dependencies
-        run: uv sync --all-extras
+        run: uv sync --all-extras --all-groups
         
       - name: Running lint check
         run: uv run ruff check .
@@ -60,3 +60,10 @@ jobs:
         with:
           name: coverage-html-${{ matrix.python-version }}
           path: htmlcov
+
+      - name: Upload snapshot report on failure
+        if: failure()
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
+        with:
+          name: snapshot-report-${{ matrix.python-version }}
+          path: snapshot_report.html

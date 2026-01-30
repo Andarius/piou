@@ -40,12 +40,13 @@ def get_formatter(formatter_type: FormatterType | None = None) -> Formatter:
     """
     from .base import Formatter
 
-    if formatter_type is None:
-        formatter_type = os.environ.get("PIOU_FORMATTER", "").lower() or None  # type: ignore[assignment]
+    _formatter_type = (
+        formatter_type if formatter_type is not None else os.environ.get("PIOU_FORMATTER", "").lower() or None
+    )
 
-    if formatter_type == "raw":
+    if _formatter_type == "raw":
         return Formatter()
-    elif formatter_type == "rich":
+    elif _formatter_type == "rich":
         try:
             from .rich_formatter import RichFormatter
 

@@ -48,3 +48,17 @@
 [data-md-color-scheme="slate"] .md-nav__link--active {
   color: #ffffff !important;
 }
+
+/* Highlighted links (orange accent) */
+.highlight-link {
+  color: #EB5826 !important;
+  font-weight: 500;
+}
+.highlight-link:hover {
+  color: #ff6b3d !important;
+}
+
+/* Add padding at the bottom of pages */
+.md-content__inner {
+  padding-bottom: 4rem;
+}

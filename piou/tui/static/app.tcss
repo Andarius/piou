@@ -1,0 +1,161 @@
+Screen {
+    background: transparent;
+    padding: 0 2;
+
+    &:inline {
+        scrollbar-size: 0 0;
+        height: 100vh;
+    }
+}
+
+#name {
+    background: transparent;
+    color: white;
+    text-style: bold;
+    padding: 0;
+    margin: 0;
+    height: 1;
+}
+
+#description {
+    background: transparent;
+    color: grey;
+    padding: 0;
+    margin: 0;
+    height: 1;
+}
+
+Rule {
+    background: transparent;
+    color: grey;
+    margin: 0;
+    padding: 0;
+}
+
+Rule.bash-mode {
+    color: #cc6666;
+}
+
+#suggestions {
+    background: transparent;
+    margin-bottom: 1;
+    height: auto;
+    display: none;
+}
+
+.suggestion {
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    height: 1;
+    color: grey;
+}
+
+.suggestion.selected {
+    color: white;
+}
+
+#input-row {
+    background: transparent;
+    height: 1;
+    padding: 0;
+    margin: 0;
+}
+
+#prompt {
+    background: transparent;
+    color: white;
+    width: auto;
+    height: 1;
+    padding: 0;
+    margin: 0;
+}
+
+#prompt.chat-mode {
+    color: #87ceeb;
+}
+
+Input {
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+    height: 1;
+    color: white;
+}
+
+Input:focus {
+    border: none;
+}
+
+Input > .input--cursor {
+    background: white;
+    color: black;
+}
+
+Input > .input--suggestion {
+    color: #555555;
+}
+
+#messages {
+    background: transparent;
+    padding: 0 0 2 0;
+    margin: 0;
+    height: 1fr;
+    max-height: 100%;
+    overflow-y: auto;
+    scrollbar-size-vertical: 1;
+    scrollbar-color: grey 50%;
+    scrollbar-color-active: white;
+    scrollbar-background: transparent;
+
+    &:inline {
+        height: auto;
+    }
+}
+
+.message {
+    background: white 20%;
+    color: white;
+    padding: 0;
+    margin: 0 0 1 0;
+    height: 1;
+}
+
+.output {
+    background: transparent;
+    color: white;
+    padding: 0;
+    margin: 0;
+    height: auto;
+}
+
+.output.error {
+    color: red;
+}
+
+#context-panel {
+    background: transparent;
+    min-height: 2;
+    height: auto;
+}
+
+#hint {
+    background: transparent;
+    color: grey;
+    padding: 0;
+    margin: 0;
+    height: 1;
+    display: none;
+}
+
+#hint.bash-mode {
+    color: #cc6666;
+}
+
+#command-help {
+    background: transparent;
+    color: grey;
+    margin-bottom: 1;
+    display: none;
+}
