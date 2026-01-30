@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.28.1 (2026-01-30)
+
+### Fix
+
+- passing css to tui run (#31)
+
 ## 0.28.0 (2026-01-30)
 
 ### Feat
