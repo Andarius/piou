@@ -273,6 +273,8 @@ class CommandGroup:
         if _all_options & {"-h", "--help"}:
             raise ShowHelpError(group=command_group or self, parent_args=parent_args, command=command)
         # Checks if TUI mode was requested
+        if "--tui-inline" in _all_options:
+            raise ShowTuiError(inline=True)
         if "--tui" in _all_options:
             raise ShowTuiError()
 
@@ -355,4 +357,5 @@ class ShowHelpError(Exception):
 class ShowTuiError(Exception):
     """Exception raised to run TUI mode."""
 
-    pass
+    def __init__(self, inline: bool = False):
+        self.inline = inline

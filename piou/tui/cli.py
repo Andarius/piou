@@ -66,10 +66,14 @@ class TuiCli:
             on_ready=self.cli._on_tui_ready,
         )
 
-    def run(self, *args: str) -> None:
-        """Run the TUI app, optionally pre-filling the input field with formatted args."""
+    def get_app(self, initial_input: str | None = None):
+        """Create and return a TuiApp instance."""
         from .app import TuiApp
 
+        return TuiApp(state=self.state, initial_input=initial_input)
+
+    def run(self, *args: str) -> None:
+        """Run the TUI app, optionally pre-filling the input field with formatted args."""
         initial_input = None
         if args:
             cmd_name = args[0]
@@ -78,4 +82,4 @@ class TuiCli:
                 initial_input = f"/{cmd_name} {shlex.join(cmd_args)}"
             else:
                 initial_input = f"/{cmd_name}"
-        return TuiApp(state=self.state, initial_input=initial_input).run(inline=self.inline, loop=self.loop)
+        return self.get_app(initial_input=initial_input).run(inline=self.inline, loop=self.loop)

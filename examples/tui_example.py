@@ -13,7 +13,7 @@ from piou.tui import TuiContext, TuiOption, get_tui_context
 cli = Cli(description="Interactive CLI Demo", tui=True)
 
 
-@cli.on_tui_ready
+@cli.tui_on_ready
 def processor():
     """Processor that runs before each command to demonstrate TUI notifications."""
     ctx = get_tui_context()

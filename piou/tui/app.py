@@ -21,8 +21,7 @@ except ImportError as e:
     raise ImportError("TUI mode requires textual. Install piou[tui] or 'textual' package.") from e
 
 from .context import TuiContext, set_tui_context
-from .suggester import CommandSuggester
-from .suggestions import get_command_for_path, get_command_suggestions, get_subcommand_suggestions
+from .suggester import CommandSuggester, get_command_for_path, get_command_suggestions, get_subcommand_suggestions
 from .utils import get_command_help
 
 
@@ -358,15 +357,12 @@ class TuiApp(App):
     def _add_message(self, content: str | Text | Widget, classes: str | None = None) -> None:
         """Add a message to the messages area and scroll to bottom."""
         messages = self.query_one("#messages", Vertical)
-        if isinstance(content, Widget):
-            messages.mount(content)
-        else:
-            messages.mount(Static(content, classes=classes))
-        # """Scroll to the bottom of the messages area."""
+        _content = content if isinstance(content, Widget) else Static(content, classes=classes)
+        # Scroll to the bottom of the messages area.
+        messages.mount(_content)
         if self.is_inline:
             self.call_after_refresh(self.screen.scroll_end, animate=False)
         else:
-            messages = self.query_one("#messages", Vertical)
             self.call_after_refresh(messages.scroll_end, animate=False)
 
     def clear_input(self) -> None:

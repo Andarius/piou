@@ -67,22 +67,10 @@ class Cli:
             args = []
 
         if self.tui:
-            self.run_tui(*args)
+            self.tui_run(*args)
             return
 
         self.run_with_args(*args)
-
-    def run_tui(self, *args: str):
-        """Run the CLI in interactive TUI mode. Requires piou[tui]."""
-        try:
-            from .tui import TuiCli
-        except ImportError:
-            self.formatter.print_error("TUI mode requires textual. Install piou\\[tui] or 'textual' package.")
-            sys.exit(1)
-
-        _inline = os.getenv("PIOU_TUI_INLINE", "0") == "1"
-
-        TuiCli(self, inline=_inline).run(*args)
 
     def run_with_args(self, *args):
         """Run the CLI application with the given arguments."""
@@ -94,8 +82,8 @@ class Cli:
             sys.exit(1)
         except ShowHelpError as e:
             self.formatter.print_help(group=e.group, command=e.command, parent_args=e.parent_args)
-        except ShowTuiError:
-            self.run_tui()
+        except ShowTuiError as e:
+            self.tui_run(inline=e.inline)
         except KeywordParamNotFoundError as e:
             if not e.cmd:
                 raise
@@ -154,11 +142,6 @@ class Cli:
         """Decorator to mark a function as a processor for options"""
         return self._group.processor()
 
-    def on_tui_ready(self, fn: Callable[[], None]) -> Callable[[], None]:
-        """Decorator to register a callback when the TUI is ready."""
-        self._on_tui_ready = fn
-        return fn
-
     def add_option(self, *args, help: str | None = None, data_type: Any = bool, default: Any = False):
         """Add an option to the CLI application."""
         self._group.add_option(*args, help=help, data_type=data_type, default=default)
@@ -191,3 +174,31 @@ class Cli:
         )
         self.add_command_group(group)
         return group
+
+    # TUI methods
+
+    def tui_on_ready(self, fn: Callable[[], None]) -> Callable[[], None]:
+        """Decorator to register a callback when the TUI is ready."""
+        self._on_tui_ready = fn
+        return fn
+
+    def tui_cli(self, inline: bool | None = None):
+        """Create and return a TuiCli instance."""
+        from .tui import TuiCli
+
+        _inline = inline if inline is not None else os.getenv("PIOU_TUI_INLINE", "0") == "1"
+        return TuiCli(self, inline=_inline)
+
+    def tui_app(self, initial_input: str | None = None):
+        """Create and return a TuiApp instance. Shortcut for tui_cli().get_app()."""
+        return self.tui_cli().get_app(initial_input=initial_input)
+
+    def tui_run(self, *args: str, inline: bool | None = None):
+        """Run the CLI in interactive TUI mode. Requires piou[tui]."""
+        try:
+            tui = self.tui_cli(inline=inline)
+        except ImportError:
+            self.formatter.print_error("TUI mode requires textual. Install piou\\[tui] or 'textual' package.")
+            sys.exit(1)
+
+        tui.run(*args)
