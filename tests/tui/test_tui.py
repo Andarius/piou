@@ -690,8 +690,9 @@ class TestCommandSuggester:
     @pytest.mark.parametrize(
         "query,expected_paths",
         [
-            pytest.param("", ["/help", "/greet", "/hello", "/noargs", "/stats"], id="cmd-empty"),
+            pytest.param("", ["/help", "/tui-reload", "/greet", "/hello", "/noargs", "/stats"], id="cmd-empty"),
             pytest.param("hel", ["/help", "/hello"], id="cmd-partial"),
+            pytest.param("tui", ["/tui-reload"], id="cmd-tui-reload"),
             pytest.param("hello", ["/hello"], id="cmd-exact"),
             pytest.param("stats", ["/stats"], id="cmd-group"),
             pytest.param("xyz", [], id="cmd-no-match"),

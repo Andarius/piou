@@ -52,11 +52,6 @@ class TuiContext:
 
         In TUI mode, displays a toast notification.
         In CLI mode, this is a no-op.
-
-        Args:
-            message: The notification message
-            title: Optional title for the notification
-            severity: One of "information", "warning", or "error"
         """
         if self.tui is not None:
             self.tui.notify(message, title=title, severity=severity)

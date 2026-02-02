@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from .cli import TuiState
 
 from ..command import Command
+from .watcher import Watcher
 
 try:
     from textual.app import App, ComposeResult
@@ -70,10 +71,12 @@ class TuiApp(App):
         initial_input: str | None = None,
         css: str | None = None,
         css_path: CSSPathType | None = None,
+        dev: bool = False,
     ):
         super().__init__(ansi_color=ansi_color, css_path=css_path)
         self.state = state
         self.initial_input = initial_input
+        self.dev = dev
         if css:
             self.stylesheet.add_source(css, read_from=("<custom>", ""), is_default_css=False)
 
@@ -87,6 +90,12 @@ class TuiApp(App):
         self.current_suggestions: list[str] = []
         self.suppress_input_change = False
         self.exit_pending = False
+        self._last_help_path: str | None = None
+
+        # Dev mode: file watching
+        self._watcher = Watcher(state.group, on_reload=state.on_reload)
+        if dev:
+            self._watcher.start()
 
     @property
     def runner(self):
@@ -102,6 +111,27 @@ class TuiApp(App):
     def input_borrowed(self) -> bool:
         """True when a command is awaiting user input."""
         return self.runner.input_borrowed
+
+    # Dev mode: file watching
+
+    def _toggle_reload(self) -> None:
+        """Toggle reload mode on/off."""
+        self.dev = not self.dev
+        if self.dev:
+            self._watcher.start()
+            self.run_worker(self._watch_loop, exclusive=True)
+            self.notify("Reload enabled", severity="information")
+        else:
+            self._watcher.stop()
+            self.notify("Reload disabled", severity="information")
+
+    async def _watch_loop(self) -> None:
+        """Run the file watcher and handle events."""
+        async for error in self._watcher.watch():
+            if error:
+                self.notify(error, severity="error")
+            else:
+                self.notify("Code reloaded", severity="information")
 
     async def action_quit(self) -> None:
         """Save history and quit."""
@@ -159,9 +189,13 @@ class TuiApp(App):
             on_error=self._on_process_error,
         )
         self._notify_history_error()
+        if self.dev:
+            self.run_worker(self._watch_loop, exclusive=True)
 
     def on_ready(self) -> None:
         """Called when the app is fully ready."""
+        if self.dev:
+            self.notify("Reload enabled", severity="information")
         if self.state.on_ready:
             self.state.on_ready()
 
@@ -192,18 +226,29 @@ class TuiApp(App):
             self._update_command_help(None)
         elif value.startswith("/"):
             self._set_hint(None)
-            query = value[1:].lower()
+            # Extract command path (before first space) and any arguments
+            parts = value[1:].split(None, 1)
+            cmd_path = parts[0].lower() if parts else ""
+            has_args = len(parts) > 1
 
-            if ":" in query:
-                suggestions = get_subcommand_suggestions(self.state.group, query)
-                self._display_suggestions(suggestions, suggestions_widget, width=20)
-            else:
-                suggestions = get_command_suggestions(self.state.commands, query)
-                self._display_suggestions(suggestions, suggestions_widget, width=15)
+            # Only show suggestions if still typing the command name (no args yet)
+            if not has_args:
+                if ":" in cmd_path:
+                    suggestions = get_subcommand_suggestions(self.state.group, cmd_path)
+                    self._display_suggestions(suggestions, suggestions_widget, width=20)
+                else:
+                    suggestions = get_command_suggestions(self.state.commands, cmd_path)
+                    self._display_suggestions(suggestions, suggestions_widget, width=15)
 
-            if self.current_suggestions:
-                self.suggestion_index = 0
-                suggestions_widget.display = True
+                if self.current_suggestions:
+                    self.suggestion_index = 0
+                    suggestions_widget.display = True
+
+            # Always show help for the resolved command
+            cmd_for_help = f"/{cmd_path}"
+            if get_command_for_path(self.state.group, cmd_path):
+                self._update_command_help(cmd_for_help)
+            elif self.current_suggestions:
                 self._update_command_help(self.current_suggestions[0])
             else:
                 self._update_command_help(None)
@@ -309,6 +354,11 @@ class TuiApp(App):
         self._update_command_help(None)
         self._set_hint(None)
 
+        # Handle built-in TUI commands
+        if value.lower() == "/tui-reload":
+            self._toggle_reload()
+            return
+
         if value.startswith("/") or value.startswith("!"):
             self.runner.queue_command(value)
             if self.runner.has_pending_commands():
@@ -381,6 +431,11 @@ class TuiApp(App):
 
     def _update_command_help(self, cmd_path: str | None) -> None:
         """Update the command help widget based on selected command."""
+        # Skip if path unchanged (avoid redundant widget updates)
+        if cmd_path == self._last_help_path:
+            return
+        self._last_help_path = cmd_path
+
         help_widget = self.query_one("#command-help", Static)
 
         if cmd_path is None or cmd_path == "/help":
@@ -394,7 +449,7 @@ class TuiApp(App):
             help_widget.display = False
             return
 
-        help_text = get_command_help(cmd)
+        help_text = get_command_help(cmd, cmd_path)
         help_widget.update(help_text)
         help_widget.display = True
 

@@ -273,10 +273,13 @@ class CommandGroup:
         if _all_options & {"-h", "--help"}:
             raise ShowHelpError(group=command_group or self, parent_args=parent_args, command=command)
         # Checks if TUI mode was requested
+        _is_dev = "--tui-reload" in _all_options
         if "--tui-inline" in _all_options:
-            raise ShowTuiError(inline=True)
+            raise ShowTuiError(inline=True, dev=_is_dev)
         if "--tui" in _all_options:
-            raise ShowTuiError()
+            raise ShowTuiError(dev=_is_dev)
+        if _is_dev:
+            raise ShowTuiError(dev=True)
 
         if not command:
             # When cmd is None (no valid command found), try to find the first
@@ -357,5 +360,6 @@ class ShowHelpError(Exception):
 class ShowTuiError(Exception):
     """Exception raised to run TUI mode."""
 
-    def __init__(self, inline: bool = False):
+    def __init__(self, inline: bool = False, dev: bool = False):
         self.inline = inline
+        self.dev = dev

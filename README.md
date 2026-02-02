@@ -103,6 +103,9 @@ This provides a rich terminal experience with command suggestions, history, and 
 
 ```bash
 pip install piou[tui]
+
+# With auto-reload support for development
+pip install piou[tui-reload]
 ```
 
 ### Usage
@@ -146,8 +149,39 @@ PIOU_TUI=1 python my_cli.py
   - `Up/Down` - Navigate suggestions or history
   - `Ctrl+C` - Clear input (press twice to exit)
   - `Escape` - Quit
+- **Dev mode**: Auto-reload commands when source files change (see below)
 
 <img alt="TUI Demo" src="https://github.com/Andarius/piou/raw/master/docs/static/tui-demo.gif" width="600"/>
+
+### Dev Mode with Auto-Reload
+
+For faster development iteration, enable dev mode to automatically reload your commands when source files change:
+
+```bash
+pip install piou[tui-reload]
+```
+
+Then use the `--tui-reload` flag:
+
+```bash
+python my_cli.py --tui-reload
+```
+
+Or via environment variable:
+
+```bash
+PIOU_TUI_DEV=1 python my_cli.py --tui
+```
+
+When enabled, Piou watches your command source files and hot-reloads them on save. You can also toggle reload mode at runtime with the `/tui-reload` command.
+
+To run custom code after each reload (e.g., refresh cached data), use the `@cli.tui_on_reload` decorator:
+
+```python
+@cli.tui_on_reload
+def on_reload():
+    print('Code reloaded!')
+```
 
 ### Advanced Example: HTTP Benchmark
 
