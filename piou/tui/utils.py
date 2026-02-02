@@ -103,6 +103,8 @@ def get_command_help(cmd: Command | CommandGroup, path: str = "") -> Text:
     round-trip).
     """
     display_name = path.lstrip("/") if path else cmd.name
+    if not display_name:
+        raise ValueError("Cannot generate help for command without a name")
 
     if isinstance(cmd, Command):
         return _build_command_help(cmd, display_name)

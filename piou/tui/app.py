@@ -90,6 +90,7 @@ class TuiApp(App):
         self.current_suggestions: list[str] = []
         self.suppress_input_change = False
         self.exit_pending = False
+        # Cache last help path to skip redundant widget updates
         self._last_help_path: str | None = None
 
         # Dev mode: file watching
