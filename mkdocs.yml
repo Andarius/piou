@@ -43,6 +43,7 @@ nav:
   - Introduction: index.md
   - Usage:
       - Getting Started: getting-started.md
+      - Option Reference: options.md
       - Features: features.md
       - TUI Mode: tui.md
       - Advanced: advanced.md
