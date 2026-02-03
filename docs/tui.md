@@ -49,7 +49,7 @@ Once in TUI mode, you interact with your CLI through an input prompt:
 
 - **Commands start with `/`** - Type `/hello` to run the `hello` command
 - **Arguments follow the command** - `/hello World --loud`
-- **Subcommands use `:`** - `/stats:uploads` runs the `uploads` subcommand of `stats`
+- **Subcommands use `:`** - `/stats:` shows subcommands, `/stats:up` filters them
 
 ### Keyboard Shortcuts
 
@@ -70,16 +70,6 @@ As you type, suggestions appear below the input:
 3. Use `Up/Down` arrows to select
 4. Press `Tab` to accept and see argument hints
 
-### Subcommand Navigation
-
-For nested commands, use `:` to navigate:
-
-```
-/stats:        → shows subcommands of stats
-/stats:up      → filters to subcommands starting with "up"
-/stats:uploads → runs the uploads subcommand
-```
-
 ### Command History
 
 Your command history is persisted to `~/.{cli_name}_history`. Use `Up/Down` arrows when the suggestion list is empty to navigate through previous commands.
@@ -93,7 +83,7 @@ cli = Cli(description="Interactive CLI Demo", tui=True)
 
 @cli.command(cmd="hello", help="Say hello to someone")
 def hello(
-s    name: str = Option(help="Name to greet"),
+    name: str = Option(help="Name to greet"),
     loud: bool = Option(False, "-l", "--loud", help="Shout the greeting"),
 ):
     message = f"Hello, {name}!"
@@ -142,6 +132,30 @@ You can run shell commands directly by prefixing with `!`:
 > !ls -la
 > !git status
 > !echo "Hello from shell"
+```
+
+## Widget Layout
+
+The TUI is composed of the following Textual widgets:
+
+```
+┌──────────────────────────────────┐
+│ #name                            │
+│ #description (optional)          │ ← scrollable
+│ #messages (Vertical)             │
+│   ...                            │
+├──────────────────────────────────┤
+│ #status-above (hidden by default)│
+│ #rule-above                      │
+│ #input-row (Horizontal)          │
+│   #prompt  Input                 │
+│ #rule-below                      │
+├──────────────────────────────────┤
+│ #context-panel (Vertical)        │
+│   #hint                          │
+│   #suggestions (Vertical)        │
+│   #command-help                  │
+└──────────────────────────────────┘
 ```
 
 ## TuiContext
