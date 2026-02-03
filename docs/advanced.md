@@ -97,6 +97,13 @@ cli = Cli(formatter=RichFormatter(
 - `show_default` - Show default values in help output
 - `use_markdown` - Parse descriptions as Markdown
 - `code_theme` - Pygments theme for code blocks (see [Pygments styles](https://pygments.org/styles/))
+- `use_rich_traceback` - Use Rich's traceback formatting for exceptions (default: `False`)
+
+For convenience, you can enable Rich tracebacks directly on the `Cli` class:
+
+```python
+cli = Cli(use_rich_traceback=True)
+```
 
 ### Raw Formatter (Plain Text)
 

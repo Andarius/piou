@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Feat
+
+- add `use_rich_traceback` option to `Cli` for easy Rich traceback setup
+- `Option()` now defaults to required (`...`)
+- add `--flag/--no-flag` syntax for boolean options
+
 ## 0.28.4 (2026-01-30)
 
 ### Fix

@@ -13,16 +13,17 @@ cli = Cli(description='A CLI tool')
 
 @cli.command(cmd='foo', help='Run foo command')
 def foo_main(
-        foo1: int = Option(..., help='Foo arguments'),
-        foo2: str = Option(..., '-f', '--foo2', help='Foo2 arguments'),
+        foo1: int = Option(help='Foo arguments'),
+        foo2: str = Option('-f', '--foo2', help='Foo2 arguments'),
         foo3: str | None = Option(None, '-g', '--foo3', help='Foo3 arguments'),
 ):
     pass
 ```
 
 In this case:
-- `foo1` is a **positional** argument.
-- `foo2` and `foo3` are **keyword** arguments (flags).
+- `foo1` is a required **positional** argument (no keyword flags, default is `...`).
+- `foo2` is a required **keyword** argument (has flags, default is `...`).
+- `foo3` is an optional **keyword** argument (has flags, default is `None`).
 
 ### Global Options
 

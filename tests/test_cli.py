@@ -1416,3 +1416,28 @@ class TestNestedCommandGroup:
         # options_sorted should exist and return same as options
         assert hasattr(group, "options_sorted")
         assert group.options_sorted == group.options
+
+
+@pytest.mark.parametrize(
+    "args, expected_verbose",
+    [
+        pytest.param(["test"], False, id="default-false"),
+        pytest.param(["test", "--verbose"], True, id="positive-flag"),
+        pytest.param(["test", "--no-verbose"], False, id="negative-flag"),
+        pytest.param(["test", "-v"], True, id="short-flag"),
+    ],
+)
+def test_negative_flag_option(args, expected_verbose):
+    """Test that --flag/--no-flag syntax works for boolean options."""
+    from piou import Cli, Option
+
+    result = {}
+
+    cli = Cli()
+
+    @cli.command("test")
+    def test_cmd(verbose: bool = Option(False, "-v", "--verbose/--no-verbose")):
+        result["verbose"] = verbose
+
+    cli.run_with_args(*args)
+    assert result["verbose"] == expected_verbose
