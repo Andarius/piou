@@ -21,6 +21,9 @@ def fmt_option(option: CommandOption, show_full: bool = False, color: str = "whi
         return f"[{color}]<{option.name}>[/{color}]"
     elif show_full:
         first_arg, *other_args = option.keyword_args
+        # Show --flag/--no-flag syntax for boolean flags with negative_flag
+        if option.negative_flag:
+            first_arg = f"{first_arg}/{option.negative_flag}"
         required = f"[{color}]*[/{color}]" if option.is_required else ""
         if other_args:
             other_args = ", ".join(other_args)
@@ -28,7 +31,11 @@ def fmt_option(option: CommandOption, show_full: bool = False, color: str = "whi
         else:
             return f"[{color}]{first_arg}[/{color}]{required}"
     else:
-        return "[" + sorted(option.keyword_args)[-1] + "]"
+        # Show --flag/--no-flag in usage line too
+        flag = sorted(option.keyword_args)[-1]
+        if option.negative_flag:
+            flag = f"{flag}/{option.negative_flag}"
+        return "[" + flag + "]"
 
 
 def fmt_cmd_options(options: list[CommandOption]) -> str:
@@ -106,6 +113,8 @@ class RichFormatter(Formatter):
     """See https://pygments.org/styles/ for a list of styles """
     # Only usable if use_markdown is True
     code_theme: str = "solarized-dark"
+    """Use Rich Traceback for exceptions, otherwise use Python's default traceback."""
+    use_rich_traceback: bool = False
 
     def _color_cmd(self, cmd: str):
         return f"[{self.cmd_color}]{cmd}[/{self.cmd_color}]"
@@ -307,8 +316,13 @@ class RichFormatter(Formatter):
         """Print an exception traceback with Rich formatting.
 
         The hide_internals parameter controls whether piou internal frames are
-        hidden from the traceback.
+        hidden from the traceback. If use_rich_traceback is False, falls back
+        to Python's default traceback formatting.
         """
+        if not self.use_rich_traceback:
+            super().print_exception(exc, hide_internals=hide_internals)
+            return
+
         # Lazy imports: saves ~11ms startup cost
         from rich.traceback import Traceback
 

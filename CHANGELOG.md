@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.29.0 (2026-02-03)
+
+### Feat
+
+- adding negative flags (#37)
+
 ## 0.28.4 (2026-01-30)
 
 ### Fix

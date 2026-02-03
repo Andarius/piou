@@ -20,8 +20,8 @@ cli = Cli(description='A CLI tool')
 
 @cli.command(cmd='foo', help='Run foo command')
 def foo_main(
-        bar: int = Option(..., help='Bar positional argument (required)'),
-        baz: str = Option(..., '-b', '--baz', help='Baz keyword argument (required)'),
+        bar: int = Option(help='Bar positional argument (required)'),
+        baz: str = Option('-b', '--baz', help='Baz keyword argument (required)'),
         foo: str | None = Option(None, '--foo', help='Foo keyword argument'),
 ):
     """

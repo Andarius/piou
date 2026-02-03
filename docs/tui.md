@@ -93,7 +93,7 @@ cli = Cli(description="Interactive CLI Demo", tui=True)
 
 @cli.command(cmd="hello", help="Say hello to someone")
 def hello(
-    name: str = Option(..., help="Name to greet"),
+s    name: str = Option(help="Name to greet"),
     loud: bool = Option(False, "-l", "--loud", help="Shout the greeting"),
 ):
     message = f"Hello, {name}!"
@@ -155,7 +155,7 @@ from piou.tui import TuiContext, TuiOption
 cli = Cli(description="My CLI", tui=True)
 
 @cli.command(cmd="greet")
-def greet(name: str = Option(...), ctx: TuiContext = TuiOption()):
+def greet(name: str = Option(), ctx: TuiContext = TuiOption()):
     ctx.notify(f"Hello, {name}!", title="Greeting")
 ```
 
