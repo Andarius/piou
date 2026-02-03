@@ -33,6 +33,7 @@ class TuiState:
     history: History
     runner: CommandRunner
     on_ready: Callable[[], None] | None = None
+    on_reload: Callable[[], None] | None = None
 
 
 @dataclass
@@ -46,6 +47,8 @@ class TuiCli:
     """Path to history file. Defaults to ~/.{cli_name}_history."""
     loop: asyncio.AbstractEventLoop | None = None
     """Event loop to run the TUI on (if any)."""
+    dev: bool = False
+    """Enable dev mode with auto-reload on file changes."""
 
     # Initialized in __post_init__
     state: TuiState = field(init=False)
@@ -66,6 +69,7 @@ class TuiCli:
                 hide_internal_errors=self.cli.hide_internal_errors,
             ),
             on_ready=self.cli._on_tui_ready,
+            on_reload=self.cli._on_tui_reload,
         )
 
     def get_app(
@@ -77,7 +81,7 @@ class TuiCli:
         """Create and return a TuiApp instance with optional custom CSS."""
         from .app import TuiApp
 
-        return TuiApp(state=self.state, initial_input=initial_input, css=css, css_path=css_path)
+        return TuiApp(state=self.state, initial_input=initial_input, css=css, css_path=css_path, dev=self.dev)
 
     def run(
         self,

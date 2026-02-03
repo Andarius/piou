@@ -1,14 +1,11 @@
 from types import NoneType, UnionType
 from typing import Union, get_args, get_origin
 
-from rich.console import Console
 from rich.text import Text
 
 from ..command import Command, CommandGroup
 
 __all__ = ("get_command_help",)
-
-_RENDER_CONSOLE = Console(force_terminal=True, markup=True, highlight=False)
 
 
 def _format_type_name(t: type) -> str:
@@ -22,76 +19,93 @@ def _format_type_name(t: type) -> str:
     return getattr(t, "__name__", str(t))
 
 
-def get_command_help(cmd: Command | CommandGroup, console: Console = _RENDER_CONSOLE) -> Text:
+def _build_command_help(cmd: Command, display_name: str) -> Text:
+    """Build help text for a Command."""
+    text = Text()
+
+    # Description (from docstring)
+    if cmd.description:
+        text.append(cmd.description)
+        text.append("\n\n")
+
+    # Usage line
+    args_parts = []
+    for opt in cmd.positional_args:
+        args_parts.append(f"<{opt.name}>")
+    for opt in cmd.keyword_args:
+        arg_name = sorted(opt.keyword_args)[-1]
+        if opt.is_required:
+            args_parts.append(f"{arg_name} <value>")
+        else:
+            args_parts.append(f"[{arg_name}]")
+
+    text.append("Usage:", style="bold")
+    if args_parts:
+        text.append(f" /{display_name} {' '.join(args_parts)}")
+    else:
+        text.append(f" /{display_name}")
+
+    # Arguments section
+    if cmd.positional_args:
+        text.append("\n\n")
+        text.append("Arguments:", style="bold")
+        for opt in cmd.positional_args:
+            type_name = _format_type_name(opt.data_type)
+            text.append("\n  ")
+            text.append(f"<{opt.name}>", style="cyan")
+            text.append(f" ({type_name})")
+            if opt.help:
+                text.append(f" - {opt.help}")
+
+    # Options section
+    if cmd.keyword_args:
+        text.append("\n\n")
+        text.append("Options:", style="bold")
+        for opt in cmd.keyword_args:
+            arg_display = ", ".join(sorted(opt.keyword_args))
+            type_name = _format_type_name(opt.data_type)
+            text.append("\n  ")
+            text.append(arg_display, style="cyan")
+            text.append(f" ({type_name})")
+            if opt.is_required:
+                text.append(" *required", style="red")
+            elif opt.default is not None:
+                text.append(f" (default: {opt.default})")
+            if opt.help:
+                text.append(f" - {opt.help}")
+
+    return text
+
+
+def _build_group_help(group: CommandGroup, display_name: str) -> Text:
+    """Build help text for a CommandGroup."""
+    text = Text()
+
+    text.append("Usage:", style="bold")
+    text.append(f" /{display_name}:<subcommand>")
+
+    if group.commands:
+        text.append("\n\n")
+        text.append("Subcommands:", style="bold")
+        for subcmd in group.commands.values():
+            text.append("\n  ")
+            text.append(subcmd.name, style="cyan")
+            if subcmd.help:
+                text.append(f" - {subcmd.help}")
+
+    return text
+
+
+def get_command_help(cmd: Command | CommandGroup, path: str = "") -> Text:
     """Format command help for display in the help widget.
 
-    Example output for a Command:
-
-    ```
-    Usage: /greet <name> [--loud]
-
-    Arguments:
-      <name> (str) - Name to greet
-
-    Options:
-      -l, --loud (bool) (default: False) - Shout the greeting
-    ```
-
-    Example output for a CommandGroup:
-
-    ```
-    Usage: /stats:<subcommand>
-
-    Subcommands:
-      uploads - Show upload statistics
-      downloads - Show download statistics
-    ```
+    Builds Rich Text directly for performance (avoids console.print + from_ansi
+    round-trip).
     """
-    lines: list[str] = []
+    display_name = path.lstrip("/") if path else cmd.name
+    if not display_name:
+        raise ValueError("Cannot generate help for command without a name")
 
     if isinstance(cmd, Command):
-        args_parts = []
-        for opt in cmd.positional_args:
-            args_parts.append(f"<{opt.name}>")
-        for opt in cmd.keyword_args:
-            arg_name = sorted(opt.keyword_args)[-1]
-            if opt.is_required:
-                args_parts.append(f"{arg_name} <value>")
-            else:
-                args_parts.append(f"[{arg_name}]")
-        if args_parts:
-            lines.append(f"[bold]Usage:[/bold] /{cmd.name} {' '.join(args_parts)}")
-        else:
-            lines.append(f"[bold]Usage:[/bold] /{cmd.name}")
-
-        if cmd.positional_args:
-            lines.append("")
-            lines.append("[bold]Arguments:[/bold]")
-            for opt in cmd.positional_args:
-                type_name = _format_type_name(opt.data_type)
-                help_text = f" - {opt.help}" if opt.help else ""
-                lines.append(f"  [cyan]<{opt.name}>[/cyan] ({type_name}){help_text}")
-
-        if cmd.keyword_args:
-            lines.append("")
-            lines.append("[bold]Options:[/bold]")
-            for opt in cmd.keyword_args:
-                arg_display = ", ".join(sorted(opt.keyword_args))
-                type_name = _format_type_name(opt.data_type)
-                required = " [red]*required[/red]" if opt.is_required else ""
-                default = f" (default: {opt.default})" if not opt.is_required and opt.default is not None else ""
-                help_text = f" - {opt.help}" if opt.help else ""
-                lines.append(f"  [cyan]{arg_display}[/cyan] ({type_name}){required}{default}{help_text}")
-    else:
-        lines.append(f"[bold]Usage:[/bold] /{cmd.name}:<subcommand>")
-        if cmd.commands:
-            lines.append("")
-            lines.append("[bold]Subcommands:[/bold]")
-            for subcmd in cmd.commands.values():
-                help_text = f" - {subcmd.help}" if subcmd.help else ""
-                lines.append(f"  [cyan]{subcmd.name}[/cyan]{help_text}")
-
-    with console.capture() as capture:
-        for line in lines:
-            console.print(line)
-    return Text.from_ansi(capture.get().rstrip())
+        return _build_command_help(cmd, display_name)
+    return _build_group_help(cmd, display_name)

@@ -40,6 +40,8 @@ class Cli:
     """Run in interactive TUI mode instead of CLI mode. Requires piou[tui]."""
     _on_tui_ready: Callable[[], None] | None = field(default=None, repr=False)
     """Internal: Callback called when the TUI is ready."""
+    _on_tui_reload: Callable[[], None] | None = field(default=None, repr=False)
+    """Internal: Callback called when code is reloaded in dev mode."""
     hide_internal_errors: bool = True
     """Hide piou internal frames from exception tracebacks. Set to False to show full tracebacks."""
     use_rich_traceback: bool | None = None
@@ -88,7 +90,7 @@ class Cli:
         except ShowHelpError as e:
             self.formatter.print_help(group=e.group, command=e.command, parent_args=e.parent_args)
         except ShowTuiError as e:
-            self.tui_run(inline=e.inline)
+            self.tui_run(inline=e.inline, dev=e.dev)
         except KeywordParamNotFoundError as e:
             if not e.cmd:
                 raise
@@ -187,34 +189,50 @@ class Cli:
         self._on_tui_ready = fn
         return fn
 
-    def tui_cli(self, inline: bool | None = None):
+    def tui_on_reload(self, fn: Callable[[], None]) -> Callable[[], None]:
+        """Decorator to register a callback when code is reloaded in dev mode."""
+        self._on_tui_reload = fn
+        return fn
+
+    def tui_cli(self, inline: bool | None = None, dev: bool | None = None):
         """Create and return a TuiCli instance."""
         from .tui import TuiCli
 
         _inline = inline if inline is not None else os.getenv("PIOU_TUI_INLINE", "0") == "1"
-        return TuiCli(self, inline=_inline)
+        _dev = dev if dev is not None else os.getenv("PIOU_TUI_DEV", "0") == "1"
+        return TuiCli(self, inline=_inline, dev=_dev)
 
     def tui_app(
         self,
         initial_input: str | None = None,
         css: str | None = None,
         css_path: str | None = None,
+        dev: bool | None = None,
     ):
         """Create and return a TuiApp instance. Shortcut for tui_cli().get_app()."""
-        return self.tui_cli().get_app(initial_input=initial_input, css=css, css_path=css_path)
+        return self.tui_cli(dev=dev).get_app(initial_input=initial_input, css=css, css_path=css_path)
 
     def tui_run(
         self,
         *args: str,
         inline: bool | None = None,
+        dev: bool | None = None,
         css: str | None = None,
         css_path: str | None = None,
     ):
         """Run the CLI in interactive TUI mode. Requires piou[tui]."""
+        # Filter out TUI-specific flags from args
+        tui_flags = {"--tui", "--tui-inline", "--tui-reload"}
+        filtered_args = [a for a in args if a not in tui_flags]
+
+        # Check for --tui-reload in args to enable dev mode
+        if dev is None and "--tui-reload" in args:
+            dev = True
+
         try:
-            tui = self.tui_cli(inline=inline)
+            tui = self.tui_cli(inline=inline, dev=dev)
         except ImportError:
             self.formatter.print_error("TUI mode requires textual. Install piou\\[tui] or 'textual' package.")
             sys.exit(1)
 
-        tui.run(*args, css=css, css_path=css_path)
+        tui.run(*filtered_args, css=css, css_path=css_path)

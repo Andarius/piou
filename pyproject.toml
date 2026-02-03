@@ -34,13 +34,23 @@ tui = [
     "textual>=0.40.0",
 ]
 
+tui-reload = [
+    "textual>=0.40.0",
+    "watchfiles>=1.0.0",
+]
+
 [dependency-groups]
 tui = [
     "textual>=0.40.0",
 ]
 
-dev = [
+tui-reload = [
     { include-group = "tui" },
+    "watchfiles>=1.0.0",
+]
+
+dev = [
+    { include-group = "tui-reload" },
     "textual-dev>=1.0.0",
     "pyright>=1.1.407",
     "pytest>=8.4.1",

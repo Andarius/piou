@@ -6,6 +6,13 @@ from textual.suggester import Suggester
 
 from ..command import Command, CommandGroup
 
+try:
+    import watchfiles  # noqa: F401
+
+    _WATCHFILES_AVAILABLE = True
+except ImportError:
+    _WATCHFILES_AVAILABLE = False
+
 if TYPE_CHECKING:
     from .app import TuiApp
 
@@ -98,9 +105,11 @@ def get_command_suggestions(
     """
     suggestions: list[tuple[str, str]] = []
 
-    # Add built-in /help command
+    # Add built-in commands
     if query == "" or "help".startswith(query):
         suggestions.append(("/help", "Show available commands"))
+    if _WATCHFILES_AVAILABLE and (query == "" or "tui-reload".startswith(query)):
+        suggestions.append(("/tui-reload", "Toggle auto-reload on file changes"))
 
     # Add CLI commands
     for cmd in commands:
