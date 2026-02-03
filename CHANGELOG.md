@@ -1,14 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.29.1 (2026-02-03)
 
-### Feat
+### Fix
 
-- add TUI auto-reload for development: hot-reload commands when source files change
-  - enable via `--tui-reload` flag or `PIOU_TUI_DEV=1` environment variable
-  - toggle at runtime with `/tui-reload` command
-  - `@cli.tui_on_reload` decorator for custom reload hooks
-  - requires `piou[tui-reload]` extra
+- tui fixes + hot reload (#35)
 
 ## 0.29.0 (2026-02-03)
 
