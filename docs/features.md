@@ -25,6 +25,9 @@ In this case:
 - `foo2` is a required **keyword** argument (has flags, default is `...`).
 - `foo3` is an optional **keyword** argument (has flags, default is `None`).
 
+!!! tip "Optional Ellipsis"
+    `Option()` defaults to required (`...`), so `Option(help='...')` is equivalent to `Option(..., help='...')`.
+
 ### Global Options
 
 You can specify global options that apply to all commands:
