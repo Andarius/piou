@@ -14,7 +14,7 @@ from .exceptions import (
     InvalidValueError,
     CommandError,
 )
-from .formatter import Formatter, get_formatter
+from .formatter import Formatter, get_formatter, RichFormatter
 
 
 @dataclass
@@ -52,8 +52,7 @@ class Cli:
         self._group.propagate_options = self.propagate_options
         self._group.on_cmd_run = self.on_cmd_run
         # Configure Rich traceback if specified and formatter supports it
-        # Using hasattr to avoid importing RichFormatter unnecessarily
-        if self.use_rich_traceback is not None and hasattr(self.formatter, "use_rich_traceback"):
+        if self.use_rich_traceback is not None and isinstance(self.formatter, RichFormatter):
             self.formatter.use_rich_traceback = self.use_rich_traceback
 
     @property
