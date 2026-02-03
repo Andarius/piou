@@ -813,7 +813,7 @@ class TestTuiSnapshots:
             pytest.param([], id="initial"),
             pytest.param(["/"], id="suggestions"),
             pytest.param(["/", "h"], id="filtered"),
-            pytest.param(["/", "down"], id="selection"),
+            pytest.param(["/", "down", "down"], id="selection"),
             pytest.param(["ctrl+c"], id="exit-hint"),
         ],
     )
