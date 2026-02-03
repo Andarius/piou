@@ -91,6 +91,9 @@ def fmt_option_raw(option: CommandOption, show_full: bool = False) -> str:
         return f"<{option.name}>"
     elif show_full:
         first_arg, *other_args = option.keyword_args
+        # Show --flag/--no-flag syntax for boolean flags with negative_flag
+        if option.negative_flag:
+            first_arg = f"{first_arg}/{option.negative_flag}"
         required = "*" if option.is_required else ""
         if other_args:
             other_args_str = ", ".join(other_args)
@@ -98,7 +101,11 @@ def fmt_option_raw(option: CommandOption, show_full: bool = False) -> str:
         else:
             return f"{first_arg}{required}"
     else:
-        return "[" + sorted(option.keyword_args)[-1] + "]"
+        # Show --flag/--no-flag in usage line too
+        flag = sorted(option.keyword_args)[-1]
+        if option.negative_flag:
+            flag = f"{flag}/{option.negative_flag}"
+        return "[" + flag + "]"
 
 
 def fmt_cmd_options_raw(options: list[CommandOption]) -> str:

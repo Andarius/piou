@@ -330,6 +330,9 @@ class CommandOption(Generic[T]):
     case_sensitive: bool = True
     hide_choices: bool = False
 
+    # For boolean flags with --flag/--no-flag syntax
+    negative_flag: str | None = None
+
     # For dynamic derived
     arg_name: str | None = None
 
@@ -340,6 +343,25 @@ class CommandOption(Generic[T]):
     show_first: int | None = None
     show_last: int | None = None
     replacement: str = "*"
+
+    def __post_init__(self):
+        """Parse --flag/--no-flag syntax for boolean options."""
+        # Skip parsing if already parsed (e.g., from dataclasses.replace)
+        if self.negative_flag is not None:
+            return
+        parsed_args = []
+        for arg in self.keyword_args:
+            if "/" in arg and arg.startswith("--"):
+                # Parse --flag/--no-flag syntax
+                parts = arg.split("/")
+                if len(parts) == 2 and parts[1].startswith("--no-"):
+                    parsed_args.append(parts[0])
+                    self.negative_flag = parts[1]
+                else:
+                    parsed_args.append(arg)
+            else:
+                parsed_args.append(arg)
+        self.keyword_args = tuple(parsed_args)
 
     @property
     def data_type(self):
@@ -409,7 +431,7 @@ class CommandOption(Generic[T]):
 
 
 def Option(
-    default: Any,
+    default: Any = ...,
     *keyword_args: str,
     help: str | None = None,
     # Only for type Literal
@@ -470,7 +492,9 @@ def _split_cmd(cmd: str) -> list[str]:
     return cmd_split
 
 
-def get_cmd_args(cmd: str, types: dict[str, Any]) -> tuple[list[str], dict[str, str]]:
+def get_cmd_args(
+    cmd: str, types: dict[str, Any], negative_flags: dict[str, str] | None = None
+) -> tuple[list[str], dict[str, str]]:
     """
     Parse a command string into positional arguments and keyword parameters.
 
@@ -481,9 +505,13 @@ def get_cmd_args(cmd: str, types: dict[str, Any]) -> tuple[list[str], dict[str, 
     The parsing follows these rules:
     - Arguments before the first "-" or "--" flag are treated as positional
     - Boolean-typed flags are set to True when present (no value expected)
+    - Negative flags (--no-flag) are set to False when present
     - Non-boolean flags consume the next argument as their value
     - Multi-value arguments are grouped together as space-separated strings
     - Unknown flags raise KeywordParamNotFoundError
+
+    The negative_flags parameter maps negative flags (e.g., "--no-verbose") to their
+    corresponding positive flag (e.g., "--verbose") for the --flag/--no-flag syntax.
 
     Examples:
         >>> get_cmd_args("file1 --verbose --count 5", {"verbose": bool, "count": int})
@@ -515,6 +543,12 @@ def get_cmd_args(cmd: str, types: dict[str, Any]) -> tuple[list[str], dict[str, 
 
         if is_positional_arg:
             positional_args.append(_arg)
+            continue
+
+        # Check if this is a negative flag (--no-flag)
+        if negative_flags and _arg in negative_flags:
+            positive_flag = negative_flags[_arg]
+            keyword_params[positive_flag] = False
             continue
 
         # Converts keyword argument format (--my-param) to parameter name (my_param)
@@ -671,9 +705,14 @@ def convert_args_to_dict(input_args: list[str], options: list[CommandOption]) ->
         >>> convert_args_to_dict(["input.txt"], options)
         {"input_file": "input.txt", "verbose": False, "count": 1}
     """
+    # Build negative_flags mapping: --no-flag -> --flag (the first keyword arg)
+    negative_flags = {
+        opt.negative_flag: opt.keyword_args[0] for opt in options if opt.negative_flag and opt.keyword_args
+    }
     _input_pos_args, _input_keyword_args = get_cmd_args(
         " ".join(f"'{x}'" for x in input_args),
         {name: opt.data_type for opt in options for name in opt.names},
+        negative_flags=negative_flags,
     )
     positional_args, keyword_args = [], {}
     for _arg in options:

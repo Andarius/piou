@@ -42,7 +42,14 @@ def get_usage(
 ):
     """Generate the usage string for a command or command group."""
     parent_args = parent_args or []
-    _global_options = " ".join(["[" + sorted(x.keyword_args)[-1] + "]" for x in global_options])
+
+    def _fmt_flag(opt: CommandOption) -> str:
+        flag = sorted(opt.keyword_args)[-1]
+        if opt.negative_flag:
+            flag = f"{flag}/{opt.negative_flag}"
+        return f"[{flag}]"
+
+    _global_options = " ".join([_fmt_flag(x) for x in global_options])
     _command = None
     if command != "__main__":
         _command = command if command else "<command>"
@@ -72,6 +79,9 @@ def get_options_str(
             other_args = None
         else:
             name, *other_args = _option.keyword_args
+            # Show --flag/--no-flag syntax for boolean flags with negative_flag
+            if _option.negative_flag:
+                name = f"{name}/{_option.negative_flag}"
             other_args = " (" + ", ".join(other_args) + ")" if other_args else ""
 
         lines.append((name, other_args, _option))

@@ -14,7 +14,7 @@ from .exceptions import (
     InvalidValueError,
     CommandError,
 )
-from .formatter import Formatter, get_formatter
+from .formatter import Formatter, get_formatter, RichFormatter
 
 
 @dataclass
@@ -42,6 +42,8 @@ class Cli:
     """Internal: Callback called when the TUI is ready."""
     hide_internal_errors: bool = True
     """Hide piou internal frames from exception tracebacks. Set to False to show full tracebacks."""
+    use_rich_traceback: bool | None = None
+    """Use Rich traceback formatting. If None, uses formatter's default. Only applies to RichFormatter."""
     _group: CommandGroup = field(init=False, default_factory=CommandGroup)
     """The main command group that will contain all the commands and options"""
 
@@ -49,6 +51,9 @@ class Cli:
         self._group.description = clean_multiline(self.description) if self.description else None
         self._group.propagate_options = self.propagate_options
         self._group.on_cmd_run = self.on_cmd_run
+        # Configure Rich traceback if specified and formatter supports it
+        if self.use_rich_traceback is not None and isinstance(self.formatter, RichFormatter):
+            self.formatter.use_rich_traceback = self.use_rich_traceback
 
     @property
     def group(self) -> CommandGroup:

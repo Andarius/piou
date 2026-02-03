@@ -82,6 +82,15 @@ def error_main():
     raise CommandError("An error occurred")
 
 
+@cli.command(cmd="exception", help="Raise an exception to test traceback formatting")
+def exception_main(
+    use_rich: bool = Option(False, "--rich/--no-rich", help="Use Rich traceback formatting"),
+):
+    """Test traceback formatting. Use --rich to see Rich's formatted traceback."""
+    cli.formatter.use_rich_traceback = use_rich  # pyright: ignore[reportAttributeAccessIssue]
+    raise ValueError("Something went wrong!")
+
+
 sub_cmd = cli.add_sub_parser(cmd="sub", help="A sub command", propagate_options=True)
 sub_cmd.add_option("--test", help="Test mode")
 

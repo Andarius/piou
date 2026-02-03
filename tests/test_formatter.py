@@ -791,3 +791,32 @@ class TestFormatterEnvVar:
         cli = Cli()
         expected_cls = Formatter if expected_cls_name == "Formatter" else RichFormatter
         assert type(cli.formatter) is expected_cls
+
+
+@pytest.mark.parametrize(
+    "formatter_cls, use_rich_traceback, hide_internals, use_stderr",
+    [
+        pytest.param("Formatter", None, True, True, id="base-formatter"),
+        pytest.param("RichFormatter", True, True, False, id="rich-traceback-hide-internals"),
+        pytest.param("RichFormatter", True, False, False, id="rich-traceback-show-internals"),
+        pytest.param("RichFormatter", False, True, True, id="fallback-traceback-hide-internals"),
+        pytest.param("RichFormatter", False, False, True, id="fallback-traceback-show-internals"),
+    ],
+)
+def test_print_exception(formatter_cls, use_rich_traceback, hide_internals, use_stderr, capsys):
+    from piou.formatter import Formatter, RichFormatter
+
+    if formatter_cls == "Formatter":
+        formatter = Formatter()
+    else:
+        formatter = RichFormatter(use_rich_traceback=use_rich_traceback)
+
+    try:
+        raise ValueError("test error message")
+    except ValueError as e:
+        formatter.print_exception(e, hide_internals=hide_internals)
+
+    captured = capsys.readouterr()
+    output = captured.err if use_stderr else captured.out
+    assert "ValueError" in output, output
+    assert "test error message" in output, output
