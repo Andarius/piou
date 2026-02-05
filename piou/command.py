@@ -39,6 +39,7 @@ class Command:
     options: list[CommandOption] = field(default_factory=list)
     description: str | None = None
     derived_options: list[CommandDerivedOption] = field(default_factory=list)
+    tui: bool | None = None
 
     @property
     def positional_args(self) -> list[CommandOption]:
@@ -155,7 +156,7 @@ class CommandGroup:
     @property
     def command_names(self) -> set[str]:
         """Returns a set of command names, including both commands and command groups."""
-        return set(self._commands.keys()) | (self._command_groups.keys())
+        return (set(self._commands.keys()) - {"__main__"}) | self._command_groups.keys()
 
     def add_group(self, group: CommandGroup):
         """Adds a sub-command group to the command group."""
@@ -174,17 +175,13 @@ class CommandGroup:
         help: str | None = None,
         description: str | None = None,
         is_main: bool = False,
+        tui: bool | None = None,
     ):
         """Adds a command to the command group."""
 
         cmd_name = "__main__" if is_main else cmd or f.__name__
-        if cmd_name in self.commands:
+        if cmd_name in self._commands or cmd_name in self.command_names:
             raise DuplicatedCommandError(f"Duplicated command found for {cmd_name!r}", cmd_name)
-
-        if cmd_name == "__main__" and self.commands:
-            raise CommandException("Main command cannot be added with other commands")
-        if cmd_name != "__main__" and "__main__" in self.commands:
-            raise CommandException(f"Command {cmd_name!r} cannot be added with main command")
 
         _options, _derived_options = extract_function_info(f)
         self._commands[cmd_name] = Command(
@@ -194,6 +191,7 @@ class CommandGroup:
             derived_options=_derived_options,
             help=help,
             description=description or getdoc(f),
+            tui=tui,
         )
 
     def command(
@@ -202,11 +200,12 @@ class CommandGroup:
         help: str | None = None,
         description: str | None = None,
         is_main: bool = False,
+        tui: bool | None = None,
     ):
         """Decorator to mark a function as a command."""
 
         def _command(f):
-            self.add_command(f, cmd=cmd, help=help, description=description, is_main=is_main)
+            self.add_command(f, cmd=cmd, help=help, description=description, is_main=is_main, tui=tui)
             return f
 
         return _command
@@ -233,19 +232,27 @@ class CommandGroup:
 
         # Collect all global option names from current group and parent args
         global_option_names = set()
+        global_bool_option_names = set()
         for option in self.options:
             global_option_names.update(option.keyword_args)
+            if option.data_type is bool:
+                global_bool_option_names.update(option.keyword_args)
 
         # Add parent global options
         if parent_args:
             for parent_arg in parent_args:
                 for option in parent_arg.options:
                     global_option_names.update(option.keyword_args)
+                    if option.data_type is bool:
+                        global_bool_option_names.update(option.keyword_args)
         # Splits the input arguments into:
         # - cmd: The command name to execute
         # - global_options: Options that apply to the current command group
         # - cmd_options: Options specific to the sub-command
-        cmd, global_options, cmd_options = parse_input_args(args, self.command_names, global_option_names)
+        _parse_commands = self.command_names | ({"__main__"} if "__main__" in self._commands else set())
+        cmd, global_options, cmd_options = parse_input_args(
+            args, _parse_commands, global_option_names, global_bool_option_names
+        )
         # Determines if cmd refers to a sub-command group or a direct command
         command_group = self._command_groups.get(cmd) if cmd else None
         command = (command_group or self)._commands.get(cmd) if cmd else None
@@ -280,6 +287,8 @@ class CommandGroup:
             raise ShowTuiError(dev=_is_dev)
         if _is_dev:
             raise ShowTuiError(dev=True)
+        if command and command.tui is True:
+            raise ShowTuiError()
 
         if not command:
             # When cmd is None (no valid command found), try to find the first

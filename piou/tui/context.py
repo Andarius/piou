@@ -41,6 +41,24 @@ class TuiContext:
         """Return True if a command is currently borrowing user input."""
         return self.tui is not None and self.tui.input_borrowed
 
+    @property
+    def pending_count(self) -> int:
+        """Return the number of commands waiting in the queue."""
+        if self.tui is None:
+            return 0
+        return self.tui.runner.pending_count
+
+    def clear_queue(self) -> int:
+        """Clear all pending commands from the queue. Returns count of cleared commands."""
+        if self.tui is None:
+            return 0
+        return self.tui.runner.clear_queue()
+
+    def set_silent_queue(self, silent: bool) -> None:
+        """Set silent queue mode. When True, queued commands won't be displayed in messages."""
+        if self.tui is not None:
+            self.tui.silent_queue = silent
+
     def notify(
         self,
         message: str,

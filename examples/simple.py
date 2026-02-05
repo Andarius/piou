@@ -3,8 +3,8 @@ from piou import Cli, Option
 cli = Cli(description="A CLI tool")
 
 
-@cli.command(cmd="foo", help="Run foo command")
-def foo_main(
+@cli.main(help="Run default command")
+def main_cmd(
     bar: int = Option(..., help="Bar positional argument (required)"),
     baz: str = Option(..., "-b", "--baz", help="Baz keyword argument (required)"),
     foo: str | None = Option(None, "--foo", help="Foo keyword argument"),
@@ -13,9 +13,24 @@ def foo_main(
     A longer description on what the function is doing.
     You can run it with:
     ```bash
-     python -m examples.simple foo 1 -b baz
+     python -m examples.simple 1 -b baz
     ```
     And you are good to go!
+    """
+    print(f"bar={bar}, baz={baz}, foo={foo}")
+
+
+@cli.command(cmd="foo", help="Run foo command")
+def foo_main(
+    bar: int = Option(..., help="Bar positional argument (required)"),
+    baz: str = Option(..., "-b", "--baz", help="Baz keyword argument (required)"),
+    foo: str | None = Option(None, "--foo", help="Foo keyword argument"),
+):
+    """
+    You can run it with:
+    ```bash
+     python -m examples.simple foo 1 -b baz
+    ```
     """
     print(f"bar={bar}, baz={baz}, foo={foo}")
 

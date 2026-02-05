@@ -52,6 +52,11 @@ class CommandRunner:
         """True when a command is awaiting user input via prompt_input."""
         return self._input_future is not None
 
+    @property
+    def pending_count(self) -> int:
+        """Number of commands waiting in the queue."""
+        return self._command_queue.qsize()
+
     def queue_command(self, value: str) -> None:
         """Add a command to the queue."""
         self._command_queue.put_nowait(value)
@@ -59,6 +64,17 @@ class CommandRunner:
     def has_pending_commands(self) -> bool:
         """True if there are commands waiting in the queue."""
         return self._command_queue.qsize() > 1
+
+    def clear_queue(self) -> int:
+        """Clear all pending commands from the queue. Returns count of cleared commands."""
+        count = 0
+        while not self._command_queue.empty():
+            try:
+                self._command_queue.get_nowait()
+                count += 1
+            except asyncio.QueueEmpty:
+                break
+        return count
 
     def cancel_input(self) -> None:
         """Cancel the current input future if one exists."""

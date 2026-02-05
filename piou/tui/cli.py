@@ -92,7 +92,7 @@ class TuiCli:
         """Run the TUI app, optionally pre-filling the input field with formatted args."""
         initial_input = None
         if args:
-            cmd_name = args[0]
+            cmd_name = args[0].lstrip("/")
             cmd_args = args[1:]
             if cmd_args:
                 initial_input = f"/{cmd_name} {shlex.join(cmd_args)}"

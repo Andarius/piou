@@ -128,6 +128,7 @@ class Cli:
         help: str | None = None,
         description: str | None = None,
         is_main: bool = False,
+        tui: bool | None = None,
     ):
         """
         Decorator to mark a function as a command
@@ -135,15 +136,16 @@ class Cli:
         """
         if is_main and cmd is not None:
             raise ValueError("Main command should not have a command name")
-        return self._group.command(cmd=cmd, help=help, description=description, is_main=is_main)
+        return self._group.command(cmd=cmd, help=help, description=description, is_main=is_main, tui=tui)
 
     def main(
         self,
         help: str | None = None,
         description: str | None = None,
+        tui: bool | None = None,
     ):
         """Decorator to mark a function as the main command"""
-        return self.command(cmd=None, help=help, description=description, is_main=True)
+        return self.command(cmd=None, help=help, description=description, is_main=True, tui=tui)
 
     def processor(self):
         """Decorator to mark a function as a processor for options"""

@@ -22,7 +22,7 @@
 
 ### Fix
 
-- adding support for a cstum 'status-above' content (#33)
+- adding support for a custom 'status-above' content (#33)
 
 ## 0.28.2 (2026-01-30)
 

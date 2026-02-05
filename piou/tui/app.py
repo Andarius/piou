@@ -90,6 +90,7 @@ class TuiApp(App):
         self.current_suggestions: list[str] = []
         self.suppress_input_change = False
         self.exit_pending = False
+        self.silent_queue = False
         # Cache last help path to skip redundant widget updates
         self._last_help_path: str | None = None
 
@@ -181,10 +182,6 @@ class TuiApp(App):
 
     def on_mount(self) -> None:
         """Called when the app is mounted."""
-        if self.initial_input:
-            inp = self.query_one(Input)
-            inp.value = self.initial_input
-            inp.cursor_position = len(inp.value)
         self.runner.start_processing(
             on_success=self._display_output,
             on_error=self._on_process_error,
@@ -199,6 +196,12 @@ class TuiApp(App):
             self.notify("Reload enabled", severity="information")
         if self.state.on_ready:
             self.state.on_ready()
+        # Auto-execute initial command if provided
+        if self.initial_input:
+            inp = self.query_one(Input)
+            self._add_message(f"> {self.initial_input}", CssClass.MESSAGE)
+            inp.value = ""
+            self.runner.queue_command(self.initial_input)
 
     # Input events
 
@@ -341,10 +344,16 @@ class TuiApp(App):
             event.input.value = ""
             return
 
-        self.history.append(value)
+        # Normalize command (strip extra leading slashes)
+        history_value = value
+        if value.startswith("/"):
+            history_value = "/" + value.lstrip("/")
+        self.history.append(history_value)
         self._notify_history_error()
 
-        self._add_message(f"> {value}", CssClass.MESSAGE)
+        # Only display message if not in silent queue mode
+        if not self.silent_queue:
+            self._add_message(f"> {value}", CssClass.MESSAGE)
         event.input.value = ""
 
         suggestions = self.query_one("#suggestions", Vertical)
@@ -362,8 +371,8 @@ class TuiApp(App):
 
         if value.startswith("/") or value.startswith("!"):
             self.runner.queue_command(value)
-            if self.runner.has_pending_commands():
-                self._add_message("(queued)", CssClass.OUTPUT)
+            if self.runner.pending_count > 1:
+                self._add_message(f"({self.runner.pending_count} queued)", CssClass.OUTPUT)
 
     def _handle_ctrl_c(self) -> None:
         """Handle Ctrl+C: cancel running command, clear input, show exit hint, or exit."""

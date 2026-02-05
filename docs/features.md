@@ -60,9 +60,9 @@ async def bar_main():
     pass
 ```
 
-## Without Command (Main)
+## Default Command (Main)
 
-If you want to run a function without specifying a command (like a single-purpose script), use the `@cli.main()` decorator or `is_main=True`.
+Use the `@cli.main()` decorator (or `is_main=True`) to define a default command that runs when no named command is matched.
 
 ```python
 @cli.main()
@@ -72,10 +72,27 @@ def run_main():
 
 Run it directly:
 ```bash
-python -m examples.simple_main -h
+python -m examples.simple -h
 ```
 
-**Note**: You can only have one `main` function in the CLI.
+`@cli.main()` can also coexist with named commands. Named commands always take priority, and unmatched input falls back to the default command:
+
+```python
+cli = Cli(description='My CLI')
+
+@cli.main()
+def default(name: str = Option(...)):
+    print(f'Hello {name}')
+
+@cli.command('greet', help='Greet someone')
+def greet(name: str = Option(..., '--name')):
+    print(f'Greetings, {name}!')
+```
+
+```bash
+python run.py world          # runs default: "Hello world"
+python run.py greet --name a # runs greet: "Greetings, a!"
+```
 
 ## Command Groups / Sub-commands
 
@@ -109,3 +126,28 @@ def processor(verbose: bool = Option(False, '--verbose', help='Increase verbosit
 ```
 
 By default, processed options are consumed. To pass them down to the command functions as well, use `propagate_options=True` when creating the `Cli` or sub-parser.
+
+## Error Handling
+
+### CommandError
+
+Use `CommandError` to display a user-friendly error message and exit with code 1, without showing a traceback.
+
+```python
+from piou import Cli, Option
+from piou.exceptions import CommandError
+
+cli = Cli(description='A CLI tool')
+
+@cli.command(cmd='deploy', help='Deploy the application')
+def deploy_main(
+    env: str = Option(help='Target environment'),
+):
+    if env not in ('staging', 'production'):
+        raise CommandError(f'Unknown environment: {env!r}')
+    ...
+```
+
+When raised inside a command, `CommandError` is caught by `Cli.run()` and the message is printed using the configured formatter — no Python traceback is shown to the user.
+
+<img alt="command error output" src="../static/command-error-output.svg" width="800"/>
