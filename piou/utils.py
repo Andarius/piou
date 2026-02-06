@@ -459,10 +459,17 @@ def Option(
     )
 
 
-def _split_cmd(cmd: str) -> list[str]:
+def _is_list_type(t: Any) -> bool:
+    return t is list or get_origin(t) is list
+
+
+def _split_cmd(cmd: str, types: dict[str, Any] | None = None) -> list[str]:
     """
     Utility to split a string containing arrays like --foo 1 2 3
-    from ['--foo', '1', '2', '3'] to ['--foo', '1 2 3']
+    from ['--foo', '1', '2', '3'] to ['--foo', '1 2 3'].
+
+    When types is provided, only list-typed flags buffer multiple bare args.
+    Single-value flags consume one value then revert to positional mode.
     """
 
     def reset_buff():
@@ -471,19 +478,29 @@ def _split_cmd(cmd: str) -> list[str]:
         buff = []
 
     is_pos_arg = True
-    buff = []
-    cmd_split = []
+    is_list_flag = False
+    buff: list[str] = []
+    cmd_split: list[str] = []
     for arg in shlex.split(cmd):
         if arg.startswith("-"):
             if buff:
                 reset_buff()
             is_pos_arg = False
+            if types is not None:
+                name = keyword_arg_to_name(arg)
+                is_list_flag = name in types and _is_list_type(types[name])
+            else:
+                is_list_flag = True
         else:
             if is_pos_arg:
                 cmd_split.append(arg)
                 continue
             else:
                 buff.append(arg)
+                if not is_list_flag:
+                    reset_buff()
+                    is_pos_arg = True
+                    continue
 
         if not buff:
             cmd_split.append(arg)
@@ -494,7 +511,7 @@ def _split_cmd(cmd: str) -> list[str]:
 
 def get_cmd_args(
     cmd: str, types: dict[str, Any], negative_flags: dict[str, str] | None = None
-) -> tuple[list[str], dict[str, str]]:
+) -> tuple[list[str], dict[str, str | bool]]:
     """
     Parse a command string into positional arguments and keyword parameters.
 
@@ -523,25 +540,18 @@ def get_cmd_args(
         >>> get_cmd_args("input.txt output.txt", {})
         (["input.txt", "output.txt"], {})
     """
-    positional_args = []
-    keyword_params = {}
+    positional_args: list[str] = []
+    keyword_params: dict[str, str | bool] = {}
 
-    is_positional_arg = True
     skip_position = None
 
-    cmd_split = _split_cmd(cmd)
+    cmd_split = _split_cmd(cmd, types)
 
     for i, _arg in enumerate(cmd_split):
         if skip_position is not None and i <= skip_position:
             continue
 
-        # Once we encounter the first argument starting with -,
-        # all subsequent arguments are treated as keyword arguments
-        # All arguments before the first - argument are positional
-        if _arg.startswith("-"):
-            is_positional_arg = False
-
-        if is_positional_arg:
+        if not _arg.startswith("-"):
             positional_args.append(_arg)
             continue
 
@@ -575,7 +585,10 @@ def get_cmd_args(
 
 
 def parse_input_args(
-    args: tuple[Any, ...], commands: set[str], global_option_names: set[str] | None = None
+    args: tuple[Any, ...],
+    commands: set[str],
+    global_option_names: set[str] | None = None,
+    global_bool_option_names: set[str] | None = None,
 ) -> tuple[str | None, list[str], list[str]]:
     """Split command-line arguments into global options, command name, and command options.
 
@@ -612,7 +625,24 @@ def parse_input_args(
 
     # If no command found but __main__ exists, use __main__
     if cmd is None and "__main__" in commands:
-        return "__main__", [], list(args)
+        if not global_option_names:
+            return "__main__", [], list(args)
+        _bool_opts = global_bool_option_names or set()
+        global_options: list[str] = []
+        cmd_options: list[str] = []
+        i = 0
+        args_list = list(args)
+        while i < len(args_list):
+            arg = args_list[i]
+            if arg in global_option_names:
+                global_options.append(arg)
+                if arg not in _bool_opts and i + 1 < len(args_list) and not args_list[i + 1].startswith("-"):
+                    i += 1
+                    global_options.append(args_list[i])
+            else:
+                cmd_options.append(arg)
+            i += 1
+        return "__main__", global_options, cmd_options
 
     # If no command found at all
     if cmd is None:

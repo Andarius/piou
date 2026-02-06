@@ -589,7 +589,7 @@ class TestClosestMatch:
         from piou.command import CommandGroup
 
         class SimpleFormatter(Formatter):
-            def print_cli_help(self, group: CommandGroup) -> None:
+            def print_cli_help(self, group: CommandGroup, default_command=None) -> None:
                 pass
 
             def print_cmd_group_help(self, group: CommandGroup, parent_args) -> None:

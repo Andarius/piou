@@ -380,6 +380,27 @@ class TestTuiApp:
 
             assert app.history.entries[0] == "/add 5 5"
 
+    @pytest.mark.parametrize(
+        "input_value,expected_history",
+        [
+            pytest.param("//hello world", "/hello world", id="double-slash"),
+            pytest.param("///hello world", "/hello world", id="triple-slash"),
+            pytest.param("!ls", "!ls", id="shell-command"),
+        ],
+    )
+    async def test_history_normalizes_slashes(self, tui_state, input_value, expected_history):
+        """Test that history normalizes multiple leading slashes to single."""
+        app = TuiApp(state=tui_state)
+        async with app.run_test() as pilot:
+            from textual.widgets import Input
+
+            inp = app.query_one(Input)
+            inp.value = input_value
+            await pilot.press("enter")
+            await pilot.pause()
+
+            assert app.history.entries[0] == expected_history
+
     async def test_message_displayed_on_submit(self, tui_state):
         """Test that submitted input is shown in messages."""
         app = TuiApp(state=tui_state)
@@ -409,14 +430,42 @@ class TestTuiApp:
             errors = app.query(f".{CssClass.ERROR}")
             assert len(errors) >= 1
 
-    async def test_initial_input(self, tui_state):
-        """Test that initial_input pre-fills the input field."""
-        app = TuiApp(state=tui_state, initial_input="/hello world")
-        async with app.run_test():
+    async def test_initial_input_auto_executes(self, tui_state):
+        """Test that initial_input auto-executes the command on ready."""
+        app = TuiApp(state=tui_state, initial_input="/add 2 3")
+        async with app.run_test() as pilot:
             from textual.widgets import Input
 
+            await pilot.pause()
+
             inp = app.query_one(Input)
-            assert inp.value == "/hello world"
+            # Input should be cleared after auto-execute
+            assert inp.value == ""
+            # Command message should be displayed
+            messages = app.query(f".{CssClass.MESSAGE}")
+            assert any("> /add 2 3" in str(m.render()) for m in messages)
+            # Output should be displayed
+            outputs = app.query(f".{CssClass.OUTPUT}")
+            assert any("5" in str(o.render()) for o in outputs)
+
+    async def test_silent_queue_suppresses_message(self, tui_state):
+        """Test that silent_queue=True suppresses the > command message."""
+        app = TuiApp(state=tui_state)
+        async with app.run_test() as pilot:
+            from textual.widgets import Input
+
+            app.silent_queue = True
+            inp = app.query_one(Input)
+            inp.value = "/add 1 1"
+            await pilot.press("enter")
+            await pilot.pause()
+
+            # Message should NOT be displayed when silent
+            messages = app.query(f".{CssClass.MESSAGE}")
+            assert not any("> /add 1 1" in str(m.render()) for m in messages)
+            # But output should still appear
+            outputs = app.query(f".{CssClass.OUTPUT}")
+            assert any("2" in str(o.render()) for o in outputs)
 
     @pytest.mark.parametrize(
         "method,rule_id",
@@ -449,16 +498,13 @@ class TestTuiApp:
             assert rule.line_style == "double"
 
     async def test_custom_css_injection(self, tui_state):
-        """Test that custom CSS is applied to the app."""
+        """Test that custom CSS is added to the app's stylesheet."""
         custom_css = "Rule.custom-test { color: red; }"
         app = TuiApp(state=tui_state, css=custom_css)
         async with app.run_test():
-            from textual.widgets import Rule
-
-            rule = app.query_one("#rule-above", Rule)
-            rule.set_classes("custom-test")
-            # The CSS should be loaded and applied
-            assert "custom-test" in rule.classes
+            # Verify CSS was added to stylesheet by checking selector_names
+            all_selector_names = {name for rule in app.stylesheet.rules for name in rule.selector_names}
+            assert ".custom-test" in all_selector_names
 
     @pytest.mark.parametrize(
         "get_app",
@@ -469,14 +515,12 @@ class TestTuiApp:
     )
     async def test_custom_css_via_cli(self, cli_with_subcommands, get_app):
         """Test that custom CSS can be passed through Cli methods."""
-        custom_css = "Rule.custom { color: blue; }"
+        custom_css = "Rule.custom-via-cli { color: blue; }"
         app = get_app(cli_with_subcommands, custom_css)
         async with app.run_test():
-            from textual.widgets import Rule
-
-            rule = app.query_one("#rule-above", Rule)
-            rule.set_classes("custom")
-            assert "custom" in rule.classes
+            # Verify CSS was added to stylesheet by checking selector_names
+            all_selector_names = {name for rule in app.stylesheet.rules for name in rule.selector_names}
+            assert ".custom-via-cli" in all_selector_names
 
     @pytest.mark.parametrize(
         "content,expected_display",
@@ -506,6 +550,42 @@ def reset_context():
     set_tui_context(TuiContext())
 
 
+class TestCommandRunner:
+    """Tests for the CommandRunner class."""
+
+    def test_clear_queue(self, tui_state):
+        """Test clear_queue removes all pending commands and returns count."""
+        runner = tui_state.runner
+        runner.queue_command("/cmd1")
+        runner.queue_command("/cmd2")
+        runner.queue_command("/cmd3")
+
+        count = runner.clear_queue()
+
+        assert count == 3
+        assert runner.command_queue.empty()
+
+    def test_clear_queue_empty(self, tui_state):
+        """Test clear_queue on empty queue returns 0."""
+        runner = tui_state.runner
+        count = runner.clear_queue()
+        assert count == 0
+
+    def test_pending_count(self, tui_state):
+        """Test pending_count tracks queued commands."""
+        runner = tui_state.runner
+        assert runner.pending_count == 0
+
+        runner.queue_command("/cmd1")
+        assert runner.pending_count == 1
+
+        runner.queue_command("/cmd2")
+        assert runner.pending_count == 2
+
+        runner.clear_queue()
+        assert runner.pending_count == 0
+
+
 class TestTuiContext:
     """Tests for the TuiContext class."""
 
@@ -522,6 +602,50 @@ class TestTuiContext:
         if with_tui:
             ctx.tui = MagicMock(spec=TuiApp)
         assert ctx.is_tui is expected_is_tui
+
+    @pytest.mark.parametrize(
+        "queue_count,expected_pending",
+        [
+            pytest.param(0, 0, id="empty-queue"),
+            pytest.param(3, 3, id="with-pending"),
+        ],
+    )
+    async def test_pending_count(self, tui_state, queue_count, expected_pending):
+        """Test pending_count returns the number of queued commands."""
+        app = TuiApp(state=tui_state)
+        async with app.run_test():
+            ctx = get_tui_context()
+            for i in range(queue_count):
+                tui_state.runner.queue_command(f"/cmd{i}")
+            assert ctx.pending_count == expected_pending
+
+    def test_pending_count_no_tui(self):
+        """Test pending_count returns 0 when not in TUI mode."""
+        ctx = TuiContext()
+        assert ctx.pending_count == 0
+
+    def test_clear_queue_no_tui(self):
+        """Test clear_queue returns 0 when not in TUI mode."""
+        ctx = TuiContext()
+        assert ctx.clear_queue() == 0
+
+    async def test_set_silent_queue(self, tui_state):
+        """Test set_silent_queue updates app.silent_queue flag."""
+        app = TuiApp(state=tui_state)
+        async with app.run_test():
+            ctx = get_tui_context()
+            assert app.silent_queue is False
+
+            ctx.set_silent_queue(True)
+            assert app.silent_queue is True
+
+            ctx.set_silent_queue(False)
+            assert app.silent_queue is False
+
+    def test_set_silent_queue_no_tui(self):
+        """Test set_silent_queue is a no-op when not in TUI mode."""
+        ctx = TuiContext()
+        ctx.set_silent_queue(True)  # Should not raise
 
     @pytest.mark.parametrize(
         "with_tui,severity",
@@ -840,3 +964,36 @@ class TestTuiSnapshots:
             await pilot.pause()
 
         assert snap_compare("tui_app.py", run_before=run_before, terminal_size=(80, 24))
+
+
+class TestTuiCli:
+    """Tests for TuiCli class."""
+
+    @pytest.mark.parametrize(
+        "args, expected_initial_input",
+        [
+            pytest.param(["/chat:send", "Hello"], "/chat:send Hello", id="subcommand-syntax"),
+            pytest.param(["/models"], "/models", id="command-syntax"),
+            pytest.param(["chat:send", "Hello"], "/chat:send Hello", id="no-leading-slash"),
+            pytest.param(["//models"], "/models", id="double-slash-stripped"),
+        ],
+    )
+    def test_run_builds_initial_input(self, sample_cli, args, expected_initial_input):
+        """Test that TuiCli.run() builds correct initial_input from args."""
+        from piou.tui.cli import TuiCli
+        from unittest.mock import patch, MagicMock
+
+        tui_cli = TuiCli(sample_cli)
+        captured_initial_input = None
+
+        def mock_get_app(initial_input=None, css=None, css_path=None):
+            nonlocal captured_initial_input
+            captured_initial_input = initial_input
+            mock_app = MagicMock()
+            mock_app.run = MagicMock()
+            return mock_app
+
+        with patch.object(tui_cli, "get_app", side_effect=mock_get_app):
+            tui_cli.run(*args)
+
+        assert captured_initial_input == expected_initial_input

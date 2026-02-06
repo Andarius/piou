@@ -168,10 +168,35 @@ class RichFormatter(Formatter):
             table.add_row(*row)
         self._console.print(table)
 
-    def print_cli_help(self, group: CommandGroup):
+    def print_cli_help(self, group: CommandGroup, default_command: Command | None = None):
         self._console.print(RichTitles.USAGE)
-        self._console.print(pad(get_usage(group.options)))
+        if default_command:
+            usage = get_usage(
+                global_options=group.options,
+                command=default_command.name,
+                command_options=default_command.options_sorted,
+            )
+            self._console.print(pad(usage))
+        else:
+            self._console.print(pad(get_usage(group.options)))
         self._console.print()
+
+        if default_command and default_command.options:
+            if default_command.positional_args:
+                self._console.print(RichTitles.ARGUMENTS)
+                self.print_rows(
+                    [
+                        (
+                            fmt_option(option, color=self.option_color),
+                            self._fmt_help(option),
+                        )
+                        for option in default_command.positional_args
+                    ]
+                )
+            if default_command.keyword_args:
+                self._console.print("\n" + RichTitles.OPTIONS)
+                self._print_options(default_command.keyword_args)
+            self._console.print()
 
         if group.options:
             self._console.print(RichTitles.GLOBAL_OPTIONS)

@@ -73,7 +73,8 @@ class Cli:
         except ValueError:
             args = []
 
-        if self.tui:
+        # Start TUI if enabled or if the first argument looks like a TUI command (e.g., "/send")
+        if self.tui or (args and args[0].startswith("/")):
             self.tui_run(*args, **kwargs)
             return
 

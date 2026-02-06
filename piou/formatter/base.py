@@ -129,7 +129,10 @@ class Formatter:
     ) -> None:
         # We are printing a command help
         if command:
-            self.print_cmd_help(command, group.options, parent_args)
+            if command.name == "__main__" and group.command_names:
+                self.print_cli_help(group, default_command=command)
+            else:
+                self.print_cmd_help(command, group.options, parent_args)
         # In case we are printing help for a command group
         elif parent_args:
             self.print_cmd_group_help(group, parent_args)
@@ -163,10 +166,33 @@ class Formatter:
             for line in description.split("\n"):
                 self.print_fn(f"  {line}")
 
-    def print_cli_help(self, group: CommandGroup) -> None:
+    def print_cli_help(self, group: CommandGroup, default_command: Command | None = None) -> None:
         self.print_fn(Titles.USAGE)
-        self.print_fn(f"  {get_usage(group.options)}")
+        if default_command:
+            usage = get_usage(
+                global_options=group.options,
+                command=default_command.name,
+                command_options=default_command.options_sorted,
+            )
+            self.print_fn(f"  {usage}")
+        else:
+            self.print_fn(f"  {get_usage(group.options)}")
         self.print_fn()
+
+        if default_command and default_command.options:
+            if default_command.positional_args:
+                self.print_fn(Titles.ARGUMENTS)
+                for option in default_command.positional_args:
+                    self.print_fn(f"  <{option.name}>")
+                    help_str = self._fmt_help(option)
+                    if help_str:
+                        for line in help_str.split("\n"):
+                            self.print_fn(f"      {line}")
+                self.print_fn()
+            if default_command.keyword_args:
+                self.print_fn(Titles.OPTIONS)
+                self._print_options(default_command.keyword_args)
+                self.print_fn()
 
         if group.options:
             self.print_fn(Titles.GLOBAL_OPTIONS)

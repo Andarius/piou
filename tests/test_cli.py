@@ -8,6 +8,7 @@ from functools import partial
 from pathlib import Path
 from typing import Annotated, Literal, Optional
 from uuid import UUID
+from unittest.mock import MagicMock
 
 import pytest
 from typing_extensions import LiteralString
@@ -421,6 +422,20 @@ def test_invalid_validate_value(data_type, value, expected, expected_str):
         ),
         ("--foo /tmp", {"foo": Path}, [], {"--foo": "/tmp"}),
         ("--foo-bar /tmp", {"foo_bar": Path}, [], {"--foo-bar": "/tmp"}),
+        pytest.param(
+            "-m gemini-3 'what is python'",
+            {"m": str},
+            ["what is python"],
+            {"-m": "gemini-3"},
+            id="single_value_flag_then_positional",
+        ),
+        pytest.param(
+            "--foo 1 2 3 --bar baz rest",
+            {"foo": list[int], "bar": str},
+            ["rest"],
+            {"--foo": "1 2 3", "--bar": "baz"},
+            id="list_flag_then_single_flag_then_positional",
+        ),
     ],
 )
 def test_get_cmd_args(input_str, types, expected_pos_args, expected_key_args):
@@ -1116,7 +1131,7 @@ def test_cmd_args(arg_type, arg_value, expected):
 @pytest.mark.parametrize("decorator", ["command", "main"])
 def test_main_command(decorator):
     from piou import Cli, Option
-    from piou.exceptions import DuplicatedCommandError, CommandException
+    from piou.exceptions import DuplicatedCommandError
 
     cli = Cli(description="A CLI tool")
 
@@ -1136,12 +1151,6 @@ def test_main_command(decorator):
         called = True
         assert bar == 1
 
-    with pytest.raises(CommandException, match="Command 'bar' cannot be added with main command"):
-
-        @cli.command("bar")
-        def _bar():
-            pass
-
     with pytest.raises(DuplicatedCommandError):
 
         @cli.command(is_main=True)
@@ -1150,6 +1159,105 @@ def test_main_command(decorator):
 
     cli.run_with_args("1")
     assert called
+
+
+class TestMainWithCommands:
+    @pytest.mark.parametrize(
+        "args, expected_cmd, expected_value",
+        [
+            pytest.param(["hello"], "main", "hello", id="fallback_to_main"),
+            pytest.param(["foo", "--bar", "42"], "foo", 42, id="named_command_priority"),
+        ],
+    )
+    def test_main_with_named_commands(self, args, expected_cmd, expected_value):
+        """Named commands take priority; unmatched input falls back to __main__."""
+        from piou import Cli, Option
+
+        result: dict[str, object] = {}
+
+        cli = Cli(description="Test CLI")
+
+        @cli.main()
+        def default(name: str = Option(...)):
+            result["cmd"] = "main"
+            result["value"] = name
+
+        @cli.command("foo")
+        def foo(bar: int = Option(..., "--bar")):
+            result["cmd"] = "foo"
+            result["value"] = bar
+
+        cli.run_with_args(*args)
+        assert result["cmd"] == expected_cmd
+        assert result["value"] == expected_value
+
+    def test_main_with_global_options(self):
+        """Global options are properly separated when falling back to __main__."""
+        from piou import Cli, Option
+
+        result: dict[str, object] = {}
+        processor_called = False
+
+        cli = Cli(description="Test CLI", propagate_options=True)
+
+        @cli.processor()
+        def processor(
+            verbose: bool = Option(False, "-v", "--verbose"),
+        ):
+            nonlocal processor_called
+            processor_called = True
+
+        @cli.main()
+        def default(verbose: bool, name: str = Option(...)):
+            result["name"] = name
+            result["verbose"] = verbose
+
+        @cli.command("foo")
+        def foo():
+            pass
+
+        cli.run_with_args("-v", "hello")
+        assert processor_called
+        assert result["name"] == "hello"
+        assert result["verbose"] is True
+
+    def test_main_not_in_command_not_found_error(self):
+        """__main__ should not appear in CommandNotFoundError messages."""
+        from piou import Cli, Option
+
+        cli = Cli(description="Test CLI")
+
+        @cli.main()
+        def default(name: str = Option(...)):
+            pass
+
+        @cli.command("foo", help="Foo command")
+        def foo():
+            pass
+
+        # __main__ should not appear in command_names
+        assert "__main__" not in cli._group.command_names
+        assert "foo" in cli._group.command_names
+
+    def test_help_shows_both_default_and_commands(self, capsys):
+        """Help output shows default command options alongside available commands."""
+        from piou import Cli, Option
+
+        cli = Cli(description="Test CLI")
+
+        @cli.main()
+        def default(name: str = Option(...)):
+            pass
+
+        @cli.command("foo", help="Foo command")
+        def foo():
+            pass
+
+        cli.run_with_args("-h")
+        output = capsys.readouterr().out
+        assert "AVAILABLE COMMANDS" in output
+        assert "foo" in output
+        assert "name" in output
 
 
 class TestAnnotated:
@@ -1441,3 +1549,27 @@ def test_negative_flag_option(args, expected_verbose):
 
     cli.run_with_args(*args)
     assert result["verbose"] == expected_verbose
+
+
+@pytest.mark.parametrize(
+    "argv, expected_tui",
+    [
+        pytest.param(["cli", "/send", "hello"], True, id="slash_prefix_triggers_tui"),
+        pytest.param(["cli", "send"], False, id="no_slash_runs_normally"),
+        pytest.param(["cli"], False, id="no_args_runs_normally"),
+    ],
+)
+def test_slash_prefix_triggers_tui(argv, expected_tui, monkeypatch):
+    """A leading / on the first arg should trigger TUI mode."""
+    from piou import Cli
+
+    monkeypatch.setattr(sys, "argv", argv)
+
+    cli = Cli(description="Test CLI")
+    cli.tui_run = MagicMock()
+    cli.run_with_args = MagicMock()
+
+    cli.run()
+
+    assert cli.tui_run.called is expected_tui
+    assert cli.run_with_args.called is (not expected_tui)
