@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.30.0 (2026-02-06)
+
+### Feat
+
+- tui queue management, main+commands coexistence, fix split_cmd for single value flags (#38)
+
 ## 0.29.1 (2026-02-03)
 
 ### Fix
