@@ -39,7 +39,6 @@ class Command:
     options: list[CommandOption] = field(default_factory=list)
     description: str | None = None
     derived_options: list[CommandDerivedOption] = field(default_factory=list)
-    tui: bool | None = None
 
     @property
     def positional_args(self) -> list[CommandOption]:
@@ -175,7 +174,6 @@ class CommandGroup:
         help: str | None = None,
         description: str | None = None,
         is_main: bool = False,
-        tui: bool | None = None,
     ):
         """Adds a command to the command group."""
 
@@ -191,7 +189,6 @@ class CommandGroup:
             derived_options=_derived_options,
             help=help,
             description=description or getdoc(f),
-            tui=tui,
         )
 
     def command(
@@ -200,12 +197,11 @@ class CommandGroup:
         help: str | None = None,
         description: str | None = None,
         is_main: bool = False,
-        tui: bool | None = None,
     ):
         """Decorator to mark a function as a command."""
 
         def _command(f):
-            self.add_command(f, cmd=cmd, help=help, description=description, is_main=is_main, tui=tui)
+            self.add_command(f, cmd=cmd, help=help, description=description, is_main=is_main)
             return f
 
         return _command
@@ -287,8 +283,6 @@ class CommandGroup:
             raise ShowTuiError(dev=_is_dev)
         if _is_dev:
             raise ShowTuiError(dev=True)
-        if command and command.tui is True:
-            raise ShowTuiError()
 
         if not command:
             # When cmd is None (no valid command found), try to find the first

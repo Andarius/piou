@@ -8,6 +8,7 @@ from functools import partial
 from pathlib import Path
 from typing import Annotated, Literal, Optional
 from uuid import UUID
+from unittest.mock import MagicMock
 
 import pytest
 from typing_extensions import LiteralString
@@ -1548,3 +1549,27 @@ def test_negative_flag_option(args, expected_verbose):
 
     cli.run_with_args(*args)
     assert result["verbose"] == expected_verbose
+
+
+@pytest.mark.parametrize(
+    "argv, expected_tui",
+    [
+        pytest.param(["cli", "/send", "hello"], True, id="slash_prefix_triggers_tui"),
+        pytest.param(["cli", "send"], False, id="no_slash_runs_normally"),
+        pytest.param(["cli"], False, id="no_args_runs_normally"),
+    ],
+)
+def test_slash_prefix_triggers_tui(argv, expected_tui, monkeypatch):
+    """A leading / on the first arg should trigger TUI mode."""
+    from piou import Cli
+
+    monkeypatch.setattr(sys, "argv", argv)
+
+    cli = Cli(description="Test CLI")
+    cli.tui_run = MagicMock()
+    cli.run_with_args = MagicMock()
+
+    cli.run()
+
+    assert cli.tui_run.called is expected_tui
+    assert cli.run_with_args.called is (not expected_tui)

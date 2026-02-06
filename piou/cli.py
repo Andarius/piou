@@ -73,7 +73,8 @@ class Cli:
         except ValueError:
             args = []
 
-        if self.tui:
+        # Start TUI if enabled or if the first argument looks like a TUI command (e.g., "/send")
+        if self.tui or (args and args[0].startswith("/")):
             self.tui_run(*args, **kwargs)
             return
 
@@ -128,7 +129,6 @@ class Cli:
         help: str | None = None,
         description: str | None = None,
         is_main: bool = False,
-        tui: bool | None = None,
     ):
         """
         Decorator to mark a function as a command
@@ -136,16 +136,15 @@ class Cli:
         """
         if is_main and cmd is not None:
             raise ValueError("Main command should not have a command name")
-        return self._group.command(cmd=cmd, help=help, description=description, is_main=is_main, tui=tui)
+        return self._group.command(cmd=cmd, help=help, description=description, is_main=is_main)
 
     def main(
         self,
         help: str | None = None,
         description: str | None = None,
-        tui: bool | None = None,
     ):
         """Decorator to mark a function as the main command"""
-        return self.command(cmd=None, help=help, description=description, is_main=True, tui=tui)
+        return self.command(cmd=None, help=help, description=description, is_main=True)
 
     def processor(self):
         """Decorator to mark a function as a processor for options"""
