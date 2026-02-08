@@ -10,7 +10,7 @@ import shlex
 from collections import namedtuple
 from dataclasses import dataclass, field
 from enum import Enum
-from inspect import iscoroutinefunction
+from inspect import isawaitable, iscoroutinefunction
 from pathlib import Path
 from typing import (
     Annotated,
@@ -325,6 +325,7 @@ class CommandOption(Generic[T]):
 
     _name: str | None = field(init=False, default=None)
     _data_type: type[T] = field(init=False, default=Any)  # pyright: ignore[reportAssignmentType]
+    _literal_values: list = field(init=False, default_factory=list)
 
     # Only for literal types
     case_sensitive: bool = True
@@ -369,13 +370,15 @@ class CommandOption(Generic[T]):
 
     @property
     def literal_values(self):
-        return get_literals_union_args(self.data_type)
+        return self._literal_values
 
     @data_type.setter
     def data_type(self, v: type[T]):
-        if self.choices and get_literals_union_args(v):
+        literals = get_literals_union_args(v)
+        if self.choices and literals:
             raise ValueError("Pick either a Literal type or choices")
         self._data_type = v
+        self._literal_values = literals
 
     @property
     def is_secret(self) -> bool:
@@ -415,6 +418,20 @@ class CommandOption(Generic[T]):
             _choices = run_function(self.choices)
         else:
             _choices = self.choices
+        return self.literal_values or _choices
+
+    async def async_get_choices(self) -> list[T] | None:
+        """Async version of get_choices(), safe to call inside a running event loop."""
+        if callable(self.choices):
+            if iscoroutinefunction(self.choices):
+                _choices = await self.choices()
+            else:
+                _choices = self.choices()
+        else:
+            _choices = self.choices
+        # Handle partial(async_fn) — callable that returns an awaitable
+        if isawaitable(_choices):
+            _choices = await _choices
         return self.literal_values or _choices
 
     def validate(self, value: str) -> T:

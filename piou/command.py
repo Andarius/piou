@@ -1,5 +1,6 @@
 from __future__ import annotations
 import asyncio
+import functools
 import textwrap
 from dataclasses import dataclass, field
 from inspect import getdoc
@@ -40,11 +41,11 @@ class Command:
     description: str | None = None
     derived_options: list[CommandDerivedOption] = field(default_factory=list)
 
-    @property
+    @functools.cached_property
     def positional_args(self) -> list[CommandOption]:
         return [opt for opt in self.options if opt.is_positional_arg]
 
-    @property
+    @functools.cached_property
     def keyword_args(self) -> list[CommandOption]:
         return sorted(
             [opt for opt in self.options if not opt.is_positional_arg],
@@ -59,6 +60,23 @@ class Command:
         - keyword optional
         """
         return self.positional_args + self.keyword_args
+
+    @functools.cached_property
+    def flag_maps(self) -> tuple[dict[str, CommandOption], set[str], set[str]]:
+        """Cached (flag_map, bool_flags, neg_flags) built from keyword options."""
+        flag_map: dict[str, CommandOption] = {}
+        bool_flags: set[str] = set()
+        neg_flags: set[str] = set()
+        for opt in self.options:
+            if opt.is_positional_arg:
+                continue
+            for kw in opt.keyword_args:
+                flag_map[kw] = opt
+                if opt.data_type is bool:
+                    bool_flags.add(kw)
+            if opt.negative_flag:
+                neg_flags.add(opt.negative_flag)
+        return flag_map, bool_flags, neg_flags
 
     def run(self, *args, loop: asyncio.AbstractEventLoop | None = None, **kwargs):
         return run_function(self.fn, *args, loop=loop, **kwargs)

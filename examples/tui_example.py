@@ -5,7 +5,6 @@ Run with:
 """
 
 import time
-from typing import Literal
 
 from piou import Cli, Option
 from piou.tui import TuiContext, TuiOption, get_tui_context
@@ -56,7 +55,7 @@ def echo(
 @cli.command(cmd="format", help="Format text")
 def format_text(
     text: str = Option(..., help="Text to format"),
-    style: Literal["upper", "lower", "title"] = Option("title", "-s", "--style", help="Text style"),
+    style: str = Option("title", "-s", "--style", help="Text style", choices=["upper", "lower", "title"]),
 ):
     """Format text in different styles."""
     if style == "upper":
@@ -108,6 +107,54 @@ def process(
 
     ctx.notify("Processing complete!", title="Done", severity="information")
     print(f"Successfully processed {items} items")
+
+
+TIMEZONES = [
+    "US/Eastern",
+    "US/Central",
+    "US/Mountain",
+    "US/Pacific",
+    "Europe/London",
+    "Europe/Paris",
+    "Europe/Berlin",
+    "Europe/Rome",
+    "Europe/Madrid",
+    "Europe/Amsterdam",
+    "Europe/Brussels",
+    "Europe/Zurich",
+    "Asia/Tokyo",
+    "Asia/Shanghai",
+    "Asia/Singapore",
+    "Asia/Dubai",
+    "Asia/Kolkata",
+    "Asia/Seoul",
+    "Asia/Hong_Kong",
+    "Asia/Bangkok",
+    "Australia/Sydney",
+    "Australia/Melbourne",
+    "Pacific/Auckland",
+    "America/Toronto",
+    "America/Chicago",
+    "America/Denver",
+    "America/Los_Angeles",
+    "America/Sao_Paulo",
+    "America/Mexico_City",
+    "Africa/Cairo",
+    "Africa/Johannesburg",
+    "Africa/Lagos",
+]
+
+
+@cli.command(cmd="time", help="Show current time in a timezone")
+def show_time(
+    tz: str = Option("US/Eastern", "-z", "--zone", help="Timezone", choices=TIMEZONES),
+):
+    """Display the current time in the given timezone."""
+    import datetime as dt
+    from zoneinfo import ZoneInfo
+
+    now = dt.datetime.now(ZoneInfo(tz))
+    print(f"{tz}: {now:%H:%M:%S}")
 
 
 @cli.command(cmd="warn", help="Show warning notification")
