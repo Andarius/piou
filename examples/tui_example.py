@@ -5,6 +5,7 @@ Run with:
 """
 
 import time
+from typing import Literal
 
 from piou import Cli, Option
 from piou.tui import TuiContext, TuiOption, get_tui_context
@@ -55,7 +56,7 @@ def echo(
 @cli.command(cmd="format", help="Format text")
 def format_text(
     text: str = Option(..., help="Text to format"),
-    style: str = Option("title", "-s", "--style", help="Text style", choices=["upper", "lower", "title"]),
+    style: Literal["upper", "lower", "title"] = Option("title", "-s", "--style", help="Text style"),
 ):
     """Format text in different styles."""
     if style == "upper":
