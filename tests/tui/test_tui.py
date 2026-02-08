@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import tempfile
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Literal, cast
 from unittest.mock import MagicMock
 
 import pytest
 
 from piou import Cli, Option
+from piou.utils import CommandOption
 from piou.command import Command, CommandGroup
 from piou.tui import (
     TuiContext,
@@ -25,11 +26,16 @@ from piou.tui import (
 from piou.tui.runner import CommandRunner
 from piou.tui.suggester import (
     CommandSuggester,
+    OptionContext,
+    SuggestionState,
     get_command_for_path,
     get_command_suggestions,
     get_subcommand_suggestions,
+    get_value_suggestions,
+    parse_option_context,
 )
 from piou.tui.utils import get_command_help
+from piou.tui.value_picker import ValuePicker
 
 # Check if textual is available
 pytest.importorskip("textual")
@@ -136,7 +142,7 @@ def mock_app(cli_with_subcommands):
     app = MagicMock()
     app.state = MagicMock()
     app.state.group = cli_with_subcommands.group
-    app.current_suggestions = []
+    app.suggestions = SuggestionState()
     return app
 
 
@@ -268,7 +274,7 @@ class TestTuiApp:
             await pilot.pause()
 
             # Check that selection moved
-            assert app.suggestion_index == 1
+            assert app.suggestions.index == 1
 
     async def test_tab_completes_command(self, tui_state):
         """Test that Tab completes the selected command."""
@@ -860,7 +866,7 @@ class TestCommandSuggester:
     @pytest.mark.asyncio
     async def test_get_suggestion(self, mock_app, value, current_suggestions, expected):
         """Test get_suggestion returns the expected completion or None."""
-        mock_app.current_suggestions = current_suggestions
+        mock_app.suggestions.items = current_suggestions
         suggester = CommandSuggester(mock_app)
         result = await suggester.get_suggestion(value)
         assert result == expected
@@ -997,3 +1003,262 @@ class TestTuiCli:
             tui_cli.run(*args)
 
         assert captured_initial_input == expected_initial_input
+
+
+@pytest.fixture
+def choices_cli():
+    """Create a CLI with Literal/choices options for value completion testing."""
+    cli = Cli(description="Test CLI")
+
+    @cli.command(cmd="format", help="Format text")
+    def format_text(
+        text: str = Option(..., help="Text to format"),
+        style: Literal["upper", "lower", "title"] = Option("title", "-s", "--style", help="Style"),
+    ):
+        pass
+
+    @cli.command(cmd="deploy", help="Deploy app")
+    def deploy(
+        env: str = Option("dev", "-e", "--env", help="Environment", choices=["dev", "staging", "prod"]),
+        verbose: bool = Option(False, "-v", "--verbose", help="Verbose"),
+        flag: bool = Option(False, "--flag/--no-flag", help="Toggle"),
+    ):
+        pass
+
+    @cli.command(cmd="hidden", help="Hidden choices")
+    def hidden(
+        secret: str = CommandOption(  # pyright: ignore[reportArgumentType]
+            default="a",
+            keyword_args=("-s", "--secret"),
+            help="Secret",
+            choices=["a", "b"],
+            hide_choices=True,
+        ),
+    ):
+        pass
+
+    @cli.command(cmd="noopt", help="Positional only")
+    def noopt(name: str = Option(..., help="Name")):
+        pass
+
+    return cli
+
+
+@pytest.fixture
+def picker_app():
+    """Create a minimal app with a ValuePicker for testing."""
+    from textual.app import App, ComposeResult
+
+    class _App(App):
+        def compose(self) -> ComposeResult:
+            yield ValuePicker(col_size=3)
+
+    return _App()
+
+
+class TestValuePicker:
+    @pytest.mark.parametrize(
+        "values,index,expected_has,expected_val",
+        [
+            pytest.param([], -1, False, None, id="empty"),
+            pytest.param(["a", "b"], 0, True, "a", id="first"),
+            pytest.param(["a", "b"], 1, True, "b", id="second"),
+            pytest.param(["a", "b"], -1, False, None, id="no-selection"),
+            pytest.param(["a", "b"], 5, True, None, id="out-of-bounds"),
+        ],
+    )
+    def test_selection_properties(self, values, index, expected_has, expected_val):
+        picker = ValuePicker()
+        picker.values = values
+        picker.selected_index = index
+        assert picker.has_selection is expected_has
+        assert picker.selected_value == expected_val
+
+    @pytest.mark.parametrize(
+        "values,expected_grid_cols,expected_count",
+        [
+            pytest.param([], 0, 0, id="empty"),
+            pytest.param(["a", "b", "c"], 0, 3, id="small-list"),
+            pytest.param(["a", "b", "c", "d", "e"], 2, 5, id="grid-mode"),
+        ],
+    )
+    async def test_set_values(self, picker_app, values, expected_grid_cols, expected_count):
+        async with picker_app.run_test():
+            picker = picker_app.query_one(ValuePicker)
+            picker.set_values(values)
+            assert len(picker.query(".vp-item")) == expected_count
+            assert picker._grid_cols == expected_grid_cols
+            assert picker.display is bool(values)
+            assert picker.selected_index == (0 if values else -1)
+
+    async def test_clear(self, picker_app):
+        async with picker_app.run_test() as pilot:
+            picker = picker_app.query_one(ValuePicker)
+            picker.set_values(["a", "b", "c"])
+            picker.clear()
+            await pilot.pause()
+            assert picker.values == []
+            assert picker.selected_index == -1
+            assert picker.display is False
+            assert len(picker.query(".vp-item")) == 0
+
+    @pytest.mark.parametrize(
+        "values,col_size,keys,expected_index,expected_value",
+        [
+            pytest.param(["a", "b", "c"], 10, ["down"], 1, "b", id="down"),
+            pytest.param(["a", "b", "c"], 10, ["down", "down", "down"], 0, "a", id="down-wrap"),
+            pytest.param(["a", "b", "c"], 10, ["up"], 2, "c", id="up-wrap"),
+            pytest.param(["a", "b", "c"], 10, ["down", "up"], 0, "a", id="down-up"),
+            pytest.param(["a", "b", "c", "d", "e"], 3, ["right"], 1, None, id="grid-right"),
+            pytest.param(["a", "b", "c", "d", "e"], 3, ["left"], 4, None, id="grid-left-wrap"),
+        ],
+    )
+    async def test_navigate(self, picker_app, values, col_size, keys, expected_index, expected_value):
+        async with picker_app.run_test():
+            picker = picker_app.query_one(ValuePicker)
+            picker.col_size = col_size
+            picker.set_values(values)
+            result = None
+            for key in keys:
+                result = picker.navigate(key)
+            assert picker.selected_index == expected_index
+            if expected_value is not None:
+                assert result == expected_value
+            # Verify highlight matches selected_index
+            for i, item in enumerate(picker.query(".vp-item")):
+                assert item.has_class("vp-selected") == (i == expected_index)
+
+    def test_navigate_empty(self):
+        picker = ValuePicker()
+        assert picker.navigate("down") is None
+        assert picker.navigate("up") is None
+
+
+class TestParseOptionContext:
+    @pytest.mark.parametrize(
+        "cmd_name,args_text,expected",
+        [
+            pytest.param(
+                "format",
+                "hello -s up",
+                ("style", "up", "hello -s "),
+                id="flag-with-partial",
+            ),
+            pytest.param(
+                "format",
+                "hello -s ",
+                ("style", "", "hello -s "),
+                id="flag-with-trailing-space",
+            ),
+            pytest.param(
+                "deploy",
+                "-e ",
+                ("env", "", "-e "),
+                id="choices-trailing-space",
+            ),
+            pytest.param(
+                "deploy",
+                "-e st",
+                ("env", "st", "-e "),
+                id="choices-partial",
+            ),
+            pytest.param(
+                "deploy",
+                "-v",
+                None,
+                id="bool-flag-no-context",
+            ),
+            pytest.param(
+                "deploy",
+                "--no-flag",
+                None,
+                id="negative-flag-no-context",
+            ),
+            pytest.param(
+                "deploy",
+                "--unknown val",
+                None,
+                id="unknown-flag",
+            ),
+            pytest.param(
+                "noopt",
+                "hello",
+                None,
+                id="positional-only",
+            ),
+            pytest.param(
+                "format",
+                "hello",
+                None,
+                id="no-flag-typed",
+            ),
+            pytest.param(
+                "hidden",
+                "-s ",
+                None,
+                id="hide-choices",
+            ),
+            pytest.param(
+                "deploy",
+                "-v -e pr",
+                ("env", "pr", "-v -e "),
+                id="bool-then-value-flag",
+            ),
+        ],
+    )
+    def test_parse_option_context(self, choices_cli, cmd_name, args_text, expected):
+        cmd = choices_cli.group.commands[cmd_name]
+        result = parse_option_context(cmd, args_text)
+        if expected is None:
+            assert result is None
+        else:
+            assert result is not None
+            exp_name, exp_partial, exp_prefix = expected
+            assert result.option.name == exp_name
+            assert result.partial == exp_partial
+            assert result.prefix == exp_prefix
+
+
+class TestGetValueSuggestions:
+    @pytest.mark.parametrize(
+        "choices,partial,case_sensitive,expected",
+        [
+            pytest.param(
+                ["upper", "lower", "title"],
+                "up",
+                True,
+                [("upper", "")],
+                id="prefix-filter",
+            ),
+            pytest.param(
+                ["upper", "lower", "title"],
+                "",
+                True,
+                [("upper", ""), ("lower", ""), ("title", "")],
+                id="empty-partial-all",
+            ),
+            pytest.param(
+                ["Upper", "Lower"],
+                "up",
+                False,
+                [("Upper", "")],
+                id="case-insensitive",
+            ),
+            pytest.param(
+                ["upper", "lower"],
+                "x",
+                True,
+                [],
+                id="no-match",
+            ),
+        ],
+    )
+    @pytest.mark.asyncio
+    async def test_get_value_suggestions(self, choices, partial, case_sensitive, expected):
+        opt = CommandOption(default="x")
+        opt._data_type = str
+        opt.choices = choices
+        opt.case_sensitive = case_sensitive
+        ctx = OptionContext(option=opt, partial=partial, prefix="")
+        result = await get_value_suggestions(ctx)
+        assert result == expected

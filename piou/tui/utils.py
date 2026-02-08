@@ -1,5 +1,5 @@
 from types import NoneType, UnionType
-from typing import Union, get_args, get_origin
+from typing import Literal, Union, get_args, get_origin
 
 from rich.text import Text
 
@@ -16,6 +16,10 @@ def _format_type_name(t: type) -> str:
         if len(args) == 1:
             return _format_type_name(args[0])
         return " | ".join(_format_type_name(a) for a in args)
+    if origin is Literal:
+        args = get_args(t)
+        if args:
+            return type(args[0]).__name__
     return getattr(t, "__name__", str(t))
 
 
@@ -73,6 +77,13 @@ def _build_command_help(cmd: Command, display_name: str) -> Text:
                 text.append(f" (default: {opt.default})")
             if opt.help:
                 text.append(f" - {opt.help}")
+            choices = opt.literal_values or (opt.choices if not callable(opt.choices) else None)
+            if choices and not opt.hide_choices:
+                if len(choices) <= 10:
+                    choices_str = ", ".join(str(c) for c in choices)
+                    text.append(f" (choices are: {choices_str})", style="yellow")
+                else:
+                    text.append(f" ({len(choices)} choices, use Tab to complete)", style="yellow")
 
     return text
 

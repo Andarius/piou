@@ -22,8 +22,18 @@ except ImportError as e:
     raise ImportError("TUI mode requires textual. Install piou[tui] or 'textual' package.") from e
 
 from .context import TuiContext, set_tui_context
-from .suggester import CommandSuggester, get_command_for_path, get_command_suggestions, get_subcommand_suggestions
+from .suggester import (
+    CommandSuggester,
+    OptionContext,
+    SuggestionState,
+    get_command_for_path,
+    get_command_suggestions,
+    get_subcommand_suggestions,
+    get_value_suggestions,
+    parse_option_context,
+)
 from .utils import get_command_help
+from .value_picker import ValuePicker
 
 
 class CssClass:
@@ -86,8 +96,7 @@ class TuiApp(App):
         set_tui_context(ctx)
 
         # UI state
-        self.suggestion_index = -1
-        self.current_suggestions: list[str] = []
+        self.suggestions = SuggestionState()
         self.suppress_input_change = False
         self.exit_pending = False
         self.silent_queue = False
@@ -162,6 +171,7 @@ class TuiApp(App):
             │ #context-panel (Vertical)        │
             │   #hint                          │
             │   #suggestions (Vertical)        │
+            │   #value-picker (ValuePicker)    │
             │   #command-help                  │
             └──────────────────────────────────┘
         """
@@ -178,10 +188,13 @@ class TuiApp(App):
         with Vertical(id="context-panel"):
             yield Static(id="hint")
             yield Vertical(id="suggestions")
+            yield ValuePicker(id="value-picker")
             yield Static(id="command-help")
 
     def on_mount(self) -> None:
         """Called when the app is mounted."""
+        self._picker = self.query_one(ValuePicker)
+        self._suggestions_widget = self.query_one("#suggestions", Vertical)
         self.runner.start_processing(
             on_success=self._display_output,
             on_error=self._on_process_error,
@@ -207,58 +220,108 @@ class TuiApp(App):
 
     def on_input_changed(self, event: Input.Changed) -> None:
         """Show command suggestions when input starts with /"""
-        if self.suppress_input_change:
-            self.suppress_input_change = False
+        if self._handle_early_returns(event):
             return
 
+        self._reset_suggestion_state()
+
+        value = event.value.strip()
+        if value.startswith("!"):
+            self._handle_shell_command()
+        elif value.startswith("/"):
+            self._handle_command_suggestions(event.value)
+        elif value:
+            self._set_hint(None)
+            self._update_command_help(None)
+
+    def _handle_early_returns(self, event: Input.Changed) -> bool:
+        """Check conditions that should skip suggestion processing.
+
+        Returns True when the input change was programmatic (suppress flag),
+        the input is borrowed by another widget (e.g. prompt), or to cancel
+        exit-pending state when the user starts typing again.
+        """
+        if self.suppress_input_change:
+            self.suppress_input_change = False
+            return True
+
         if self.input_borrowed:
-            return
+            return True
 
         if event.value and self.exit_pending:
             self.exit_pending = False
             self._set_hint(None)
 
-        suggestions_widget = self.query_one("#suggestions", Vertical)
-        suggestions_widget.remove_children()
-        suggestions_widget.display = False
-        self.current_suggestions = []
-        self.suggestion_index = -1
+        return False
 
-        value = event.value.strip()
-        if value.startswith("!"):
-            self._set_hint("Shell command - press Enter to execute", bash_mode=True)
+    def _reset_suggestion_state(self) -> None:
+        """Reset all suggestion-related UI state."""
+        if self._suggestions_widget.children:
+            self._suggestions_widget.remove_children()
+        self._suggestions_widget.display = False
+        self.suggestions.reset()
+        if self._picker.values:
+            self._picker.clear()
+
+    def _handle_shell_command(self) -> None:
+        """Handle shell command input (starts with !)."""
+        self._set_hint("Shell command - press Enter to execute", bash_mode=True)
+        self._update_command_help(None)
+
+    def _handle_command_suggestions(self, input_value: str) -> None:
+        """Handle command suggestions for input starting with /."""
+        self._set_hint(None)
+
+        parts = input_value[1:].split(None, 1)
+        cmd_path = parts[0].lower() if parts else ""
+        args_text = parts[1] if len(parts) > 1 else ""
+        resolved = get_command_for_path(self.state.group, cmd_path)
+
+        if not args_text:
+            self._show_command_suggestions(cmd_path, self._suggestions_widget)
+        elif isinstance(resolved, Command):
+            if input_value.endswith(" ") and not args_text.endswith(" "):
+                args_text += " "
+            self._handle_value_completion(args_text, resolved, cmd_path)
+
+        # Update help panel
+        if resolved:
+            self._update_command_help(f"/{cmd_path}")
+        elif self.suggestions.items:
+            self._update_command_help(self.suggestions.items[0])
+        else:
             self._update_command_help(None)
-        elif value.startswith("/"):
-            self._set_hint(None)
-            # Extract command path (before first space) and any arguments
-            parts = value[1:].split(None, 1)
-            cmd_path = parts[0].lower() if parts else ""
-            has_args = len(parts) > 1
 
-            # Only show suggestions if still typing the command name (no args yet)
-            if not has_args:
-                if ":" in cmd_path:
-                    suggestions = get_subcommand_suggestions(self.state.group, cmd_path)
-                    self._display_suggestions(suggestions, suggestions_widget, width=20)
-                else:
-                    suggestions = get_command_suggestions(self.state.commands, cmd_path)
-                    self._display_suggestions(suggestions, suggestions_widget, width=15)
+    def _show_command_suggestions(self, cmd_path: str, suggestions_widget: Vertical) -> None:
+        """Show command suggestions based on command path."""
+        if ":" in cmd_path:
+            suggestions = get_subcommand_suggestions(self.state.group, cmd_path)
+            self._display_suggestions(suggestions, suggestions_widget, width=20)
+        else:
+            suggestions = get_command_suggestions(self.state.commands, cmd_path)
+            self._display_suggestions(suggestions, suggestions_widget, width=15)
 
-                if self.current_suggestions:
-                    self.suggestion_index = 0
-                    suggestions_widget.display = True
+        if self.suggestions.items:
+            self.suggestions.index = 0
+            suggestions_widget.display = True
 
-            # Always show help for the resolved command
-            cmd_for_help = f"/{cmd_path}"
-            if get_command_for_path(self.state.group, cmd_path):
-                self._update_command_help(cmd_for_help)
-            elif self.current_suggestions:
-                self._update_command_help(self.current_suggestions[0])
-            else:
-                self._update_command_help(None)
-        elif value:
-            self._set_hint(None)
-            self._update_command_help(None)
+    def _handle_value_completion(self, args_text: str, command: Command, cmd_path: str) -> None:
+        """Handle option value completion for a resolved command with arguments."""
+        ctx = parse_option_context(command, args_text)
+        if ctx is not None:
+            self.suggestions.value_prefix = f"/{cmd_path} {ctx.prefix}"
+            self.run_worker(
+                self._load_value_suggestions(ctx, self.suggestions.value_prefix),
+                exclusive=True,
+                group="value_suggestions",
+            )
+
+    async def _load_value_suggestions(self, ctx: OptionContext, expected_prefix: str) -> None:
+        """Load value suggestions asynchronously and display them."""
+        value_suggestions = await get_value_suggestions(ctx)
+        if not value_suggestions or self.suggestions.value_prefix != expected_prefix:
+            return
+        self._picker.set_values([v for v, _ in value_suggestions])
 
     def _display_suggestions(
         self,
@@ -268,23 +331,28 @@ class TuiApp(App):
     ) -> None:
         """Mount suggestion widgets from a list of (path, help_text) tuples."""
         for full_path, help_text in suggestions:
-            self.current_suggestions.append(full_path)
+            self.suggestions.items.append(full_path)
             text = f"{full_path:<{width}}{help_text}"
-            is_first = len(self.current_suggestions) == 1
+            is_first = len(self.suggestions.items) == 1
             classes = f"{CssClass.SUGGESTION} {CssClass.SELECTED}" if is_first else CssClass.SUGGESTION
             widget.mount(Static(text, classes=classes))
 
     def on_key(self, event: Key) -> None:
         """Route key events to specific handlers."""
-        if event.key in ("up", "down") and self.current_suggestions:
+        if event.key in ("left", "right", "up", "down") and self._picker.has_selection:
+            event.prevent_default()
+            event.stop()
+            self._on_picker_nav(event.key, self._picker)
+            return
+        if event.key in ("up", "down") and self.suggestions.items:
             event.prevent_default()
             event.stop()
             self._on_up_down(event.key)
-        elif event.key in ("up", "down") and not self.current_suggestions and self.history.entries:
+        elif event.key in ("up", "down") and not self.suggestions.items and self.history.entries:
             event.prevent_default()
             event.stop()
             self._on_history(event.key)
-        elif event.key == "tab" and self.suggestion_index >= 0:
+        elif event.key == "tab" and (self.suggestions.index >= 0 or self._picker.has_selection):
             event.prevent_default()
             event.stop()
             self._on_tab()
@@ -294,18 +362,35 @@ class TuiApp(App):
             self._handle_ctrl_c()
 
     def _on_up_down(self, key: str) -> None:
-        """Cycle through suggestions with up/down arrows."""
+        """Cycle through command suggestions with up/down arrows."""
         self.suppress_input_change = True
         if key == "down":
-            self.suggestion_index = (self.suggestion_index + 1) % len(self.current_suggestions)
+            self.suggestions.index = (self.suggestions.index + 1) % len(self.suggestions.items)
         else:
-            self.suggestion_index = (self.suggestion_index - 1) % len(self.current_suggestions)
+            self.suggestions.index = (self.suggestions.index - 1) % len(self.suggestions.items)
         inp = self.query_one(Input)
-        inp.value = self.current_suggestions[self.suggestion_index]
+        selected = self.suggestions.items[self.suggestions.index]
+        if self.suggestions.value_prefix is not None:
+            inp.value = f"{self.suggestions.value_prefix}{selected}"
+        else:
+            inp.value = selected
         inp.cursor_position = len(inp.value)
         for i, s in enumerate(self.query(f".{CssClass.SUGGESTION}")):
-            s.set_class(i == self.suggestion_index, CssClass.SELECTED)
-        self._update_command_help(self.current_suggestions[self.suggestion_index])
+            s.set_class(i == self.suggestions.index, CssClass.SELECTED)
+        if self.suggestions.value_prefix is None:
+            self._update_command_help(selected)
+
+    def _on_picker_nav(self, key: str, picker: ValuePicker) -> None:
+        """Handle navigation within the ValuePicker."""
+        self.suppress_input_change = True
+        selected = picker.navigate(key)
+        if selected is not None:
+            inp = self.query_one(Input)
+            if self.suggestions.value_prefix is not None:
+                inp.value = f"{self.suggestions.value_prefix}{selected}"
+            else:
+                inp.value = selected
+            inp.cursor_position = len(inp.value)
 
     def _on_history(self, key: str) -> None:
         """Cycle through command history with up/down arrows."""
@@ -318,20 +403,25 @@ class TuiApp(App):
     def _on_tab(self) -> None:
         """Confirm selection and show first argument placeholder."""
         self.suppress_input_change = True
-        suggestions = self.query_one("#suggestions", Vertical)
-        suggestions.remove_children()
-        suggestions.display = False
-        cmd_name = self.current_suggestions[self.suggestion_index]
-        cmd = self.state.commands_map.get(cmd_name)
         inp = self.query_one(Input)
-        if isinstance(cmd, Command) and cmd.positional_args:
-            first_arg = cmd.positional_args[0]
-            inp.value = f"{cmd_name} <{first_arg.name}>"
+
+        if self._picker.has_selection:
+            selected = self._picker.selected_value or ""
+            inp.value = f"{self.suggestions.value_prefix or ''}{selected} "
+            self._picker.clear()
         else:
-            inp.value = f"{cmd_name} "
+            self._suggestions_widget.remove_children()
+            self._suggestions_widget.display = False
+            selected = self.suggestions.items[self.suggestions.index]
+            cmd = self.state.commands_map.get(selected)
+            if isinstance(cmd, Command) and cmd.positional_args:
+                first_arg = cmd.positional_args[0]
+                inp.value = f"{selected} <{first_arg.name}>"
+            else:
+                inp.value = f"{selected} "
+
         inp.cursor_position = len(inp.value)
-        self.current_suggestions = []
-        self.suggestion_index = -1
+        self.suggestions.reset()
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
         """Show user input in messages area and queue command for execution."""
@@ -356,11 +446,9 @@ class TuiApp(App):
             self._add_message(f"> {value}", CssClass.MESSAGE)
         event.input.value = ""
 
-        suggestions = self.query_one("#suggestions", Vertical)
-        suggestions.remove_children()
-        suggestions.display = False
-        self.current_suggestions = []
-        self.suggestion_index = -1
+        self._suggestions_widget.remove_children()
+        self._suggestions_widget.display = False
+        self.suggestions.reset()
         self._update_command_help(None)
         self._set_hint(None)
 
@@ -431,11 +519,10 @@ class TuiApp(App):
         """Clear input field and suggestions."""
         inp = self.query_one(Input)
         inp.value = ""
-        suggestions = self.query_one("#suggestions", Vertical)
-        suggestions.remove_children()
-        suggestions.display = False
-        self.current_suggestions = []
-        self.suggestion_index = -1
+        self._suggestions_widget.remove_children()
+        self._suggestions_widget.display = False
+        self.suggestions.reset()
+        self._picker.clear()
         self.history.reset_index()
         self._update_command_help(None)
 

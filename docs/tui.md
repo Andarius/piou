@@ -154,6 +154,7 @@ The TUI is composed of the following Textual widgets:
 │ #context-panel (Vertical)        │
 │   #hint                          │
 │   #suggestions (Vertical)        │
+│   #value-picker (ValuePicker)    │
 │   #command-help                  │
 └──────────────────────────────────┘
 ```
@@ -283,6 +284,7 @@ app = cli.tui_app(css="""
 | `#input-row` | Input row container |
 | `#prompt` | Input prompt (`> `) |
 | `#suggestions` | Suggestions container |
+| `#value-picker` | Option value picker grid |
 | `#command-help` | Command help display |
 | `#hint` | Hint text |
 | `#rule-above` | Rule above input |

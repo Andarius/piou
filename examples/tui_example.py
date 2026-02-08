@@ -110,6 +110,54 @@ def process(
     print(f"Successfully processed {items} items")
 
 
+TIMEZONES = [
+    "US/Eastern",
+    "US/Central",
+    "US/Mountain",
+    "US/Pacific",
+    "Europe/London",
+    "Europe/Paris",
+    "Europe/Berlin",
+    "Europe/Rome",
+    "Europe/Madrid",
+    "Europe/Amsterdam",
+    "Europe/Brussels",
+    "Europe/Zurich",
+    "Asia/Tokyo",
+    "Asia/Shanghai",
+    "Asia/Singapore",
+    "Asia/Dubai",
+    "Asia/Kolkata",
+    "Asia/Seoul",
+    "Asia/Hong_Kong",
+    "Asia/Bangkok",
+    "Australia/Sydney",
+    "Australia/Melbourne",
+    "Pacific/Auckland",
+    "America/Toronto",
+    "America/Chicago",
+    "America/Denver",
+    "America/Los_Angeles",
+    "America/Sao_Paulo",
+    "America/Mexico_City",
+    "Africa/Cairo",
+    "Africa/Johannesburg",
+    "Africa/Lagos",
+]
+
+
+@cli.command(cmd="time", help="Show current time in a timezone")
+def show_time(
+    tz: str = Option("US/Eastern", "-z", "--zone", help="Timezone", choices=TIMEZONES),
+):
+    """Display the current time in the given timezone."""
+    import datetime as dt
+    from zoneinfo import ZoneInfo
+
+    now = dt.datetime.now(ZoneInfo(tz))
+    print(f"{tz}: {now:%H:%M:%S}")
+
+
 @cli.command(cmd="warn", help="Show warning notification")
 def warn(
     message: str = Option(..., help="Warning message"),

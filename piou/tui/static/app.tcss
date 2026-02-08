@@ -55,6 +55,7 @@ Rule.bash-mode {
     color: white;
 }
 
+
 #input-row {
     background: transparent;
     height: 1;
