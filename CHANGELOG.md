@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.31.0 (2026-02-08)
+
+### Feat
+
+- tui option value completion with ValuePicker widget and perf optimizations (#39)
+
 ## 0.30.0 (2026-02-06)
 
 ### Feat
