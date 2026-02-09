@@ -68,7 +68,7 @@ def format_text(
 
 
 # Command group with subcommands
-stats = cli.add_sub_parser(cmd="stats", help="View statistics")
+stats = cli.add_command_group("stats", help="View statistics")
 
 
 @stats.command(cmd="uploads", help="Show upload statistics")

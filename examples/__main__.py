@@ -91,7 +91,7 @@ def exception_main(
     raise ValueError("Something went wrong!")
 
 
-sub_cmd = cli.add_sub_parser(cmd="sub", help="A sub command", propagate_options=True)
+sub_cmd = cli.add_command_group("sub", help="A sub command", propagate_options=True)
 sub_cmd.add_option("--test", help="Test mode")
 
 

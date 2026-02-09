@@ -2,6 +2,7 @@ from __future__ import annotations
 import asyncio
 import functools
 import textwrap
+import warnings
 from dataclasses import dataclass, field
 from inspect import getdoc
 from typing import Any, NamedTuple, Callable
@@ -150,7 +151,16 @@ class CommandGroup:
         return self.options
 
     def add_sub_parser(self, help: str | None = None, description: str | None = None):
-        """Adds a sub-parser to the command group, which can be used to add sub-commands."""
+        """Adds a sub-parser to the command group, which can be used to add sub-commands.
+
+        .. deprecated::
+            Use the `CommandGroup()` constructor directly instead.
+        """
+        warnings.warn(
+            "CommandGroup.add_sub_parser() is deprecated. Use CommandGroup() constructor directly.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         cls = type(self)
         return cls(help=help, description=description)  # noqa
 
@@ -223,6 +233,10 @@ class CommandGroup:
             return f
 
         return _command
+
+    def main(self, help: str | None = None, description: str | None = None):
+        """Decorator to mark a function as the main command for this group."""
+        return self.command(cmd=None, help=help, description=description, is_main=True)
 
     def processor(self):
         """Decorator to mark a function as an option processor."""
