@@ -122,7 +122,7 @@ def get_cmd_group_cli_with_global_opt(formatter):
     cli.add_option("-q", "--quiet", help="Do not output any message")
     cli.add_option("--verbose", help="Increase verbosity")
 
-    sub_cmd = cli.add_sub_parser("sub-cmd", help="A sub command")
+    sub_cmd = cli.add_command_group("sub-cmd", help="A sub command")
 
     sub_cmd.add_option("-t", "--test", help="Test mode")
 
@@ -138,7 +138,7 @@ def get_cmd_group_cli_with_global_opt(formatter):
     def bar_main(**kwargs):
         pass
 
-    sub_cmd2 = cli.add_sub_parser("sub-cmd2", help="Another sub command")
+    sub_cmd2 = cli.add_command_group("sub-cmd2", help="Another sub command")
 
     @sub_cmd2.command(cmd="bar", help="Run bar command")
     def another_bar_main(**kwargs):
@@ -169,7 +169,7 @@ def get_cli_full(formatter):
     def bar_main():
         pass
 
-    baz_cmd = cli.add_sub_parser(cmd="baz", help="A sub command")
+    baz_cmd = cli.add_command_group("baz", help="A sub command")
     baz_cmd.add_option("--test", help="Test mode")
 
     @baz_cmd.command(cmd="bar", help="Run baz command")
@@ -641,7 +641,7 @@ class TestClosestMatch:
 
         cli = Cli(formatter=RichFormatter())
 
-        sub = cli.add_sub_parser("db", help="Database commands")
+        sub = cli.add_command_group("db", help="Database commands")
 
         @sub.command(cmd="migrate")
         def migrate_cmd():
