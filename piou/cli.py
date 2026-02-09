@@ -195,6 +195,10 @@ class Cli:
                 description=description,
                 propagate_options=propagate_options,
             )
+        elif help is not None or description is not None or propagate_options:
+            raise TypeError(
+                "help, description, and propagate_options are only accepted when passing a command name string"
+            )
         self._group.add_group(group)
         return group
 

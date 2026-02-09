@@ -157,7 +157,7 @@ class CommandGroup:
             Use the `CommandGroup()` constructor directly instead.
         """
         warnings.warn(
-            "CommandGroup.add_sub_parser() is deprecated. Use CommandGroup() constructor directly.",
+            "CommandGroup.add_sub_parser() is deprecated. Use CommandGroup() constructor or Cli.add_command_group() instead.",
             DeprecationWarning,
             stacklevel=2,
         )
@@ -227,6 +227,8 @@ class CommandGroup:
         is_main: bool = False,
     ):
         """Decorator to mark a function as a command."""
+        if is_main and cmd is not None:
+            raise ValueError("Main command should not have a command name")
 
         def _command(f):
             self.add_command(f, cmd=cmd, help=help, description=description, is_main=is_main)
