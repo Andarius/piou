@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.32.0 (2026-02-09)
+
+### Feat
+
+- overload add_command_group, deprecate add_sub_parser (#40)
+
 ## 0.31.0 (2026-02-08)
 
 ### Feat
