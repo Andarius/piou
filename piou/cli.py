@@ -1,7 +1,8 @@
 import os
 import sys
+import warnings
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any, Callable, overload
 
 from .command import CommandGroup, ShowHelpError, ShowTuiError, clean_multiline, OnCommandRun
 from .utils import cleanup_event_loop
@@ -162,9 +163,44 @@ class Cli:
         """Add a command to the CLI application."""
         self._group.add_command(cmd=cmd, f=f, help=help, description=description)
 
-    def add_command_group(self, group: CommandGroup):
-        """Add a command group to the CLI application."""
+    @overload
+    def add_command_group(self, group: CommandGroup) -> CommandGroup: ...
+    @overload
+    def add_command_group(
+        self,
+        group: str,
+        *,
+        help: str | None = None,
+        description: str | None = None,
+        propagate_options: bool = False,
+    ) -> CommandGroup: ...
+
+    def add_command_group(
+        self,
+        group: CommandGroup | str,
+        *,
+        help: str | None = None,
+        description: str | None = None,
+        propagate_options: bool = False,
+    ) -> CommandGroup:
+        """Add a command group to the CLI application.
+
+        Accepts either a pre-built CommandGroup or a command name string
+        to create one inline.
+        """
+        if isinstance(group, str):
+            group = CommandGroup(
+                name=group,
+                help=help,
+                description=description,
+                propagate_options=propagate_options,
+            )
+        elif help is not None or description is not None or propagate_options:
+            raise TypeError(
+                "help, description, and propagate_options are only accepted when passing a command name string"
+            )
         self._group.add_group(group)
+        return group
 
     def add_sub_parser(
         self,
@@ -173,15 +209,22 @@ class Cli:
         description: str | None = None,
         propagate_options: bool = False,
     ) -> CommandGroup:
-        """Add a sub-command group to the CLI application."""
-        group = CommandGroup(
-            name=cmd,
+        """Add a sub-command group to the CLI application.
+
+        .. deprecated::
+            Use `add_command_group()` instead.
+        """
+        warnings.warn(
+            "add_sub_parser() is deprecated. Use add_command_group() instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.add_command_group(
+            cmd,
             help=help,
             description=description,
             propagate_options=propagate_options,
         )
-        self.add_command_group(group)
-        return group
 
     # TUI methods
 

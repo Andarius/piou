@@ -96,10 +96,10 @@ python run.py greet --name a # runs greet: "Greetings, a!"
 
 ## Command Groups / Sub-commands
 
-You can nest commands arbitrarily deep using sub-parsers.
+You can nest commands arbitrarily deep using command groups.
 
 ```python
-sub_cmd = cli.add_sub_parser(cmd='sub', help='A sub command')
+sub_cmd = cli.add_command_group('sub', help='A sub command')
 sub_cmd.add_option('--test', help='Test mode')
 
 @sub_cmd.command(cmd='bar', help='Run bar command')

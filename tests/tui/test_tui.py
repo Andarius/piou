@@ -123,7 +123,7 @@ def cli_with_subcommands():
         msg = f"Hi, {name}!"
         print(msg.upper() if loud else msg)
 
-    stats = cli.add_sub_parser(cmd="stats", help="Statistics commands")
+    stats = cli.add_command_group("stats", help="Statistics commands")
 
     @stats.command(cmd="uploads", help="Show upload stats")
     def uploads():

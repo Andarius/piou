@@ -346,16 +346,15 @@ class CommandOption(Generic[T]):
     replacement: str = "*"
 
     def __post_init__(self):
-        """Parse --flag/--no-flag syntax for boolean options."""
+        """Parse --flag/--negative-flag syntax for boolean options."""
         # Skip parsing if already parsed (e.g., from dataclasses.replace)
         if self.negative_flag is not None:
             return
         parsed_args = []
         for arg in self.keyword_args:
             if "/" in arg and arg.startswith("--"):
-                # Parse --flag/--no-flag syntax
                 parts = arg.split("/")
-                if len(parts) == 2 and parts[1].startswith("--no-"):
+                if len(parts) == 2 and parts[1].startswith("--"):
                     parsed_args.append(parts[0])
                     self.negative_flag = parts[1]
                 else:

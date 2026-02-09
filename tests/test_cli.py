@@ -776,7 +776,7 @@ def test_run_group_command():
 
     cli.set_options_processor(processor)
 
-    foo_sub_cmd = cli.add_sub_parser(cmd="foo", description="A sub command")
+    foo_sub_cmd = cli.add_command_group("foo", description="A sub command")
     foo_sub_cmd.add_option("--test", help="Test mode")
 
     sub_processor_called = False
@@ -855,7 +855,7 @@ def test_run_group_command_pass_global_args():
 
     cli.set_options_processor(processor)
 
-    foo_sub_cmd = cli.add_sub_parser(cmd="foo", description="A sub command", propagate_options=True)
+    foo_sub_cmd = cli.add_command_group("foo", description="A sub command", propagate_options=True)
     foo_sub_cmd.add_option("--test", help="Test mode")
 
     sub_processor_called = False
@@ -1084,7 +1084,7 @@ def test_on_cmd_run():
     def test(value: int = Derived(processor), bar: str = Option(None, "--bar")):
         pass
 
-    sub_cmd = cli.add_sub_parser("sub")
+    sub_cmd = cli.add_command_group("sub")
 
     @sub_cmd.processor()
     def sub_processor(verbose: bool = Option(False, "--verbose")):
@@ -1524,6 +1524,53 @@ class TestNestedCommandGroup:
         # options_sorted should exist and return same as options
         assert hasattr(group, "options_sorted")
         assert group.options_sorted == group.options
+
+    @pytest.mark.parametrize(
+        "method, match",
+        [
+            pytest.param("cli", "add_sub_parser.*add_command_group", id="cli_add_sub_parser"),
+            pytest.param("group", "CommandGroup.add_sub_parser.*CommandGroup\\(\\)", id="group_add_sub_parser"),
+        ],
+    )
+    def test_add_sub_parser_deprecated(self, method, match):
+        """Both add_sub_parser methods emit DeprecationWarning."""
+        from piou import Cli, CommandGroup
+
+        if method == "cli":
+            cli = Cli(description="Test CLI")
+            with pytest.warns(DeprecationWarning, match=match):
+                cli.add_sub_parser(cmd="foo")
+            assert "foo" in cli._group.command_names
+        else:
+            parent = CommandGroup(name="parent")
+            with pytest.warns(DeprecationWarning, match=match):
+                child = parent.add_sub_parser(help="Child help")
+            assert isinstance(child, CommandGroup)
+
+    def test_command_group_main_with_named_commands(self):
+        """CommandGroup.main() coexists with named commands."""
+        from piou import Cli, Option
+
+        cli = Cli(description="Test CLI")
+        group = cli.add_command_group("sub")
+        result: dict[str, object] = {}
+
+        @group.main()
+        def default(name: str = Option(...)):
+            result["cmd"] = "main"
+            result["value"] = name
+
+        @group.command("action")
+        def action(val: int = Option(..., "--val")):
+            result["cmd"] = "action"
+            result["value"] = val
+
+        cli.run_with_args("sub", "hello")
+        assert result == {"cmd": "main", "value": "hello"}
+
+        result.clear()
+        cli.run_with_args("sub", "action", "--val", "42")
+        assert result == {"cmd": "action", "value": 42}
 
 
 @pytest.mark.parametrize(
