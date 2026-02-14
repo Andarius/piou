@@ -4,11 +4,12 @@ Run with:
     python -m examples.tui_example
 """
 
+import asyncio
 import time
 from typing import Literal
 
 from piou import Cli, Option
-from piou.tui import TuiContext, TuiOption, get_tui_context
+from piou.tui import StreamingMessage, TuiContext, TuiOption, get_tui_context
 
 cli = Cli(description="Interactive CLI Demo", tui=True)
 
@@ -108,6 +109,55 @@ def process(
 
     ctx.notify("Processing complete!", title="Done", severity="information")
     print(f"Successfully processed {items} items")
+
+
+@cli.command(cmd="generate", help="Stream generated text")
+async def generate(
+    lines: int = Option(30, "-n", "--lines", help="Number of lines to generate"),
+    delay: float = Option(0.15, "-d", "--delay", help="Delay between lines in seconds"),
+    ctx: TuiContext = TuiOption(),
+):
+    """Generate text line by line to demonstrate streaming.
+
+    In TUI mode, uses a StreamingMessage widget so lines appear one by one.
+    Try scrolling up with Shift+Up while text is being generated —
+    autoscroll pauses. Scroll back down to re-enable it.
+    """
+    import random
+
+    words = [
+        "the",
+        "quick",
+        "brown",
+        "fox",
+        "jumps",
+        "over",
+        "lazy",
+        "dog",
+        "lorem",
+        "ipsum",
+        "dolor",
+        "sit",
+        "amet",
+        "alpha",
+        "beta",
+        "gamma",
+    ]
+
+    if ctx.is_tui:
+        widget = StreamingMessage()
+        ctx.mount_widget(widget)
+        for i in range(1, lines + 1):
+            sentence = " ".join(random.choices(words, k=random.randint(4, 10)))
+            widget.append(f"[{i:>3}/{lines}] {sentence}\n")
+            await asyncio.sleep(delay)
+        widget.append("Done.")
+    else:
+        for i in range(1, lines + 1):
+            sentence = " ".join(random.choices(words, k=random.randint(4, 10)))
+            print(f"[{i:>3}/{lines}] {sentence}")
+            time.sleep(delay)
+        print("Done.")
 
 
 TIMEZONES = [

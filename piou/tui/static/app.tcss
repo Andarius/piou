@@ -104,7 +104,6 @@ Input > .input--suggestion {
     margin: 0;
     height: 1fr;
     max-height: 100%;
-    overflow-y: auto;
     scrollbar-size-vertical: 1;
     scrollbar-color: grey 50%;
     scrollbar-color-active: white;
