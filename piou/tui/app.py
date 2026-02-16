@@ -14,7 +14,7 @@ from .watcher import Watcher
 
 try:
     from textual.app import App, ComposeResult
-    from textual.containers import Horizontal, Vertical
+    from textual.containers import Horizontal, Vertical, VerticalScroll
     from textual.events import Key
     from textual.widget import Widget
     from textual.widgets import Input, Rule, Static
@@ -34,6 +34,19 @@ from .suggester import (
 )
 from .utils import get_command_help
 from .value_picker import ValuePicker
+
+
+class _MessageScroll(VerticalScroll):
+    """Messages container that syncs scroll position with TuiApp._auto_scroll."""
+
+    def watch_scroll_y(self, old_value: float, new_value: float) -> None:
+        super().watch_scroll_y(old_value, new_value)
+        app: TuiApp = self.app  # type: ignore[assignment]
+        if app._is_scrolled_to_bottom(self):
+            app._auto_scroll = True
+        elif new_value < old_value:
+            app._auto_scroll = False
+            self.anchor(False)
 
 
 class CssClass:
@@ -70,7 +83,11 @@ class PromptStyle:
 class TuiApp(App):
     """TUI application for a piou CLI."""
 
-    BINDINGS = [("escape", "quit", "Quit")]
+    BINDINGS = [
+        ("escape", "quit", "Quit"),
+        ("shift+up", "scroll_messages_up", "Scroll Up"),
+        ("shift+down", "scroll_messages_down", "Scroll Down"),
+    ]
     CSS_PATH = "static/app.tcss"
 
     def __init__(
@@ -100,6 +117,7 @@ class TuiApp(App):
         self.suppress_input_change = False
         self.exit_pending = False
         self.silent_queue = False
+        self._auto_scroll = True
         # Cache last help path to skip redundant widget updates
         self._last_help_path: str | None = None
 
@@ -175,7 +193,9 @@ class TuiApp(App):
             │   #command-help                  │
             └──────────────────────────────────┘
         """
-        with Vertical(id="messages"):
+        messages = _MessageScroll(id="messages")
+        messages.can_focus = False
+        with messages:
             yield Static(self.state.cli_name, id="name")
             if self.state.description:
                 yield Static(self.state.description, id="description")
@@ -505,15 +525,42 @@ class TuiApp(App):
     # -------------------------------------------------------------------------
 
     def _add_message(self, content: str | Text | Widget, classes: str | None = None) -> None:
-        """Add a message to the messages area and scroll to bottom."""
-        messages = self.query_one("#messages", Vertical)
+        """Add a message to the messages area and scroll to bottom if autoscroll is active."""
+        messages = self.query_one("#messages", VerticalScroll)
         _content = content if isinstance(content, Widget) else Static(content, classes=classes)
-        # Scroll to the bottom of the messages area.
         messages.mount(_content)
-        if self.is_inline:
-            self.call_after_refresh(self.screen.scroll_end, animate=False)
-        else:
-            self.call_after_refresh(messages.scroll_end, animate=False)
+        if self._auto_scroll:
+            if self.is_inline:
+                self.call_after_refresh(self.screen.scroll_end, animate=False)
+            else:
+                self.call_after_refresh(self._scroll_to_bottom)
+
+    def _is_scrolled_to_bottom(self, scroll_view: VerticalScroll) -> bool:
+        """Check if a scroll view is at (or near) the bottom."""
+        threshold = 3
+        return scroll_view.scroll_y >= (scroll_view.max_scroll_y - threshold)
+
+    def _scroll_to_bottom(self) -> None:
+        """Scroll the messages area to the bottom and anchor for new content.
+
+        Re-checks ``_auto_scroll`` at execution time so that deferred
+        callbacks (via ``call_after_refresh``) respect scroll changes that
+        happened between queue time and execution time.
+        """
+        if not self._auto_scroll:
+            return
+        messages = self.query_one("#messages", VerticalScroll)
+        messages.scroll_end(animate=False)
+        if messages.max_scroll_y > 0:
+            messages.anchor()
+
+    def action_scroll_messages_up(self) -> None:
+        """Scroll messages up."""
+        self.query_one("#messages", VerticalScroll).scroll_relative(y=-5, animate=False)
+
+    def action_scroll_messages_down(self) -> None:
+        """Scroll messages down."""
+        self.query_one("#messages", VerticalScroll).scroll_relative(y=5, animate=False)
 
     def clear_input(self) -> None:
         """Clear input field and suggestions."""

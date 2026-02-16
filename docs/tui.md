@@ -57,6 +57,8 @@ Once in TUI mode, you interact with your CLI through an input prompt:
 |-----|--------|
 | `Tab` | Accept suggestion and show argument placeholder |
 | `Up/Down` | Cycle through suggestions or command history |
+| `Shift+Up` | Scroll messages up (pauses autoscroll) |
+| `Shift+Down` | Scroll messages down (re-enables autoscroll at bottom) |
 | `Enter` | Execute the command |
 | `Ctrl+C` | Clear input (press twice to exit) |
 | `Escape` | Quit the TUI |
@@ -214,6 +216,24 @@ async def stats(ctx: TuiContext = TuiOption()):
     table.add_row("Users", "1,234")
     table.add_row("Events", "56,789")
     ctx.mount_widget(table)
+```
+
+### Streaming Output
+
+Use `StreamingMessage` to display content that arrives incrementally (e.g. LLM tokens, progress lines). It accumulates text via `append()` and respects autoscroll — users can scroll up to pause and scroll back down to resume.
+
+```python
+import asyncio
+from piou.tui import StreamingMessage, TuiContext, TuiOption
+
+@cli.command(cmd="generate")
+async def generate(ctx: TuiContext = TuiOption()):
+    widget = StreamingMessage()
+    ctx.mount_widget(widget)
+    for i in range(20):
+        widget.append(f"Line {i + 1}\n")
+        await asyncio.sleep(0.1)
+    widget.append("Done.")
 ```
 
 ### Prompting for Input
