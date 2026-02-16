@@ -1,11 +1,8 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from textual.widgets import Static
 
-if TYPE_CHECKING:
-    from .app import TuiApp
+from .app import TuiApp
 
 
 class StreamingMessage(Static):
@@ -25,6 +22,6 @@ class StreamingMessage(Static):
         """Append text to the message and refresh the display."""
         self._text += text
         self.update(self._text)
-        app: TuiApp = self.app  # type: ignore[assignment]
-        if app._auto_scroll:
-            self.call_after_refresh(app._scroll_to_bottom)
+        if not isinstance(self.app, TuiApp):
+            raise TypeError(f"StreamingMessage must be used inside a TuiApp, got {type(self.app).__name__}")
+        self.call_after_refresh(self.app._scroll_to_bottom)

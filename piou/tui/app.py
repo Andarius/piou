@@ -528,9 +528,6 @@ class TuiApp(App):
         """Add a message to the messages area and scroll to bottom if autoscroll is active."""
         messages = self.query_one("#messages", VerticalScroll)
         _content = content if isinstance(content, Widget) else Static(content, classes=classes)
-        was_at_bottom = self._is_scrolled_to_bottom(messages)
-        if was_at_bottom:
-            self._auto_scroll = True
         messages.mount(_content)
         if self._auto_scroll:
             if self.is_inline:
@@ -544,7 +541,14 @@ class TuiApp(App):
         return scroll_view.scroll_y >= (scroll_view.max_scroll_y - threshold)
 
     def _scroll_to_bottom(self) -> None:
-        """Scroll the messages area to the bottom and anchor for new content."""
+        """Scroll the messages area to the bottom and anchor for new content.
+
+        Re-checks ``_auto_scroll`` at execution time so that deferred
+        callbacks (via ``call_after_refresh``) respect scroll changes that
+        happened between queue time and execution time.
+        """
+        if not self._auto_scroll:
+            return
         messages = self.query_one("#messages", VerticalScroll)
         messages.scroll_end(animate=False)
         if messages.max_scroll_y > 0:
