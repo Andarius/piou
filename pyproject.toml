@@ -1,6 +1,6 @@
 [project]
 name = "piou"
-version = "0.32.0"
+version = "0.33.0"
 description = "A CLI toolkit"
 authors = [{ name = "Julien Brayere", email = "julien.brayere@obitrain.com" }]
 license = "MIT"
@@ -121,7 +121,7 @@ target-version = "py312"
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-version = "0.32.0"
+version = "0.33.0"
 tag_format = "$version"
 version_files = [
     "pyproject.toml:version"
