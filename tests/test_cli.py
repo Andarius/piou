@@ -606,7 +606,14 @@ def raises_exit(code: int = 1):
     assert exit_error.value.code == code
 
 
-def test_run_command():
+@pytest.mark.parametrize(
+    "use_decorator",
+    [
+        pytest.param(False, id="set_options_processor"),
+        pytest.param(True, id="processor_decorator"),
+    ],
+)
+def test_run_command(use_decorator):
     from piou import Cli, Option
     from piou.exceptions import (
         PosParamsCountError,
@@ -619,16 +626,29 @@ def test_run_command():
 
     cli = Cli(description="A CLI tool")
 
-    cli.add_option("-q", "--quiet", help="Do not output any message")
-    cli.add_option("--verbose", help="Increase verbosity")
+    if use_decorator:
 
-    def processor(quiet: bool, verbose: bool):
-        nonlocal processor_called
-        processor_called = True
-        assert quiet is True
-        assert verbose is False
+        @cli.processor()
+        def processor(
+            quiet: bool = Option(False, "-q", "--quiet", help="Do not output any message"),
+            verbose: bool = Option(False, "--verbose", help="Increase verbosity"),
+        ):
+            nonlocal processor_called
+            processor_called = True
+            assert quiet is True
+            assert verbose is False
+    else:
 
-    cli.set_options_processor(processor)
+        def processor(
+            quiet: bool = Option(False, "-q", "--quiet", help="Do not output any message"),
+            verbose: bool = Option(False, "--verbose", help="Increase verbosity"),
+        ):
+            nonlocal processor_called
+            processor_called = True
+            assert quiet is True
+            assert verbose is False
+
+        cli.set_options_processor(processor)
 
     @cli.command(cmd="foo", help="Run foo command")
     def foo_main(
@@ -1220,6 +1240,47 @@ class TestMainWithCommands:
         assert processor_called
         assert result["name"] == "hello"
         assert result["verbose"] is True
+
+    @pytest.mark.parametrize(
+        "args, expected_bar, expected_verbose",
+        [
+            pytest.param(["-v", "1", "-b", "baz"], 1, True, id="global_flag_before_positional"),
+            pytest.param(["1", "-b", "baz", "-v"], 1, True, id="global_flag_after_args"),
+            pytest.param(["1", "-b", "baz"], 1, False, id="no_global_flag"),
+        ],
+    )
+    def test_main_only_with_global_options(self, args, expected_bar, expected_verbose):
+        """Main-only CLI (no named commands) should correctly separate global
+        options from command options via parse_input_args."""
+        from piou import Cli, Option
+
+        result: dict[str, object] = {}
+        processor_called = False
+
+        cli = Cli(description="Test CLI", propagate_options=True)
+
+        def processor(
+            verbose: bool = Option(False, "-v", "--verbose"),
+        ):
+            nonlocal processor_called
+            processor_called = True
+            assert verbose is expected_verbose
+
+        cli.set_options_processor(processor)
+
+        @cli.main()
+        def main_cmd(
+            verbose: bool,
+            bar: int = Option(...),
+            baz: str = Option(..., "-b", "--baz"),
+        ):
+            result["bar"] = bar
+            result["verbose"] = verbose
+
+        cli.run_with_args(*args)
+        assert processor_called
+        assert result["bar"] == expected_bar
+        assert result["verbose"] is expected_verbose
 
     def test_main_not_in_command_not_found_error(self):
         """__main__ should not appear in CommandNotFoundError messages."""

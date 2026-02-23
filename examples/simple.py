@@ -3,6 +3,11 @@ from piou import Cli, Option
 cli = Cli(description="A CLI tool")
 
 
+@cli.processor()
+def processor(verbose: bool = Option(False, "-vv", "--verbose", help="Increase verbosity")):
+    print(f"Processing with {verbose=}")
+
+
 @cli.main(help="Run default command")
 def main_cmd(
     bar: int = Option(..., help="Bar positional argument (required)"),

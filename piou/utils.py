@@ -628,7 +628,8 @@ def parse_input_args(
     """
     # Handle main-only CLI
     if "__main__" in commands and len(commands) == 1:
-        return "__main__", [], list(args)
+        if not global_option_names:
+            return "__main__", [], list(args)
 
     # Find the command
     cmd = None
