@@ -94,6 +94,28 @@ I could not find a library that provided:
 
 **Piou** provides all these possibilities and lets you define your own Formatter.
 
+## Async Commands
+
+Commands can be `async` functions — piou detects coroutines and runs them automatically, no manual `asyncio.run()` needed:
+
+```python
+from piou import Cli, Option
+
+cli = Cli(description='Async example')
+
+@cli.command(cmd='fetch', help='Fetch data')
+async def fetch(url: str = Option(help='URL to fetch')):
+    import niquests
+    async with niquests.AsyncSession() as client:
+        r = await client.get(url)
+        print(r.status_code)
+
+if __name__ == '__main__':
+    cli.run()
+```
+
+This works the same way for commands inside command groups.
+
 ## Interactive TUI Mode
 
 Piou includes an optional interactive TUI (Text User Interface) mode powered by [Textual](https://textual.textualize.io/).

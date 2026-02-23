@@ -244,9 +244,6 @@ class CommandGroup:
         """Decorator to mark a function as an option processor."""
 
         def _processor(f):
-            options, _ = extract_function_info(f)
-            for option in options:
-                self._options.append(option)
             self.set_options_processor(f)
             return f
 
@@ -376,7 +373,13 @@ class CommandGroup:
         return command.run(loop=loop, **args_dict)
 
     def set_options_processor(self, fn: Callable):
-        """Sets the options processor function for the command group."""
+        """Sets the options processor function for the command group.
+        Options defined via Option() in the function signature are
+        automatically extracted and registered as group-level options.
+        """
+        options, _ = extract_function_info(fn)
+        for option in options:
+            self._options.append(option)
         self.options_processor = fn
 
 
