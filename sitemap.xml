@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+         <loc>https://andarius.github.io/piou/</loc>
+         <lastmod>2026-02-23</lastmod>
+    </url>
+    <url>
+         <loc>https://andarius.github.io/piou/advanced/</loc>
+         <lastmod>2026-02-23</lastmod>
+    </url>
+    <url>
+         <loc>https://andarius.github.io/piou/features/</loc>
+         <lastmod>2026-02-23</lastmod>
+    </url>
+    <url>
+         <loc>https://andarius.github.io/piou/getting-started/</loc>
+         <lastmod>2026-02-23</lastmod>
+    </url>
+    <url>
+         <loc>https://andarius.github.io/piou/migration/</loc>
+         <lastmod>2026-02-23</lastmod>
+    </url>
+    <url>
+         <loc>https://andarius.github.io/piou/options/</loc>
+         <lastmod>2026-02-23</lastmod>
+    </url>
+    <url>
+         <loc>https://andarius.github.io/piou/tui/</loc>
+         <lastmod>2026-02-23</lastmod>
+    </url>
+</urlset>
