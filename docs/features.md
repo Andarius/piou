@@ -127,6 +127,22 @@ def processor(verbose: bool = Option(False, '--verbose', help='Increase verbosit
 
 By default, processed options are consumed. To pass them down to the command functions as well, use `propagate_options=True` when creating the `Cli` or sub-parser.
 
+You can also use `set_options_processor()` instead of the decorator. Options defined via `Option()` in the function signature are automatically extracted and registered as global options:
+
+```python
+cli = Cli(description='A CLI tool')
+
+def processor(
+    verbose: bool = Option(False, '-v', '--verbose'),
+    log_level: str | None = Option(None, '--log-level'),
+):
+    ...
+
+cli.set_options_processor(processor)
+```
+
+This is equivalent to using the `@cli.processor()` decorator.
+
 ## Error Handling
 
 ### CommandError
