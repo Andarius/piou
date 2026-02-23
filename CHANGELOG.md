@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.33.1 (2026-02-23)
+
+### Fix
+
+- issue with set_options_processor (#42)
+
 ## 0.33.0 (2026-02-16)
 
 ### Feat
