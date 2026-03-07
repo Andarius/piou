@@ -303,6 +303,15 @@ class CommandGroup:
             return command_group.run_with_args(*cmd_options, parent_args=parent_args, loop=loop)
 
         _all_options = set(global_options + cmd_options)
+        # Checks if JSON help was requested
+        _help_json = _all_options & {"--help-json", "--help-json=full"}
+        if _help_json:
+            raise ShowHelpJsonError(
+                group=command_group or self,
+                parent_args=parent_args,
+                command=command,
+                resolve_choices="--help-json=full" in _help_json,
+            )
         # Checks if help was requested and raises a special exception to display help
         if _all_options & {"-h", "--help"}:
             raise ShowHelpError(group=command_group or self, parent_args=parent_args, command=command)
@@ -395,6 +404,22 @@ class ShowHelpError(Exception):
         self.command = command
         self.group = group
         self.parent_args = parent_args
+
+
+class ShowHelpJsonError(Exception):
+    """Exception raised to output the CLI schema as JSON."""
+
+    def __init__(
+        self,
+        group: CommandGroup,
+        command: Command | None = None,
+        parent_args: ParentArgs | None = None,
+        resolve_choices: bool = False,
+    ):
+        self.command = command
+        self.group = group
+        self.parent_args = parent_args
+        self.resolve_choices = resolve_choices
 
 
 class ShowTuiError(Exception):
