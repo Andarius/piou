@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.34.0 (2026-03-14)
+
+### Feat
+
+- `--help-json` flag for structured CLI discovery (#43)
+
 ## 0.33.1 (2026-02-23)
 
 ### Fix
