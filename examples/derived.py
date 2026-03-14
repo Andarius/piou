@@ -1,16 +1,16 @@
 import asyncio
 import os
 from typing import Literal
-from piou import Cli, Option, Derived
+from piou import Cli, Option, Derived, Password
 
 cli = Cli(description="A CLI tool")
 
-PgPwd = Option(os.getenv("PG_PWD", "pwd"), "--pwd", help="PG Host")
+PgPwd = Option(os.getenv("PG_PWD", "pwd"), "--pwd", help="PG Password")
 
 
 def get_pg_url(
     pg_user: str = Option("postgres", "--user"),
-    pg_pwd: str = PgPwd,
+    pg_pwd: Password = PgPwd,
     pg_host: str = Option("localhost", "--host"),
     pg_port: int = Option(5432, "--port"),
     pg_db: str = Option("postgres", "--db"),
