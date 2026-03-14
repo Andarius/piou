@@ -81,6 +81,7 @@ Full documentation is available at **[andarius.github.io/piou](https://andarius.
 - Async command support
 - Type validation and casting
 - **Interactive TUI mode** with command suggestions and history
+- **Structured JSON help** (`--help-json`) for tooling and programmatic CLI discovery
 
 ## Why Piou?
 
