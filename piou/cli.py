@@ -4,7 +4,7 @@ import warnings
 from dataclasses import dataclass, field
 from typing import Any, Callable, overload
 
-from .command import CommandGroup, ShowHelpError, ShowTuiError, clean_multiline, OnCommandRun
+from .command import CommandGroup, ShowHelpError, ShowHelpJsonError, ShowTuiError, clean_multiline, OnCommandRun
 from .utils import cleanup_event_loop
 from .exceptions import (
     CommandNotFoundError,
@@ -91,6 +91,12 @@ class Cli:
             sys.exit(1)
         except ShowHelpError as e:
             self.formatter.print_help(group=e.group, command=e.command, parent_args=e.parent_args)
+        except ShowHelpJsonError as e:
+            from .help_json import print_help_json
+
+            # Show the command if targeting a specific one, otherwise the group
+            command = e.command if e.command and e.command.name != "__main__" else None
+            print_help_json(e.group, command, e.resolve_choices)
         except ShowTuiError as e:
             self.tui_run(inline=e.inline, dev=e.dev)
         except KeywordParamNotFoundError as e:
