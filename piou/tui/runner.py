@@ -22,7 +22,7 @@ from ..exceptions import (
 )
 from ..formatter import Formatter, RichFormatter
 
-__all__ = ("CommandRunner", "tui_split")
+__all__ = ("CommandRunner", "tui_split", "tui_join")
 
 
 def tui_split(value: str) -> list[str]:
@@ -39,6 +39,21 @@ def tui_split(value: str) -> list[str]:
         return list(lexer)
     except ValueError:
         return value.split()
+
+
+def tui_join(args: tuple[str, ...] | list[str]) -> str:
+    """Join tokens into a TUI-compatible string (inverse of tui_split).
+
+    Uses double quotes for arguments that contain spaces or double quotes,
+    leaving everything else (including single quotes) untouched.
+    """
+    parts: list[str] = []
+    for arg in args:
+        if " " in arg or '"' in arg:
+            parts.append('"' + arg.replace("\\", "\\\\").replace('"', '\\"') + '"')
+        else:
+            parts.append(arg)
+    return " ".join(parts)
 
 
 @dataclass

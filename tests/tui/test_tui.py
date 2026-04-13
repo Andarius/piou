@@ -633,6 +633,50 @@ class TestTuiSplit:
 
         assert tui_split(value) == expected
 
+    @pytest.mark.parametrize(
+        "args, expected",
+        [
+            pytest.param(("hello",), "hello", id="simple"),
+            pytest.param(("-m", "model"), "-m model", id="flag-and-value"),
+            pytest.param(
+                ("text with spaces", "-m", "model"),
+                '"text with spaces" -m model',
+                id="space-in-arg",
+            ),
+            pytest.param(
+                ("l'arrondissement",),
+                "l'arrondissement",
+                id="apostrophe-no-space",
+            ),
+            pytest.param(
+                ("it's a 'test'", "-m", "model"),
+                "\"it's a 'test'\" -m model",
+                id="apostrophe-with-space",
+            ),
+        ],
+    )
+    def test_tui_join(self, args, expected):
+        from piou.tui.runner import tui_join
+
+        assert tui_join(args) == expected
+
+    @pytest.mark.parametrize(
+        "args",
+        [
+            pytest.param(("hello", "world"), id="simple-args"),
+            pytest.param(("-m", "model", "text with spaces"), id="flag-and-quoted"),
+            pytest.param(
+                ("Where can I find l'hotel?", "-m", "model"),
+                id="apostrophe-with-space",
+            ),
+        ],
+    )
+    def test_tui_join_split_roundtrip(self, args):
+        from piou.tui.runner import tui_join, tui_split
+
+        joined = tui_join(args)
+        assert tui_split(joined) == list(args)
+
 
 class TestTuiContext:
     """Tests for the TuiContext class."""
