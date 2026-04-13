@@ -119,7 +119,7 @@ Input > .input--suggestion {
     color: white;
     padding: 0;
     margin: 0 0 1 0;
-    height: 1;
+    height: auto;
 }
 
 .output {
