@@ -447,31 +447,43 @@ def test_get_cmd_args(input_str, types, expected_pos_args, expected_key_args):
 
 
 @pytest.mark.parametrize(
-    "input_str, args, expected",
+    "input_args, args, expected",
     [
-        (
-            "baz --foo buz",
+        pytest.param(
+            ["baz", "--foo", "buz"],
             [
                 {"default": ..., "name": "baz"},
                 {"default": ..., "keyword_args": ["--foo"], "name": "foo"},
             ],
             {"baz": "baz", "foo": "buz"},
+            id="positional-and-keyword",
         ),
-        (
-            "--foo buz",
+        pytest.param(
+            ["--foo", "buz"],
             [{"default": ..., "keyword_args": ["--foo", "-f"], "name": "foo"}],
             {"foo": "buz"},
+            id="keyword-with-alias",
         ),
-        (
-            "'baz buz'",
+        pytest.param(
+            ["baz buz"],
             [
                 {"default": ..., "name": "baz"},
             ],
             {"baz": "baz buz"},
+            id="positional-with-space",
+        ),
+        pytest.param(
+            ["l'arrondissement", "--foo", "bar"],
+            [
+                {"default": ..., "name": "pos"},
+                {"default": ..., "keyword_args": ["--foo"], "name": "foo"},
+            ],
+            {"pos": "l'arrondissement", "foo": "bar"},
+            id="apostrophe-in-positional-arg",
         ),
     ],
 )
-def test_validate_arguments(input_str, args, expected):
+def test_validate_arguments(input_args, args, expected):
     from piou.utils import Option, convert_args_to_dict
 
     cmd_args = []
@@ -479,7 +491,7 @@ def test_validate_arguments(input_str, args, expected):
         arg = Option(_arg["default"], *_arg.get("keyword_args", []))
         arg.name = _arg["name"]
         cmd_args.append(arg)
-    output = convert_args_to_dict(input_str.split(" "), options=cmd_args)
+    output = convert_args_to_dict(input_args, options=cmd_args)
     assert output == expected
 
 

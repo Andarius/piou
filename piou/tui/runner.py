@@ -22,7 +22,23 @@ from ..exceptions import (
 )
 from ..formatter import Formatter, RichFormatter
 
-__all__ = ("CommandRunner",)
+__all__ = ("CommandRunner", "tui_split")
+
+
+def tui_split(value: str) -> list[str]:
+    """Split TUI input into tokens, treating only double quotes as grouping.
+
+    Unlike shlex.split, single quotes are treated as literal characters
+    so that natural language with apostrophes (e.g. "l'arrondissement")
+    doesn't cause parsing failures.
+    """
+    lexer = shlex.shlex(value, posix=True)
+    lexer.whitespace_split = True
+    lexer.quotes = '"'
+    try:
+        return list(lexer)
+    except ValueError:
+        return value.split()
 
 
 @dataclass
@@ -133,10 +149,7 @@ class CommandRunner:
                 return await self.execute_bash(bash_cmd)
             return None, None
 
-        try:
-            parts = shlex.split(value)
-        except ValueError:
-            return None, None
+        parts = tui_split(value)
 
         if not parts:
             return None, None

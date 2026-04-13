@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, cast
@@ -592,6 +593,47 @@ class TestCommandRunner:
         assert runner.pending_count == 0
 
 
+class TestTuiSplit:
+    """Tests for the tui_split function."""
+
+    @pytest.mark.parametrize(
+        "value, expected",
+        [
+            pytest.param("/help", ["/help"], id="simple-command"),
+            pytest.param("/send hello world", ["/send", "hello", "world"], id="positional-args"),
+            pytest.param(
+                '/send "hello world" -m model',
+                ["/send", "hello world", "-m", "model"],
+                id="double-quoted-string",
+            ),
+            pytest.param(
+                "/send Quel est l'arrondissement -m model",
+                ["/send", "Quel", "est", "l'arrondissement", "-m", "model"],
+                id="apostrophe-in-word",
+            ),
+            pytest.param(
+                "/send it's a test -m model",
+                ["/send", "it's", "a", "test", "-m", "model"],
+                id="contraction",
+            ),
+            pytest.param(
+                '/send "l\'hotel est beau" -m model',
+                ["/send", "l'hotel est beau", "-m", "model"],
+                id="apostrophe-inside-double-quotes",
+            ),
+            pytest.param(
+                "/send 'Baguette des Franciliens'",
+                ["/send", "'Baguette", "des", "Franciliens'"],
+                id="single-quotes-are-literal",
+            ),
+        ],
+    )
+    def test_tui_split(self, value, expected):
+        from piou.tui.runner import tui_split
+
+        assert tui_split(value) == expected
+
+
 class TestTuiContext:
     """Tests for the TuiContext class."""
 
@@ -1001,6 +1043,35 @@ class TestTuiCli:
 
         with patch.object(tui_cli, "get_app", side_effect=mock_get_app):
             tui_cli.run(*args)
+
+        assert captured_initial_input == expected_initial_input
+
+    @pytest.mark.parametrize(
+        "argv, expected_initial_input",
+        [
+            pytest.param(["cli", "--tui"], None, id="no-args"),
+            pytest.param(["cli", "hello", "world", "--tui"], "/hello world", id="with-args"),
+            pytest.param(["cli", "hello", "--tui-inline"], "/hello", id="inline"),
+            pytest.param(["cli", "hello", "--tui-reload"], "/hello", id="reload"),
+        ],
+    )
+    def test_tui_flag_forwards_args(self, sample_cli, argv, expected_initial_input, monkeypatch):
+        """--tui flag in CLI args should forward remaining args as initial_input prefill."""
+        from piou.tui.cli import TuiCli
+        from unittest.mock import patch
+
+        monkeypatch.setattr(sys, "argv", argv)
+        captured_initial_input = "NOT_SET"
+
+        def mock_get_app(self_tui, initial_input=None, css=None, css_path=None):
+            nonlocal captured_initial_input
+            captured_initial_input = initial_input
+            mock_app = MagicMock()
+            mock_app.run = MagicMock()
+            return mock_app
+
+        with patch.object(TuiCli, "get_app", mock_get_app):
+            sample_cli.run()
 
         assert captured_initial_input == expected_initial_input
 
