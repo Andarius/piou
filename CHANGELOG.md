@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.34.1 (2026-05-02)
+
+### Fix
+
+- tui quote handling (#44)
+
 ## 0.34.0 (2026-03-14)
 
 ### Feat
