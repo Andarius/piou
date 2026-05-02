@@ -98,7 +98,7 @@ class Cli:
             command = e.command if e.command and e.command.name != "__main__" else None
             print_help_json(e.group, command, e.resolve_choices)
         except ShowTuiError as e:
-            self.tui_run(inline=e.inline, dev=e.dev)
+            self.tui_run(*args, inline=e.inline, dev=e.dev)
         except KeywordParamNotFoundError as e:
             if not e.cmd:
                 raise

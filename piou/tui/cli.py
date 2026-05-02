@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import shlex
 import sys
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -10,7 +9,7 @@ from typing import TYPE_CHECKING
 
 from textual.types import CSSPathType
 
-from .runner import CommandRunner
+from .runner import CommandRunner, tui_join
 
 if TYPE_CHECKING:
     from ..cli import Cli
@@ -95,7 +94,7 @@ class TuiCli:
             cmd_name = args[0].lstrip("/")
             cmd_args = args[1:]
             if cmd_args:
-                initial_input = f"/{cmd_name} {shlex.join(cmd_args)}"
+                initial_input = f"/{cmd_name} {tui_join(cmd_args)}"
             else:
                 initial_input = f"/{cmd_name}"
         return self.get_app(initial_input=initial_input, css=css, css_path=css_path).run(
