@@ -1,3 +1,35 @@
+
+<div align="right">
+  <details>
+    <summary >🌐 Language</summary>
+    <div>
+      <div align="center">
+        <a href="https://openaitx.github.io/view.html?user=Andarius&project=piou&lang=en">English</a>
+        | <a href="https://openaitx.github.io/view.html?user=Andarius&project=piou&lang=zh-CN">简体中文</a>
+        | <a href="https://openaitx.github.io/view.html?user=Andarius&project=piou&lang=zh-TW">繁體中文</a>
+        | <a href="https://openaitx.github.io/view.html?user=Andarius&project=piou&lang=ja">日本語</a>
+        | <a href="https://openaitx.github.io/view.html?user=Andarius&project=piou&lang=ko">한국어</a>
+        | <a href="https://openaitx.github.io/view.html?user=Andarius&project=piou&lang=hi">हिन्दी</a>
+        | <a href="https://openaitx.github.io/view.html?user=Andarius&project=piou&lang=th">ไทย</a>
+        | <a href="https://openaitx.github.io/view.html?user=Andarius&project=piou&lang=fr">Français</a>
+        | <a href="https://openaitx.github.io/view.html?user=Andarius&project=piou&lang=de">Deutsch</a>
+        | <a href="https://openaitx.github.io/view.html?user=Andarius&project=piou&lang=es">Español</a>
+        | <a href="https://openaitx.github.io/view.html?user=Andarius&project=piou&lang=it">Italiano</a>
+        | <a href="https://openaitx.github.io/view.html?user=Andarius&project=piou&lang=ru">Русский</a>
+        | <a href="https://openaitx.github.io/view.html?user=Andarius&project=piou&lang=pt">Português</a>
+        | <a href="https://openaitx.github.io/view.html?user=Andarius&project=piou&lang=nl">Nederlands</a>
+        | <a href="https://openaitx.github.io/view.html?user=Andarius&project=piou&lang=pl">Polski</a>
+        | <a href="https://openaitx.github.io/view.html?user=Andarius&project=piou&lang=ar">العربية</a>
+        | <a href="https://openaitx.github.io/view.html?user=Andarius&project=piou&lang=fa">فارسی</a>
+        | <a href="https://openaitx.github.io/view.html?user=Andarius&project=piou&lang=tr">Türkçe</a>
+        | <a href="https://openaitx.github.io/view.html?user=Andarius&project=piou&lang=vi">Tiếng Việt</a>
+        | <a href="https://openaitx.github.io/view.html?user=Andarius&project=piou&lang=id">Bahasa Indonesia</a>
+        | <a href="https://openaitx.github.io/view.html?user=Andarius&project=piou&lang=as">অসমীয়া</
+      </div>
+    </div>
+  </details>
+</div>
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://github.com/Andarius/piou/raw/master/docs/static/piou-dark.png">
   <source media="(prefers-color-scheme: light)" srcset="https://github.com/Andarius/piou/raw/master/docs/static/piou.jpg">
