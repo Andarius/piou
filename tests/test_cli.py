@@ -1716,6 +1716,12 @@ def test_slash_prefix_triggers_tui(argv, expected_tui, monkeypatch):
             "USAGE",
             id="missing-required-keyword-shows-help",
         ),
+        pytest.param(
+            ["unknown-cmd"],
+            "command_not_found",
+            "USAGE",
+            id="unknown-command-shows-help",
+        ),
     ],
 )
 def test_show_help_on_error(args, error_type, expected_in_output, capsys):

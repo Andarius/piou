@@ -89,7 +89,10 @@ class Cli:
             return self._group.run_with_args(*args)
         except CommandNotFoundError as e:
             e.input_args = args
-            self.formatter.print_invalid_command(e.valid_commands, e.input_command)
+            if self.show_help_on_error:
+                self.formatter.print_help(group=self._group, command=None, parent_args=None)
+            else:
+                self.formatter.print_invalid_command(e.valid_commands, e.input_command)
             sys.exit(1)
         except ShowHelpError as e:
             self.formatter.print_help(group=e.group, command=e.command, parent_args=e.parent_args)
