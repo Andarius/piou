@@ -1693,3 +1693,70 @@ def test_slash_prefix_triggers_tui(argv, expected_tui, monkeypatch):
 
     assert cli.tui_run.called is expected_tui
     assert cli.run_with_args.called is (not expected_tui)
+
+
+@pytest.mark.parametrize(
+    "args, error_type, expected_in_output",
+    [
+        pytest.param(
+            ["foo"],
+            "pos_count",
+            "USAGE",
+            id="missing-positional-shows-help",
+        ),
+        pytest.param(
+            ["foo", "1", "-vvv"],
+            "keyword_not_found",
+            "USAGE",
+            id="unknown-keyword-shows-help",
+        ),
+        pytest.param(
+            ["foo", "1"],
+            "keyword_missing",
+            "USAGE",
+            id="missing-required-keyword-shows-help",
+        ),
+    ],
+)
+def test_show_help_on_error(args, error_type, expected_in_output, capsys):
+    """When show_help_on_error=True, invalid command calls show help instead of an error."""
+    from piou import Cli, Option
+    from piou.formatter import RichFormatter
+
+    cli = Cli(description="A CLI tool", formatter=RichFormatter(), show_help_on_error=True)
+
+    @cli.command(cmd="foo", help="Run foo command")
+    def foo_main(
+        foo1: int = Option(..., help="Foo arguments"),
+        foo2: str = Option(..., "-f", "--foo2", help="Foo2 arguments"),
+    ):
+        pass
+
+    with pytest.raises(SystemExit) as exc:
+        cli.run_with_args(*args)
+    assert exc.value.code == 1
+
+    output = capsys.readouterr().out
+    assert expected_in_output in output
+    assert "foo" in output
+
+
+def test_show_help_on_error_default_still_shows_error(capsys):
+    """When show_help_on_error=False (default), errors are shown instead of help."""
+    from piou import Cli, Option
+    from piou.formatter import RichFormatter
+
+    cli = Cli(description="A CLI tool", formatter=RichFormatter())
+
+    @cli.command(cmd="foo", help="Run foo command")
+    def foo_main(
+        foo1: int = Option(..., help="Foo arguments"),
+        foo2: str = Option(..., "-f", "--foo2", help="Foo2 arguments"),
+    ):
+        pass
+
+    with pytest.raises(SystemExit):
+        cli.run_with_args("foo")
+
+    output = capsys.readouterr().out
+    assert "USAGE" not in output
