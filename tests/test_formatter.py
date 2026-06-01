@@ -329,6 +329,13 @@ DESCRIPTION
  Run foo command
 """  # noqa
 
+
+def get_simple_cli_show_help_on_error(formatter):
+    cli = get_simple_cli(formatter)
+    cli.show_help_on_error = True
+    return cli
+
+
 _PARAMS = [
     pytest.param(get_simple_cli, ["-h"], _SIMPLE_CLI_OUTPUT_RICH, id="Simple CLI"),
     pytest.param(get_simple_cli, ["foo", "-h"], _SIMPLE_CLI_COMMAND_RICH, id="Simple CLI cmd"),
@@ -379,7 +386,26 @@ _PARAMS = [
         get_simple_cli,
         ["foo"],
         "Expected 1 positional arguments but got 0 for command foo",
-        id="Simple CLI keyword error",
+        id="Simple CLI pos count error",
+    ),
+    # show_help_on_error: errors redirect to help
+    pytest.param(
+        get_simple_cli_show_help_on_error,
+        ["foo", "-vvv"],
+        _SIMPLE_CLI_COMMAND_RICH,
+        id="Simple CLI show-help-on-error keyword-not-found",
+    ),
+    pytest.param(
+        get_simple_cli_show_help_on_error,
+        ["foo"],
+        _SIMPLE_CLI_COMMAND_RICH,
+        id="Simple CLI show-help-on-error pos-count",
+    ),
+    pytest.param(
+        get_simple_cli_show_help_on_error,
+        ["unknown"],
+        _SIMPLE_CLI_OUTPUT_RICH,
+        id="Simple CLI show-help-on-error command-not-found",
     ),
 ]
 

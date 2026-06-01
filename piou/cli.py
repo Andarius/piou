@@ -45,6 +45,8 @@ class Cli:
     """Internal: Callback called when code is reloaded in dev mode."""
     hide_internal_errors: bool = True
     """Hide piou internal frames from exception tracebacks. Set to False to show full tracebacks."""
+    show_help_on_error: bool = False
+    """Show help instead of an error message when a command is called with invalid arguments."""
     use_rich_traceback: bool | None = None
     """Use Rich traceback formatting. If None, uses formatter's default. Only applies to RichFormatter."""
     _group: CommandGroup = field(init=False, default_factory=CommandGroup)
@@ -87,7 +89,10 @@ class Cli:
             return self._group.run_with_args(*args)
         except CommandNotFoundError as e:
             e.input_args = args
-            self.formatter.print_invalid_command(e.valid_commands, e.input_command)
+            if self.show_help_on_error:
+                self.formatter.print_help(group=self._group, command=None, parent_args=None)
+            else:
+                self.formatter.print_invalid_command(e.valid_commands, e.input_command)
             sys.exit(1)
         except ShowHelpError as e:
             self.formatter.print_help(group=e.group, command=e.command, parent_args=e.parent_args)
@@ -100,19 +105,28 @@ class Cli:
         except ShowTuiError as e:
             self.tui_run(*args, inline=e.inline, dev=e.dev)
         except KeywordParamNotFoundError as e:
-            if not e.cmd:
+            if e.command is None:
                 raise
-            self.formatter.print_keyword_param_error(e.cmd, e.param)
+            if self.show_help_on_error and e.group is not None:
+                self.formatter.print_help(group=e.group, command=e.command, parent_args=e.parent_args)
+            else:
+                self.formatter.print_keyword_param_error(e.command.name, e.param)
             sys.exit(1)
         except KeywordParamMissingError as e:
-            if not e.cmd:
+            if e.command is None:
                 raise
-            self.formatter.print_param_error(e.param, e.cmd)
+            if self.show_help_on_error and e.group is not None:
+                self.formatter.print_help(group=e.group, command=e.command, parent_args=e.parent_args)
+            else:
+                self.formatter.print_param_error(e.param, e.command.name)
             sys.exit(1)
         except PosParamsCountError as e:
-            if not e.cmd:
+            if e.command is None:
                 raise
-            self.formatter.print_count_error(e.expected_count, e.count, e.cmd)
+            if self.show_help_on_error and e.group is not None:
+                self.formatter.print_help(group=e.group, command=e.command, parent_args=e.parent_args)
+            else:
+                self.formatter.print_count_error(e.expected_count, e.count, e.command.name)
             sys.exit(1)
         except InvalidChoiceError as e:
             self.formatter.print_invalid_value_error(e.value, e.literal_choices, e.regex_patterns)

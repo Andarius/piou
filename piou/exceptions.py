@@ -1,11 +1,19 @@
-from typing import Any, Sequence
+from __future__ import annotations
+
 import re
+from typing import TYPE_CHECKING, Any, Sequence
+
+if TYPE_CHECKING:
+    from .command import Command, CommandGroup, ParentArgs
 
 
 class CommandException(Exception):
     def __init__(self, msg: str, cmd: str | None = None):
         super().__init__(msg)
         self.cmd = cmd
+        self.group: CommandGroup | None = None
+        self.command: Command | None = None
+        self.parent_args: ParentArgs | None = None
 
 
 class DuplicatedCommandError(Exception):
