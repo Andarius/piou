@@ -363,7 +363,6 @@ class CommandGroup:
             try:
                 _arg_dict = convert_args_to_dict(_input_opts, _opts)
             except CommandException as e:
-                e.cmd = cmd
                 e.group = self
                 e.command = command
                 e.parent_args = parent_args
