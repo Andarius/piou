@@ -336,6 +336,12 @@ def get_simple_cli_show_help_on_error(formatter):
     return cli
 
 
+def get_cmd_group_cli_show_help_on_error(formatter):
+    cli = get_cmd_group_cli_with_global_opt(formatter)
+    cli.show_help_on_error = True
+    return cli
+
+
 _PARAMS = [
     pytest.param(get_simple_cli, ["-h"], _SIMPLE_CLI_OUTPUT_RICH, id="Simple CLI"),
     pytest.param(get_simple_cli, ["foo", "-h"], _SIMPLE_CLI_COMMAND_RICH, id="Simple CLI cmd"),
@@ -406,6 +412,13 @@ _PARAMS = [
         ["unknown"],
         _SIMPLE_CLI_OUTPUT_RICH,
         id="Simple CLI show-help-on-error command-not-found",
+    ),
+    # unknown sub-command shows the group's help, not the root help
+    pytest.param(
+        get_cmd_group_cli_show_help_on_error,
+        ["sub-cmd", "unknown"],
+        _SIMPLE_CLI_SUB_CMD_HELP_RICH,
+        id="Simple CLI show-help-on-error sub-command-not-found",
     ),
 ]
 

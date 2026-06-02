@@ -60,12 +60,17 @@ class CommandNotFoundError(Exception):
         valid_commands: list[str],
         input_command: str | None = None,
         input_args: tuple[Any, ...] | None = None,
+        group: CommandGroup | None = None,
+        parent_args: ParentArgs | None = None,
     ):
         _available_cmds = ", ".join(valid_commands)
         super().__init__(f"Unknown command given. Possible commands are {_available_cmds!r}")
         self.valid_commands = sorted(valid_commands)
         self.input_command = input_command
         self.input_args = input_args
+        # The group the unknown command was looked up in, so help can target it
+        self.group = group
+        self.parent_args = parent_args
 
 
 class InvalidChoiceError(Exception):

@@ -333,7 +333,12 @@ class CommandGroup:
                     if not arg.startswith("-"):
                         input_cmd = arg
                         break
-            raise CommandNotFoundError(list(self.command_names), input_command=input_cmd)
+            raise CommandNotFoundError(
+                list(self.command_names),
+                input_command=input_cmd,
+                group=self,
+                parent_args=parent_args,
+            )
 
         args_dict = {}
         # Creates parallel lists that include:
