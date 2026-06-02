@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.35.1 (2026-06-02)
+
+### Fix
+
+- bump idna, urllib3, pymdown-extensions to patch Dependabot alerts (#48)
+
 ## 0.35.0 (2026-06-01)
 
 ### Feat
