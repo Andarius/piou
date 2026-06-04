@@ -342,6 +342,14 @@ def get_cmd_group_cli_show_help_on_error(formatter):
     return cli
 
 
+def get_empty_group_cli_show_help_on_error(formatter):
+    from piou import Cli
+
+    cli = Cli(description="A CLI tool", formatter=formatter, show_help_on_error=True)
+    cli.add_command_group("empty", help="An empty group")
+    return cli
+
+
 _PARAMS = [
     pytest.param(get_simple_cli, ["-h"], _SIMPLE_CLI_OUTPUT_RICH, id="Simple CLI"),
     pytest.param(get_simple_cli, ["foo", "-h"], _SIMPLE_CLI_COMMAND_RICH, id="Simple CLI cmd"),
@@ -394,31 +402,38 @@ _PARAMS = [
         "Expected 1 positional arguments but got 0 for command foo",
         id="Simple CLI pos count error",
     ),
-    # show_help_on_error: errors redirect to help
+    # show_help_on_error: errors show the error message followed by the help
     pytest.param(
         get_simple_cli_show_help_on_error,
         ["foo", "-vvv"],
-        _SIMPLE_CLI_COMMAND_RICH,
+        "Could not find keyword parameter '-vvv' for command 'foo'\n" + _SIMPLE_CLI_COMMAND_RICH,
         id="Simple CLI show-help-on-error keyword-not-found",
     ),
     pytest.param(
         get_simple_cli_show_help_on_error,
         ["foo"],
-        _SIMPLE_CLI_COMMAND_RICH,
+        "Expected 1 positional arguments but got 0 for command foo\n" + _SIMPLE_CLI_COMMAND_RICH,
         id="Simple CLI show-help-on-error pos-count",
     ),
     pytest.param(
         get_simple_cli_show_help_on_error,
         ["unknown"],
-        _SIMPLE_CLI_OUTPUT_RICH,
+        "Unknown command 'unknown'. Possible commands are \"foo\"\n" + _SIMPLE_CLI_OUTPUT_RICH,
         id="Simple CLI show-help-on-error command-not-found",
     ),
     # unknown sub-command shows the group's help, not the root help
     pytest.param(
         get_cmd_group_cli_show_help_on_error,
         ["sub-cmd", "unknown"],
-        _SIMPLE_CLI_SUB_CMD_HELP_RICH,
+        "Unknown command 'unknown'. Possible commands are \"bar, foo\"\n" + _SIMPLE_CLI_SUB_CMD_HELP_RICH,
         id="Simple CLI show-help-on-error sub-command-not-found",
+    ),
+    # a group with no commands has no useful help, so only the error is shown
+    pytest.param(
+        get_empty_group_cli_show_help_on_error,
+        ["empty", "unknown"],
+        "Unknown command 'unknown'. Possible commands are \"\"",
+        id="Simple CLI show-help-on-error empty-group",
     ),
 ]
 
