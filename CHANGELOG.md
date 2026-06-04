@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.35.2 (2026-06-04)
+
+### Fix
+
+- show subcommand group help on error for unknown nested command (#49)
+
 ## 0.35.1 (2026-06-02)
 
 ### Fix
