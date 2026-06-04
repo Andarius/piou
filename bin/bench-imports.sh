@@ -43,12 +43,13 @@ hyperfine --warmup "$WARMUP" --min-runs "$RUNS" \
     "$TEMP_VENV/bin/python -c \"from piou import Cli, Option\"" \
     --export-json "$CORE_JSON" >/dev/null 2>&1
 
+# --frozen: never rewrite uv.lock (the benchmark action needs a clean tree to switch to gh-pages)
 hyperfine --warmup "$WARMUP" --min-runs "$RUNS" \
-    'uv run python -c "from piou import Cli, Option"' \
+    'uv run --frozen python -c "from piou import Cli, Option"' \
     --export-json "$RICH_JSON" >/dev/null 2>&1
 
 hyperfine --warmup "$WARMUP" --min-runs "$RUNS" \
-    'uv run python -c "from piou.tui import TuiContext"' \
+    'uv run --frozen python -c "from piou.tui import TuiContext"' \
     --export-json "$TUI_JSON" >/dev/null 2>&1
 
 # Extract results (rounded to 2 decimal places for cleaner output)
