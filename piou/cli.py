@@ -83,16 +83,21 @@ class Cli:
 
         self.run_with_args(*args)
 
+    def _print_help_after_error(self, group, command, parent_args):
+        """Print a blank separator then the contextual help, after an error message."""
+        self.formatter.print_error("")
+        self.formatter.print_help(group=group, command=command, parent_args=parent_args)
+
     def run_with_args(self, *args):
         """Run the CLI application with the given arguments."""
         try:
             return self._group.run_with_args(*args)
         except CommandNotFoundError as e:
             e.input_args = args
-            if self.show_help_on_error:
-                self.formatter.print_help(group=self._group, command=None, parent_args=None)
-            else:
-                self.formatter.print_invalid_command(e.valid_commands, e.input_command)
+            self.formatter.print_invalid_command(e.valid_commands, e.input_command)
+            # Help is useless for a group with no commands
+            if self.show_help_on_error and e.valid_commands:
+                self._print_help_after_error(e.group or self._group, None, e.parent_args)
             sys.exit(1)
         except ShowHelpError as e:
             self.formatter.print_help(group=e.group, command=e.command, parent_args=e.parent_args)
@@ -107,26 +112,23 @@ class Cli:
         except KeywordParamNotFoundError as e:
             if e.command is None:
                 raise
+            self.formatter.print_keyword_param_error(e.command.name, e.param)
             if self.show_help_on_error and e.group is not None:
-                self.formatter.print_help(group=e.group, command=e.command, parent_args=e.parent_args)
-            else:
-                self.formatter.print_keyword_param_error(e.command.name, e.param)
+                self._print_help_after_error(e.group, e.command, e.parent_args)
             sys.exit(1)
         except KeywordParamMissingError as e:
             if e.command is None:
                 raise
+            self.formatter.print_param_error(e.param, e.command.name)
             if self.show_help_on_error and e.group is not None:
-                self.formatter.print_help(group=e.group, command=e.command, parent_args=e.parent_args)
-            else:
-                self.formatter.print_param_error(e.param, e.command.name)
+                self._print_help_after_error(e.group, e.command, e.parent_args)
             sys.exit(1)
         except PosParamsCountError as e:
             if e.command is None:
                 raise
+            self.formatter.print_count_error(e.expected_count, e.count, e.command.name)
             if self.show_help_on_error and e.group is not None:
-                self.formatter.print_help(group=e.group, command=e.command, parent_args=e.parent_args)
-            else:
-                self.formatter.print_count_error(e.expected_count, e.count, e.command.name)
+                self._print_help_after_error(e.group, e.command, e.parent_args)
             sys.exit(1)
         except InvalidChoiceError as e:
             self.formatter.print_invalid_value_error(e.value, e.literal_choices, e.regex_patterns)

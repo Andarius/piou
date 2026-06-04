@@ -44,11 +44,11 @@ hyperfine --warmup "$WARMUP" --min-runs "$RUNS" \
     --export-json "$CORE_JSON" >/dev/null 2>&1
 
 hyperfine --warmup "$WARMUP" --min-runs "$RUNS" \
-    'uv run python -c "from piou import Cli, Option"' \
+    'uv run --frozen python -c "from piou import Cli, Option"' \
     --export-json "$RICH_JSON" >/dev/null 2>&1
 
 hyperfine --warmup "$WARMUP" --min-runs "$RUNS" \
-    'uv run python -c "from piou.tui import TuiContext"' \
+    'uv run --frozen python -c "from piou.tui import TuiContext"' \
     --export-json "$TUI_JSON" >/dev/null 2>&1
 
 # Extract results (rounded to 2 decimal places for cleaner output)

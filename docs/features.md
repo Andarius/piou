@@ -167,3 +167,27 @@ def deploy_main(
 When raised inside a command, `CommandError` is caught by `Cli.run()` and the message is printed using the configured formatter — no Python traceback is shown to the user.
 
 <img alt="command error output" src="../static/command-error-output.svg" width="800"/>
+
+### show_help_on_error
+
+By default, usage errors (unknown command, missing argument, unknown option, ...) only print an error message.
+Set `show_help_on_error=True` to also print the contextual help after the error:
+
+```python
+from piou import Cli
+
+cli = Cli(description='A CLI tool', show_help_on_error=True)
+```
+
+```console
+$ my-cli sub eor
+Unknown command 'eor'. Possible commands are "foo"
+
+USAGE
+     my-cli sub foo <value>
+...
+```
+
+The help is contextual: an unknown command inside a command group shows that group's help, and an
+argument error shows the failing command's help. If the group has no commands to suggest, only the
+error message is printed.
