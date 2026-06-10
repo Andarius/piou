@@ -1343,7 +1343,7 @@ wheels = [
 
 [[package]]
 name = "piou"
-version = "0.35.1"
+version = "0.35.2"
 source = { editable = "." }
 dependencies = [
     { name = "rich" },
@@ -1394,7 +1394,7 @@ tui-reload = [
 
 [package.metadata]
 requires-dist = [
-    { name = "rich", specifier = ">=10.11.0,<15.0" },
+    { name = "rich", specifier = ">=10.11.0,<16.0" },
     { name = "textual", marker = "extra == 'tui'", specifier = ">=0.40.0" },
     { name = "textual", marker = "extra == 'tui-reload'", specifier = ">=0.40.0" },
     { name = "typing-extensions", specifier = ">=4.4.0" },
