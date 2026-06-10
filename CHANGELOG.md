@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.35.3 (2026-06-10)
+
+### Fix
+
+- reflow multi-line command description prose in help output (#50)
+
 ## 0.35.2 (2026-06-04)
 
 ### Fix

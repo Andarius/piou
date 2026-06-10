@@ -8,14 +8,24 @@ from piou.utils import Password, Secret
 @pytest.mark.parametrize(
     "options, input, expected",
     [
-        ({"use_markdown": True}, "**test**", "\nDESCRIPTION\n test"),
-        (
+        pytest.param({"use_markdown": True}, "**test**", "\nDESCRIPTION\n test", id="markdown_bold"),
+        pytest.param(
             {"use_markdown": True},
             "[bold]test[/bold]",
             "\nDESCRIPTION\n [bold]test[/bold]",
+            id="markdown_rich_markup_kept",
         ),
-        ({"use_markdown": False}, "**test**", "\nDESCRIPTION\n **test**"),
-        ({"use_markdown": False}, "[bold]test[/bold]", "\nDESCRIPTION\n test"),
+        pytest.param({"use_markdown": False}, "**test**", "\nDESCRIPTION\n **test**", id="no_markdown_bold"),
+        pytest.param(
+            {"use_markdown": False}, "[bold]test[/bold]", "\nDESCRIPTION\n test", id="no_markdown_rich_markup"
+        ),
+        pytest.param(
+            {"use_markdown": True},
+            # A single newline reflows prose; a blank line stays a paragraph break.
+            "First sentence of the paragraph.\nSecond sentence on a new source line.\n\nA separate paragraph.",
+            "\nDESCRIPTION\n First sentence of the paragraph. Second sentence on a new source line.\n\n A separate paragraph.",
+            id="markdown_multiline_reflow",
+        ),
     ],
 )
 def test_rich_formatting_options(options, input, expected, capsys):
@@ -24,7 +34,8 @@ def test_rich_formatting_options(options, input, expected, capsys):
 
     formatter = RichFormatter(**options)
     formatter._print_description(Command("", lambda x: ..., description=input))
-    assert capsys.readouterr().out.rstrip() == expected
+    output = "\n".join(line.rstrip() for line in capsys.readouterr().out.splitlines())
+    assert output.rstrip() == expected
 
 
 @pytest.mark.parametrize(
