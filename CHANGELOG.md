@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.35.4 (2026-06-10)
+
+### Fix
+
+- **deps**: bump min rich version
+
 ## 0.35.3 (2026-06-10)
 
 ### Fix
