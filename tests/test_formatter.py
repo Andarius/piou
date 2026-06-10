@@ -27,6 +27,23 @@ def test_rich_formatting_options(options, input, expected, capsys):
     assert capsys.readouterr().out.rstrip() == expected
 
 
+def test_rich_multiline_description_reflows(capsys):
+    """A single newline reflows prose; a blank line stays a paragraph break."""
+    from piou.formatter import RichFormatter
+    from piou.command import Command
+
+    description = "First sentence of the paragraph.\nSecond sentence on a new source line.\n\nA separate paragraph."
+    RichFormatter(use_markdown=True)._print_description(Command("", lambda x: ..., description=description))
+    lines = [line.rstrip() for line in capsys.readouterr().out.splitlines()]
+    assert lines == [
+        "",
+        "DESCRIPTION",
+        " First sentence of the paragraph. Second sentence on a new source line.",
+        "",
+        " A separate paragraph.",
+    ]
+
+
 @pytest.mark.parametrize(
     "value, show_first, show_last, expected",
     [
