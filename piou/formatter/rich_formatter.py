@@ -132,7 +132,7 @@ class RichFormatter(Formatter):
                 self._console.print(
                     pad(
                         Markdown(
-                            "  \n".join(description.split("\n")),
+                            description,
                             code_theme=self.code_theme,
                         )
                     ),
