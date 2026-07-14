@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.35.5 (2026-07-14)
+
+### Fix
+
+- accumulate repeated list-option flags instead of overwriting (#51)
+
 ## 0.35.4 (2026-06-10)
 
 ### Fix
