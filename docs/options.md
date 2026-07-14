@@ -127,6 +127,9 @@ numbers: list[int] = Option([], "--nums")
 
 Usage: `command --files a.txt b.txt c.txt`
 
+Repeating the flag accumulates values, so `command --files a.txt --files b.txt` is
+equivalent to `command --files a.txt b.txt`. (Repeated non-list flags keep the last value.)
+
 ## Choices
 
 ### Static Choices
