@@ -589,12 +589,17 @@ def get_cmd_args(
             keyword_params[_arg] = True
         else:
             # Value parameters: Take the next argument as their value and mark that position to be skipped
-            keyword_params[_arg] = (
+            value = (
                 cmd_split[i + 1]
                 if i + 1 < len(cmd_split)
                 # In case of "store_true"
                 else True
             )
+            previous = keyword_params.get(_arg)
+            # Repeated list flags accumulate (--foo 1 --foo 2 == --foo 1 2)
+            if _is_list_type(curr_type) and isinstance(previous, str) and isinstance(value, str):
+                value = f"{previous} {value}"
+            keyword_params[_arg] = value
             skip_position = i + 1
 
     return positional_args, keyword_params

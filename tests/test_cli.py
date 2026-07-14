@@ -436,6 +436,20 @@ def test_invalid_validate_value(data_type, value, expected, expected_str):
             {"--foo": "1 2 3", "--bar": "baz"},
             id="list_flag_then_single_flag_then_positional",
         ),
+        pytest.param(
+            "--foo 1 --foo 2 3",
+            {"foo": list[int]},
+            [],
+            {"--foo": "1 2 3"},
+            id="repeated_list_flag_accumulates",
+        ),
+        pytest.param(
+            "--foo a --foo b",
+            {"foo": str},
+            [],
+            {"--foo": "b"},
+            id="repeated_scalar_flag_keeps_last",
+        ),
     ],
 )
 def test_get_cmd_args(input_str, types, expected_pos_args, expected_key_args):
