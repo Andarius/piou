@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.35.6 (2026-07-17)
+
+### Fix
+
+- don't consume the next arg as value for boolean global options placed after the command (#52)
+
 ## 0.35.5 (2026-07-14)
 
 ### Fix
