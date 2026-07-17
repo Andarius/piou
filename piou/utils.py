@@ -636,6 +636,8 @@ def parse_input_args(
         if not global_option_names:
             return "__main__", [], list(args)
 
+    _bool_opts = global_bool_option_names or set()
+
     # Find the command
     cmd = None
     cmd_index = None
@@ -649,7 +651,6 @@ def parse_input_args(
     if cmd is None and "__main__" in commands:
         if not global_option_names:
             return "__main__", [], list(args)
-        _bool_opts = global_bool_option_names or set()
         global_options: list[str] = []
         cmd_options: list[str] = []
         i = 0
@@ -704,8 +705,13 @@ def parse_input_args(
         arg = after_cmd[i]
         if arg in global_option_names:
             global_options.append(arg)
-            # Check if next arg is a value for this option
-            if i + 1 < len(after_cmd) and not after_cmd[i + 1].startswith("-") and after_cmd[i + 1] not in commands:
+            # Check if next arg is a value for this option (bool flags take no value)
+            if (
+                arg not in _bool_opts
+                and i + 1 < len(after_cmd)
+                and not after_cmd[i + 1].startswith("-")
+                and after_cmd[i + 1] not in commands
+            ):
                 i += 1
                 global_options.append(after_cmd[i])
         else:

@@ -759,7 +759,15 @@ def test_reuse_option():
     assert called
 
 
-def test_run_command_pass_global_args():
+@pytest.mark.parametrize(
+    "args",
+    [
+        pytest.param(("-q", "foo", "1"), id="before_command"),
+        pytest.param(("foo", "1", "-q"), id="after_command_args"),
+        pytest.param(("foo", "-q", "1"), id="between_command_and_positional"),
+    ],
+)
+def test_run_command_pass_global_args(args):
     from piou import Cli, Option
 
     called, processor_called = False, False
@@ -789,14 +797,7 @@ def test_run_command_pass_global_args():
         assert quiet is True, "Quiet should be True"
         assert verbose is False, "Verbose should be False"
 
-    #
-    cli._group.run_with_args("-q", "foo", "1")
-    assert called
-    assert processor_called
-
-    called, processor_called = False, False
-    # Also works when passing the global option to the command
-    cli._group.run_with_args("foo", "1", "-q")
+    cli._group.run_with_args(*args)
     assert called
     assert processor_called
 
