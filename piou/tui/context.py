@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from contextvars import ContextVar
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Literal
@@ -7,6 +8,7 @@ from typing import TYPE_CHECKING, Literal
 from ..utils import Derived
 
 if TYPE_CHECKING:
+    from rich.console import RenderableType
     from textual.widget import Widget
 
     from .app import PromptStyle, TuiApp
@@ -141,6 +143,33 @@ class TuiContext:
         """
         if self.tui is not None:
             self.tui.set_status_above(content)
+
+    def set_attachments(self, content: RenderableType | None) -> None:
+        """Set or clear the attachment tray shown directly above the input.
+
+        Accepts any Rich renderable (a markup string or composed chip panels) or
+        None to hide the tray. In CLI mode, this is a no-op.
+        """
+        if self.tui is not None:
+            self.tui.set_attachments(content)
+
+    def register_paste_handler(self, handler: Callable[[list[str]], None] | None) -> None:
+        """Register a callback invoked with dropped file paths (None to clear).
+
+        Files dropped onto the terminal arrive as a paste of their path(s); the
+        handler receives the resolved local paths. In CLI mode, this is a no-op.
+        """
+        if self.tui is not None:
+            self.tui.register_paste_handler(handler)
+
+    def register_attachment_clear(self, handler: Callable[[], None] | None) -> None:
+        """Register the Ctrl+U attachment-clear callback (None to clear).
+
+        Invoked when the user presses Ctrl+U while the tray is visible. In CLI
+        mode, this is a no-op.
+        """
+        if self.tui is not None:
+            self.tui.register_attachment_clear(handler)
 
 
 _current_tui_context: ContextVar[TuiContext] = ContextVar("piou_tui_context", default=TuiContext())

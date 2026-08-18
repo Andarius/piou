@@ -1,12 +1,19 @@
 from __future__ import annotations
 
+import os
+import shlex
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
+from urllib.parse import urlsplit
+from urllib.request import url2pathname
 
 from rich.text import Text
 from textual.types import CSSPathType
 
 if TYPE_CHECKING:
+    from rich.console import RenderableType
+
     from .cli import TuiState
 
 from ..command import Command
@@ -15,7 +22,7 @@ from .watcher import Watcher
 try:
     from textual.app import App, ComposeResult
     from textual.containers import Horizontal, Vertical, VerticalScroll
-    from textual.events import Key
+    from textual.events import Key, Paste
     from textual.widget import Widget
     from textual.widgets import Input, Rule, Static
 except ImportError as e:
@@ -80,6 +87,63 @@ class PromptStyle:
         return previous
 
 
+def _drop_token_to_path(token: str) -> str | None:
+    """Resolve a single dropped token to an existing filesystem path, else None."""
+    if token.startswith("file://"):
+        token = url2pathname(urlsplit(token).path)
+    else:
+        token = os.path.expanduser(token)
+    return token if token and os.path.exists(token) else None
+
+
+def _extract_dropped_paths(text: str) -> list[str] | None:
+    """Return file paths when a paste is entirely dropped files, else None.
+
+    Terminals deliver a file drop as a bracketed paste of the path(s) — `file://`
+    URIs or shell-quoted paths — never the bytes. We only treat it as an
+    attachment when *every* token resolves to an existing file, so ordinary text
+    pastes fall through to normal insertion.
+    """
+    stripped = text.strip()
+    if not stripped:
+        return None
+    if "file://" in stripped:
+        tokens = stripped.split()
+    else:
+        try:
+            tokens = shlex.split(stripped)
+        except ValueError:
+            return None
+    if not tokens:
+        return None
+    paths: list[str] = []
+    for token in tokens:
+        path = _drop_token_to_path(token)
+        if path is None:
+            return None
+        paths.append(path)
+    return paths
+
+
+class PromptInput(Input):
+    """Input that turns a paste of file path(s) into an attachment drop.
+
+    Textual invokes every `_on_paste` in the MRO, so the base `Input._on_paste`
+    runs (and inserts text) unless we call `prevent_default()`. For a file drop
+    we suppress it and dispatch the paths; otherwise we do nothing and let the
+    base handler insert the pasted text as usual.
+    """
+
+    def _on_paste(self, event: Paste) -> None:
+        paths = _extract_dropped_paths(event.text)
+        if paths is None:
+            return
+        event.prevent_default()
+        event.stop()
+        app: TuiApp = self.app  # type: ignore[assignment]
+        app._dispatch_paste(paths)
+
+
 class TuiApp(App):
     """TUI application for a piou CLI."""
 
@@ -120,6 +184,9 @@ class TuiApp(App):
         self._auto_scroll = True
         # Cache last help path to skip redundant widget updates
         self._last_help_path: str | None = None
+        # Attachment drop handlers, registered at runtime by a command.
+        self._paste_handler: Callable[[list[str]], None] | None = None
+        self._attachment_clear: Callable[[], None] | None = None
 
         # Dev mode: file watching
         self._watcher = Watcher(state.group, on_reload=state.on_reload)
@@ -182,8 +249,9 @@ class TuiApp(App):
             ├──────────────────────────────────┤
             │ #status-above (hidden by default)│
             │ #rule-above                      │
+            │ #attachment-tray (hidden)        │
             │ #input-row (Horizontal)          │
-            │   #prompt  Input                 │
+            │   #prompt  PromptInput           │
             │ #rule-below                      │
             ├──────────────────────────────────┤
             │ #context-panel (Vertical)        │
@@ -201,9 +269,10 @@ class TuiApp(App):
                 yield Static(self.state.description, id="description")
         yield Static(id="status-above")
         yield Rule(id="rule-above")
+        yield Static(id="attachment-tray")
         with Horizontal(id="input-row"):
             yield Static("> ", id="prompt")
-            yield Input(suggester=CommandSuggester(self))
+            yield PromptInput(suggester=CommandSuggester(self))
         yield Rule(id="rule-below")
         with Vertical(id="context-panel"):
             yield Static(id="hint")
@@ -380,6 +449,14 @@ class TuiApp(App):
             event.prevent_default()
             event.stop()
             self._handle_ctrl_c()
+        elif (
+            event.key == "ctrl+u"
+            and self._attachment_clear is not None
+            and self.query_one("#attachment-tray", Static).display
+        ):
+            event.prevent_default()
+            event.stop()
+            self._attachment_clear()
 
     def _on_up_down(self, key: str) -> None:
         """Cycle through command suggestions with up/down arrows."""
@@ -683,3 +760,30 @@ class TuiApp(App):
         else:
             status.update(content.render())
             status.display = True
+
+    def set_attachments(self, content: RenderableType | None) -> None:
+        """Set or clear the attachment tray shown directly above the input.
+
+        Accepts any Rich renderable — a markup string or a composed renderable
+        such as chip panels — or None to hide the tray.
+        """
+        tray = self.query_one("#attachment-tray", Static)
+        if content is None:
+            tray.update("")
+            tray.display = False
+        else:
+            tray.update(content)
+            tray.display = True
+
+    def register_paste_handler(self, handler: Callable[[list[str]], None] | None) -> None:
+        """Register (or clear with None) a callback for dropped file paths."""
+        self._paste_handler = handler
+
+    def register_attachment_clear(self, handler: Callable[[], None] | None) -> None:
+        """Register (or clear with None) the Ctrl+U attachment-clear callback."""
+        self._attachment_clear = handler
+
+    def _dispatch_paste(self, paths: list[str]) -> None:
+        """Forward dropped file paths to the registered paste handler, if any."""
+        if self._paste_handler is not None:
+            self._paste_handler(paths)
