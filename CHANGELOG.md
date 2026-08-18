@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.37.0 (2026-08-18)
+
+### Feat
+
+- Python 3.15 support with lazy rich imports (#54)
+
 ## 0.36.0 (2026-08-18)
 
 ### Feat
