@@ -1,5 +1,9 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from difflib import get_close_matches
+from functools import cached_property
+
+# PEP 810: rich imports are lazy on Python >= 3.15, ignored on older versions
+__lazy_modules__ = ["rich.console", "rich.padding", "rich.table"]
 
 from rich.console import Console, RenderableType
 from rich.padding import Padding
@@ -101,7 +105,6 @@ MIN_MARKDOWN_SIZE: int = 75
 
 @dataclass
 class RichFormatter(Formatter):
-    _console: Console = field(init=False, repr=False, default_factory=lambda: Console(markup=True, highlight=False))
     cmd_color: str = "cyan"
     option_color: str = "cyan"
     default_color: str = "white"
@@ -115,6 +118,11 @@ class RichFormatter(Formatter):
     code_theme: str = "solarized-dark"
     """Use Rich Traceback for exceptions, otherwise use Python's default traceback."""
     use_rich_traceback: bool = False
+
+    @cached_property
+    def _console(self) -> Console:
+        # created on first use so rich stays unimported until help/error output (PEP 810)
+        return Console(markup=True, highlight=False)
 
     def _color_cmd(self, cmd: str):
         return f"[{self.cmd_color}]{cmd}[/{self.cmd_color}]"
