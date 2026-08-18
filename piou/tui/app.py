@@ -4,7 +4,7 @@ import shlex
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 from urllib.parse import urlsplit
 from urllib.request import url2pathname
 
@@ -43,12 +43,20 @@ from .utils import get_command_help
 from .value_picker import ValuePicker
 
 
+def _tui_app(widget: Widget) -> TuiApp:
+    """The enclosing TuiApp; these widgets only ever mount inside one."""
+    app = widget.app
+    if not isinstance(app, TuiApp):
+        raise RuntimeError(f"{type(widget).__name__} must be mounted in a TuiApp")
+    return app
+
+
 class _MessageScroll(VerticalScroll):
     """Messages container that syncs scroll position with TuiApp._auto_scroll."""
 
     def watch_scroll_y(self, old_value: float, new_value: float) -> None:
         super().watch_scroll_y(old_value, new_value)
-        app = cast("TuiApp", self.app)
+        app = _tui_app(self)
         if app._is_scrolled_to_bottom(self):
             app._auto_scroll = True
         elif new_value < old_value:
@@ -140,7 +148,7 @@ class PromptInput(Input):
             return
         event.prevent_default()
         event.stop()
-        app = cast("TuiApp", self.app)
+        app = _tui_app(self)
         app._dispatch_paste(paths)
 
 
