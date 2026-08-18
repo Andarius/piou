@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import os
 import shlex
 from collections.abc import Callable
 from dataclasses import dataclass
+from pathlib import Path
 from typing import TYPE_CHECKING
 from urllib.parse import urlsplit
 from urllib.request import url2pathname
@@ -89,11 +89,13 @@ class PromptStyle:
 
 def _drop_token_to_path(token: str) -> str | None:
     """Resolve a single dropped token to an existing filesystem path, else None."""
+    if not token:  # Path("") normalizes to "." which exists
+        return None
     if token.startswith("file://"):
-        token = url2pathname(urlsplit(token).path)
+        path = Path(url2pathname(urlsplit(token).path))
     else:
-        token = os.path.expanduser(token)
-    return token if token and os.path.exists(token) else None
+        path = Path(token).expanduser()
+    return str(path) if path.exists() else None
 
 
 def _extract_dropped_paths(text: str) -> list[str] | None:
