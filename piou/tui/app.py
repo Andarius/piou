@@ -4,7 +4,7 @@ import shlex
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 from urllib.parse import urlsplit
 from urllib.request import url2pathname
 
@@ -48,7 +48,7 @@ class _MessageScroll(VerticalScroll):
 
     def watch_scroll_y(self, old_value: float, new_value: float) -> None:
         super().watch_scroll_y(old_value, new_value)
-        app: TuiApp = self.app  # type: ignore[assignment]
+        app = cast("TuiApp", self.app)
         if app._is_scrolled_to_bottom(self):
             app._auto_scroll = True
         elif new_value < old_value:
@@ -142,7 +142,7 @@ class PromptInput(Input):
             return
         event.prevent_default()
         event.stop()
-        app: TuiApp = self.app  # type: ignore[assignment]
+        app = cast("TuiApp", self.app)
         app._dispatch_paste(paths)
 
 
