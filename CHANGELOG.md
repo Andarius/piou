@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.36.0 (2026-08-18)
+
+### Feat
+
+- **tui**: paste and drag-and-drop attachment hooks (#53)
+
 ## 0.35.6 (2026-07-17)
 
 ### Fix
