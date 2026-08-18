@@ -87,7 +87,7 @@ class PromptStyle:
         return previous
 
 
-def _drop_token_to_path(token: str) -> str | None:
+def _drop_token_to_path(token: str) -> Path | None:
     """Resolve a single dropped token to an existing filesystem path, else None."""
     if not token:  # Path("") normalizes to "." which exists
         return None
@@ -95,10 +95,10 @@ def _drop_token_to_path(token: str) -> str | None:
         path = Path(url2pathname(urlsplit(token).path))
     else:
         path = Path(token).expanduser()
-    return str(path) if path.exists() else None
+    return path if path.exists() else None
 
 
-def _extract_dropped_paths(text: str) -> list[str] | None:
+def _extract_dropped_paths(text: str) -> list[Path] | None:
     """Return file paths when a paste is entirely dropped files, else None.
 
     Terminals deliver a file drop as a bracketed paste of the path(s) — `file://`
@@ -118,7 +118,7 @@ def _extract_dropped_paths(text: str) -> list[str] | None:
             return None
     if not tokens:
         return None
-    paths: list[str] = []
+    paths: list[Path] = []
     for token in tokens:
         path = _drop_token_to_path(token)
         if path is None:
@@ -187,7 +187,7 @@ class TuiApp(App):
         # Cache last help path to skip redundant widget updates
         self._last_help_path: str | None = None
         # Attachment drop handlers, registered at runtime by a command.
-        self._paste_handler: Callable[[list[str]], None] | None = None
+        self._paste_handler: Callable[[list[Path]], None] | None = None
         self._attachment_clear: Callable[[], None] | None = None
 
         # Dev mode: file watching
@@ -777,7 +777,7 @@ class TuiApp(App):
             tray.update(content)
             tray.display = True
 
-    def register_paste_handler(self, handler: Callable[[list[str]], None] | None) -> None:
+    def register_paste_handler(self, handler: Callable[[list[Path]], None] | None) -> None:
         """Register (or clear with None) a callback for dropped file paths."""
         self._paste_handler = handler
 
@@ -785,7 +785,7 @@ class TuiApp(App):
         """Register (or clear with None) the Ctrl+U attachment-clear callback."""
         self._attachment_clear = handler
 
-    def _dispatch_paste(self, paths: list[str]) -> None:
+    def _dispatch_paste(self, paths: list[Path]) -> None:
         """Forward dropped file paths to the registered paste handler, if any."""
         if self._paste_handler is not None:
             self._paste_handler(paths)

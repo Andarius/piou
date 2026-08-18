@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from contextvars import ContextVar
+from pathlib import Path
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Literal
 
@@ -153,7 +154,7 @@ class TuiContext:
         if self.tui is not None:
             self.tui.set_attachments(content)
 
-    def register_paste_handler(self, handler: Callable[[list[str]], None] | None) -> None:
+    def register_paste_handler(self, handler: Callable[[list[Path]], None] | None) -> None:
         """Register a callback invoked with dropped file paths (None to clear).
 
         Files dropped onto the terminal arrive as a paste of their path(s); the

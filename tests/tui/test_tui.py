@@ -1387,14 +1387,14 @@ class TestExtractDroppedPaths:
 
         f = tmp_path / "a.png"
         f.write_bytes(b"x")
-        assert _extract_dropped_paths(f"file://{f}") == [str(f)]
+        assert _extract_dropped_paths(f"file://{f}") == [f]
 
     def test_plain_existing_path(self, tmp_path):
         from piou.tui.app import _extract_dropped_paths
 
         f = tmp_path / "a.txt"
         f.write_text("x")
-        assert _extract_dropped_paths(str(f)) == [str(f)]
+        assert _extract_dropped_paths(str(f)) == [f]
 
     def test_multiple_file_uris(self, tmp_path):
         from piou.tui.app import _extract_dropped_paths
@@ -1403,7 +1403,7 @@ class TestExtractDroppedPaths:
         a.write_text("a")
         b = tmp_path / "b.txt"
         b.write_text("b")
-        assert _extract_dropped_paths(f"file://{a} file://{b}") == [str(a), str(b)]
+        assert _extract_dropped_paths(f"file://{a} file://{b}") == [a, b]
 
     def test_percent_encoded_uri(self, tmp_path):
         from piou.tui.app import _extract_dropped_paths
@@ -1411,7 +1411,7 @@ class TestExtractDroppedPaths:
         f = tmp_path / "a b.txt"
         f.write_text("x")
         uri = "file://" + str(f).replace(" ", "%20")
-        assert _extract_dropped_paths(uri) == [str(f)]
+        assert _extract_dropped_paths(uri) == [f]
 
     @pytest.mark.parametrize(
         "text",
@@ -1445,7 +1445,7 @@ class TestAttachments:
 
         f = tmp_path / "doc.txt"
         f.write_text("hi")
-        received: list[list[str]] = []
+        received: list[list[Path]] = []
 
         app = TuiApp(state=tui_state)
         async with app.run_test() as pilot:
@@ -1454,7 +1454,7 @@ class TestAttachments:
             inp.post_message(Paste(f"file://{f}"))
             await pilot.pause()
 
-            assert received == [[str(f)]]
+            assert received == [[f]]
             assert inp.value == ""
 
     async def test_normal_paste_still_inserts_text(self, tui_state):
