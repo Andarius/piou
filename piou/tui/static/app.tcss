@@ -168,3 +168,12 @@ Input > .input--suggestion {
     height: auto;
     display: none;
 }
+
+#attachment-tray {
+    background: transparent;
+    color: white;
+    padding: 0;
+    margin: 0;
+    height: auto;
+    display: none;
+}

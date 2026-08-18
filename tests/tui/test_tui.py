@@ -1377,3 +1377,125 @@ class TestGetValueSuggestions:
         ctx = OptionContext(option=opt, partial=partial, prefix="")
         result = await get_value_suggestions(ctx)
         assert result == expected
+
+
+class TestExtractDroppedPaths:
+    """The pure file-path detection behind the drop hook."""
+
+    def test_single_file_uri(self, tmp_path):
+        from piou.tui.app import _extract_dropped_paths
+
+        f = tmp_path / "a.png"
+        f.write_bytes(b"x")
+        assert _extract_dropped_paths(f"file://{f}") == [f]
+
+    def test_plain_existing_path(self, tmp_path):
+        from piou.tui.app import _extract_dropped_paths
+
+        f = tmp_path / "a.txt"
+        f.write_text("x")
+        assert _extract_dropped_paths(str(f)) == [f]
+
+    def test_multiple_file_uris(self, tmp_path):
+        from piou.tui.app import _extract_dropped_paths
+
+        a = tmp_path / "a.txt"
+        a.write_text("a")
+        b = tmp_path / "b.txt"
+        b.write_text("b")
+        assert _extract_dropped_paths(f"file://{a} file://{b}") == [a, b]
+
+    def test_percent_encoded_uri(self, tmp_path):
+        from piou.tui.app import _extract_dropped_paths
+
+        f = tmp_path / "a b.txt"
+        f.write_text("x")
+        uri = "file://" + str(f).replace(" ", "%20")
+        assert _extract_dropped_paths(uri) == [f]
+
+    @pytest.mark.parametrize(
+        "text",
+        [
+            pytest.param("", id="empty"),
+            pytest.param("   ", id="whitespace"),
+            pytest.param("hello world", id="prose"),
+            pytest.param("it's a paste", id="unbalanced-quote"),
+            pytest.param("/no/such/file/xyz.png", id="nonexistent"),
+        ],
+    )
+    def test_returns_none(self, text):
+        from piou.tui.app import _extract_dropped_paths
+
+        assert _extract_dropped_paths(text) is None
+
+    def test_mixed_file_and_text_returns_none(self, tmp_path):
+        from piou.tui.app import _extract_dropped_paths
+
+        f = tmp_path / "a.txt"
+        f.write_text("x")
+        assert _extract_dropped_paths(f"file://{f} not-a-file") is None
+
+
+class TestAttachments:
+    """The paste hook, tray, and Ctrl+U clear wired through TuiApp."""
+
+    async def test_drop_dispatches_paths_without_inserting(self, tui_state, tmp_path):
+        from textual.events import Paste
+        from piou.tui.app import PromptInput
+
+        f = tmp_path / "doc.txt"
+        f.write_text("hi")
+        received: list[list[Path]] = []
+
+        app = TuiApp(state=tui_state)
+        async with app.run_test() as pilot:
+            app.register_paste_handler(received.append)
+            inp = app.query_one(PromptInput)
+            inp.post_message(Paste(f"file://{f}"))
+            await pilot.pause()
+
+            assert received == [[f]]
+            assert inp.value == ""
+
+    async def test_normal_paste_still_inserts_text(self, tui_state):
+        from textual.events import Paste
+        from piou.tui.app import PromptInput
+
+        app = TuiApp(state=tui_state)
+        async with app.run_test() as pilot:
+            inp = app.query_one(PromptInput)
+            inp.focus()
+            inp.post_message(Paste("just text"))
+            await pilot.pause()
+
+            assert inp.value == "just text"
+
+    async def test_set_attachments_show_hide(self, tui_state):
+        from textual.widgets import Static
+
+        app = TuiApp(state=tui_state)
+        async with app.run_test():
+            tray = app.query_one("#attachment-tray", Static)
+            assert tray.display is False
+
+            app.set_attachments("📎 foo.txt")
+            assert tray.display is True
+
+            app.set_attachments(None)
+            assert tray.display is False
+
+    async def test_ctrl_u_clears_only_when_tray_visible(self, tui_state):
+        cleared: list[bool] = []
+
+        app = TuiApp(state=tui_state)
+        async with app.run_test() as pilot:
+            app.register_attachment_clear(lambda: cleared.append(True))
+
+            await pilot.press("ctrl+u")
+            await pilot.pause()
+            assert cleared == []
+
+            app.set_attachments("📎 foo.txt")
+            await pilot.press("ctrl+u")
+            await pilot.pause()
+            assert cleared == [True]
