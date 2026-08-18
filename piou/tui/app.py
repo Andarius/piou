@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 import shlex
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -42,8 +41,6 @@ from .suggester import (
 )
 from .utils import get_command_help
 from .value_picker import ValuePicker
-
-log = logging.getLogger(__name__)
 
 
 def _tui_app(widget: Widget) -> TuiApp:
@@ -119,23 +116,18 @@ def _extract_dropped_paths(text: str) -> list[Path] | None:
     """
     if not (stripped := text.strip()):
         return None
-    is_uri_drop = "file://" in stripped
-    if is_uri_drop:
+    if "file://" in stripped:
         tokens = stripped.split()
     else:
         try:
             tokens = shlex.split(stripped)
         except ValueError:
-            return None  # unbalanced quoting: ordinary prose, not a drop
+            return None
     if not tokens:
         return None
     paths: list[Path] = []
     for token in tokens:
         if (path := _drop_token_to_path(token)) is None:
-            if is_uri_drop:
-                # Unmistakably drop-shaped yet rejected — surface why the
-                # drop silently did nothing.
-                log.debug("dropped file does not resolve to an existing path: %r", token)
             return None
         paths.append(path)
     return paths
