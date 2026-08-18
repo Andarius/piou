@@ -106,8 +106,7 @@ def _extract_dropped_paths(text: str) -> list[Path] | None:
     attachment when *every* token resolves to an existing file, so ordinary text
     pastes fall through to normal insertion.
     """
-    stripped = text.strip()
-    if not stripped:
+    if not (stripped := text.strip()):
         return None
     if "file://" in stripped:
         tokens = stripped.split()
@@ -120,8 +119,7 @@ def _extract_dropped_paths(text: str) -> list[Path] | None:
         return None
     paths: list[Path] = []
     for token in tokens:
-        path = _drop_token_to_path(token)
-        if path is None:
+        if (path := _drop_token_to_path(token)) is None:
             return None
         paths.append(path)
     return paths
