@@ -1,0 +1,64 @@
+:root {
+  --md-primary-fg-color:        #1a1a2e;
+  --md-primary-fg-color--light: #2d2d4a;
+  --md-primary-fg-color--dark:  #0f0f1a;
+  --md-accent-fg-color:         #EB5826;
+}
+
+/* Make the header smaller */
+.md-header {
+  height: 2.4rem;
+}
+
+.md-header__inner {
+  padding: 0 0.4rem;
+}
+
+.md-header__button.md-logo img {
+  height: 1.6rem;
+}
+
+/* Adjust main content top padding to match smaller header */
+.md-main__inner {
+  margin-top: 1rem;
+}
+
+/* Hide the search bar on very small headers or adjust it */
+.md-search__inner {
+  padding-top: 0.1rem;
+}
+
+/* Make navigation links more visible */
+.md-nav__link--active,
+.md-nav__link:hover {
+  border-left: 2px solid #EB5826;
+  padding-left: 0.5rem;
+}
+
+.md-nav__link--active {
+  font-weight: 600;
+}
+
+/* Light mode: use dark text */
+[data-md-color-scheme="default"] .md-nav__link--active {
+  color: #1a1a2e !important;
+}
+
+/* Dark mode: use white text */
+[data-md-color-scheme="slate"] .md-nav__link--active {
+  color: #ffffff !important;
+}
+
+/* Highlighted links (orange accent) */
+.highlight-link {
+  color: #EB5826 !important;
+  font-weight: 500;
+}
+.highlight-link:hover {
+  color: #ff6b3d !important;
+}
+
+/* Add padding at the bottom of pages */
+.md-content__inner {
+  padding-bottom: 4rem;
+}
