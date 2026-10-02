@@ -130,8 +130,9 @@ my-cli --completions fish | source           # ~/.config/fish/config.fish
 ```
 
 Completion is dynamic: on `<TAB>` the shell re-runs your CLI with `_PIOU_COMPLETE=<shell>`, which prints candidates
-instead of running a command. Command bodies never run. From Python, `cli.completion_script("zsh", prog="my-cli")`
-returns the same script.
+instead of running a command. Command bodies never run. The script is registered for the running script's name; pass
+another one when calling through a wrapper, an alias or `python -m` (`my-cli --completions zsh my-alias`). From Python,
+`cli.completion_script("zsh", prog="my-cli")` returns the same script.
 
 Callable `choices` run on every `<TAB>`, so they are off by default: enable them with
 `Cli(complete_dynamic_choices=True)` when they are cheap, or per user with `export PIOU_COMPLETE_DYNAMIC=1` (an

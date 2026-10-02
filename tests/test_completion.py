@@ -30,11 +30,13 @@ def _make_cli() -> Cli:
         pass
 
     @cluster.command(cmd="scale", help="Scale a cluster")
-    def scale(size: Literal["s", "m"] = Option(...), zone: str = Option(..., choices=["eu:west", r"a\b"])):
+    def scale(
+        size: Literal["s", "m"] = Option(...), zone: str = Option(..., choices=["eu:west", r"a\b", "x\ny", "t\tab"])
+    ):
         pass
 
     server = CommandGroup(name="server", help="Manage servers")
-    monitoring = CommandGroup(name="monitoring", help="Monitoring stack")
+    monitoring = CommandGroup(name="monitoring", help="Monitoring\tstack")
     for name in ("install", "status"):
         monitoring.add_command(lambda: None, cmd=name, help=f"{name} help")
     server.add_group(monitoring)
@@ -68,7 +70,9 @@ def _make_cli() -> Cli:
         pytest.param(["cluster", "new", "--cluster", ""], [], id="free-value"),
         pytest.param(["cluster", "new", "foo", ""], [], id="positional"),
         pytest.param(["cluster", "scale", ""], ["s", "m"], id="positional-literal"),
-        pytest.param(["cluster", "scale", "s", ""], ["eu:west", "a\\b"], id="second-positional-choices"),
+        pytest.param(
+            ["cluster", "scale", "s", ""], ["eu:west", "a\\b", "x\ny", "t\tab"], id="second-positional-choices"
+        ),
         pytest.param(["nope", ""], [], id="unknown-command"),
         pytest.param(["server", "nope", ""], [], id="unknown-subcommand"),
     ],
@@ -85,7 +89,9 @@ def test_candidates_help():
     "shell, words, expected",
     [
         pytest.param("zsh", ["server", ""], "init:Init server\nmonitoring:Monitoring stack\n", id="zsh"),
-        pytest.param("zsh", ["cluster", "scale", "s", ""], "eu\\:west\na\\\\b\n", id="zsh-escaping"),
+        pytest.param(
+            "zsh", ["cluster", "scale", "s", ""], "eu\\:west\na\\\\b\n", id="zsh-escaping-and-unrepresentable-values"
+        ),
         pytest.param("fish", ["server", ""], "init\tInit server\nmonitoring\tMonitoring stack\n", id="fish"),
         pytest.param("bash", ["server", ""], "init\nmonitoring\n", id="bash"),
         pytest.param("tcsh", ["server", ""], "", id="unknown-shell"),
@@ -109,6 +115,9 @@ def test_run_prints_candidates_only(monkeypatch, capsys, shell, words, expected)
         pytest.param(("--completions", "fish"), nullcontext("complete -c sctl"), id="fish"),
         pytest.param(("--completions", "tcsh"), pytest.raises(SystemExit, match="1"), id="unknown-shell"),
         pytest.param(("--completions",), pytest.raises(SystemExit, match="1"), id="missing-shell"),
+        pytest.param(
+            ("--completions", "zsh", "my-alias"), nullcontext("compdef _my_alias my-alias"), id="explicit-prog"
+        ),
     ],
 )
 def test_completions_flag(monkeypatch, capsys, args, expected):

@@ -138,7 +138,10 @@ def print_candidates(group: CommandGroup, shell: str, words: Sequence[str], reso
     if shell not in SHELLS:
         return
     for value, text in get_candidates(group, words, resolve_choices):
-        text = text.splitlines()[0] if text else ""
+        # one line per candidate, tab separates fish descriptions: such values can't be represented
+        if any(c in value for c in "\n\r\t"):
+            continue
+        text = text.splitlines()[0].replace("\t", " ") if text else ""
         if shell == "zsh":
             value = value.replace("\\", "\\\\").replace(":", r"\:")
             print(f"{value}:{text}" if text else value)

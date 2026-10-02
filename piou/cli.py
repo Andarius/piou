@@ -100,7 +100,9 @@ class Cli:
         """Run the CLI application with the given arguments."""
         try:
             if args[:1] == ("--completions",):
-                print(self.completion_script(args[1] if len(args) > 1 else ""), end="")
+                shell = args[1] if len(args) > 1 else ""
+                prog = args[2] if len(args) > 2 else None
+                print(self.completion_script(shell, prog), end="")
                 return None
             return self._group.run_with_args(*args)
         except CommandNotFoundError as e:
