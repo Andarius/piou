@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.38.0 (2026-10-02)
+
+### Feat
+
+- dynamic shell completion for bash, zsh and fish (#55)
+
 ## 0.37.0 (2026-08-18)
 
 ### Feat
