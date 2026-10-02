@@ -5,6 +5,7 @@ import textwrap
 import warnings
 from dataclasses import dataclass, field
 from inspect import getdoc
+from collections.abc import Iterable
 from typing import Any, NamedTuple, Callable
 
 from .exceptions import DuplicatedCommandError, CommandException, CommandNotFoundError
@@ -31,6 +32,23 @@ ParentArgs = list[ParentArg]
 
 def clean_multiline(s: str) -> str:
     return textwrap.dedent(s).strip()
+
+
+def build_flag_maps(options: Iterable[CommandOption]) -> tuple[dict[str, CommandOption], set[str], set[str]]:
+    """Build (flag_map, bool_flags, neg_flags) from the keyword options in `options`."""
+    flag_map: dict[str, CommandOption] = {}
+    bool_flags: set[str] = set()
+    neg_flags: set[str] = set()
+    for opt in options:
+        if opt.is_positional_arg:
+            continue
+        for kw in opt.keyword_args:
+            flag_map[kw] = opt
+            if opt.data_type is bool:
+                bool_flags.add(kw)
+        if opt.negative_flag:
+            neg_flags.add(opt.negative_flag)
+    return flag_map, bool_flags, neg_flags
 
 
 @dataclass
@@ -65,19 +83,7 @@ class Command:
     @functools.cached_property
     def flag_maps(self) -> tuple[dict[str, CommandOption], set[str], set[str]]:
         """Cached (flag_map, bool_flags, neg_flags) built from keyword options."""
-        flag_map: dict[str, CommandOption] = {}
-        bool_flags: set[str] = set()
-        neg_flags: set[str] = set()
-        for opt in self.options:
-            if opt.is_positional_arg:
-                continue
-            for kw in opt.keyword_args:
-                flag_map[kw] = opt
-                if opt.data_type is bool:
-                    bool_flags.add(kw)
-            if opt.negative_flag:
-                neg_flags.add(opt.negative_flag)
-        return flag_map, bool_flags, neg_flags
+        return build_flag_maps(self.options)
 
     def run(self, *args, loop: asyncio.AbstractEventLoop | None = None, **kwargs):
         return run_function(self.fn, *args, loop=loop, **kwargs)

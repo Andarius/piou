@@ -82,6 +82,7 @@ Full documentation is available at **[andarius.github.io/piou](https://andarius.
 - Type validation and casting
 - **Interactive TUI mode** with command suggestions and history
 - **Structured JSON help** (`--help-json`) for tooling and programmatic CLI discovery
+- **Shell completion** for bash, zsh and fish (`--completions`)
 
 ## Why Piou?
 
@@ -116,6 +117,25 @@ if __name__ == '__main__':
 ```
 
 This works the same way for commands inside command groups.
+
+## Shell Completion
+
+Any piou CLI can complete its commands, options and `Literal`/static choices in bash, zsh and fish, with help text
+shown as descriptions in zsh and fish. Add one line to your shell config (`my-cli` being your installed script):
+
+```bash
+source <(my-cli --completions bash)          # ~/.bashrc
+source <(my-cli --completions zsh)           # ~/.zshrc, after compinit
+my-cli --completions fish | source           # ~/.config/fish/config.fish
+```
+
+Completion is dynamic: on `<TAB>` the shell re-runs your CLI with `_PIOU_COMPLETE=<shell>`, which prints candidates
+instead of running a command. Command bodies never run. From Python, `cli.completion_script("zsh", prog="my-cli")`
+returns the same script.
+
+Callable `choices` run on every `<TAB>`, so they are off by default: enable them with
+`Cli(complete_dynamic_choices=True)` when they are cheap, or per user with `export PIOU_COMPLETE_DYNAMIC=1` (an
+explicit `complete_dynamic_choices=` wins over the env var). A choices function that fails gives no candidates.
 
 ## Interactive TUI Mode
 
@@ -215,6 +235,8 @@ The TUI mode supports mounting custom Textual widgets for rich interactive displ
 See [examples/http_bench_tui.py](examples/http_bench_tui.py) for the full implementation using `TuiContext` and custom widgets.
 
 ## Development
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, checks and pull request conventions.
 
 ### Running Tests
 

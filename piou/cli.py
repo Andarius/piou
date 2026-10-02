@@ -49,6 +49,8 @@ class Cli:
     """Show help instead of an error message when a command is called with invalid arguments."""
     use_rich_traceback: bool | None = None
     """Use Rich traceback formatting. If None, uses formatter's default. Only applies to RichFormatter."""
+    complete_dynamic_choices: bool = field(default_factory=lambda: os.getenv("PIOU_COMPLETE_DYNAMIC", "0") == "1")
+    """Call callable `choices` during shell completion. Defaults to the PIOU_COMPLETE_DYNAMIC env var."""
     _group: CommandGroup = field(init=False, default_factory=CommandGroup)
     """The main command group that will contain all the commands and options"""
 
@@ -76,8 +78,14 @@ class Cli:
         except ValueError:
             args = []
 
+        if shell := os.environ.get("_PIOU_COMPLETE"):
+            from .completion import print_candidates
+
+            print_candidates(self._group, shell, args, self.complete_dynamic_choices)
+            sys.exit(0)
+
         # Start TUI if enabled or if the first argument looks like a TUI command (e.g., "/send")
-        if self.tui or (args and args[0].startswith("/")):
+        if (self.tui and args[:1] != ["--completions"]) or (args and args[0].startswith("/")):
             self.tui_run(*args, **kwargs)
             return
 
@@ -91,6 +99,9 @@ class Cli:
     def run_with_args(self, *args):
         """Run the CLI application with the given arguments."""
         try:
+            if args[:1] == ("--completions",):
+                print(self.completion_script(args[1] if len(args) > 1 else ""), end="")
+                return None
             return self._group.run_with_args(*args)
         except CommandNotFoundError as e:
             e.input_args = args
@@ -145,6 +156,15 @@ class Cli:
         finally:
             cleanup_event_loop()
         return None
+
+    def completion_script(self, shell: str, prog: str | None = None) -> str:
+        """Shell code enabling tab-completion for `prog` (defaults to the running script name) in `shell`."""
+        from .completion import completion_script
+
+        try:
+            return completion_script(shell, prog or os.path.basename(sys.argv[0]))
+        except ValueError as e:
+            raise CommandError(str(e)) from e
 
     def command(
         self,

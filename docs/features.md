@@ -191,3 +191,22 @@ USAGE
 The help is contextual: an unknown command inside a command group shows that group's help, and an
 argument error shows the failing command's help. If the group has no commands to suggest, only the
 error message is printed.
+
+## Shell Completion
+
+Any piou CLI can complete its commands, options and `Literal`/static choices in bash, zsh and fish, with help text
+shown as descriptions in zsh and fish. Add one line to your shell config (`my-cli` being your installed script):
+
+```bash
+source <(my-cli --completions bash)          # ~/.bashrc
+source <(my-cli --completions zsh)           # ~/.zshrc, after compinit
+my-cli --completions fish | source           # ~/.config/fish/config.fish
+```
+
+Completion is dynamic: on `<TAB>` the shell re-runs your CLI with `_PIOU_COMPLETE=<shell>`, which prints candidates
+instead of running a command. Command bodies never run. From Python, `cli.completion_script("zsh", prog="my-cli")`
+returns the same script.
+
+Callable `choices` run on every `<TAB>`, so they are off by default: enable them with
+`Cli(complete_dynamic_choices=True)` when they are cheap, or per user with `export PIOU_COMPLETE_DYNAMIC=1` (an
+explicit `complete_dynamic_choices=` wins over the env var). A choices function that fails gives no candidates.
