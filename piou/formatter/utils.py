@@ -4,7 +4,7 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import Literal, TYPE_CHECKING, cast
+from typing import Callable, Literal, TYPE_CHECKING, cast
 
 from ..utils import _SecretBase
 from ..command import CommandOption
@@ -113,11 +113,22 @@ def fmt_cmd_options_raw(options: list[CommandOption]) -> str:
     return " ".join([fmt_option_raw(x) for x in options]) if options else ""
 
 
+# C0 controls, DEL and C1 controls. Choice values may come from
+# author-uncontrolled data; an ESC here would otherwise reach the terminal as
+# a control sequence (title change, clipboard write, hyperlink).
+_CONTROL_CHARS = re.compile(r"[\x00-\x1f\x7f-\x9f]")
+
+
+def strip_control_chars(value: str) -> str:
+    """Remove terminal control characters from a value shown to the user."""
+    return _CONTROL_CHARS.sub("", value)
+
+
 def fmt_choice(choice: str | re.Pattern[str]) -> str:
     """Format a choice for display, converting regex patterns to /pattern/ format."""
     if isinstance(choice, re.Pattern):
-        return f"/{choice.pattern}/"
-    return str(choice)
+        return f"/{strip_control_chars(choice.pattern)}/"
+    return strip_control_chars(str(choice))
 
 
 def fmt_help(
@@ -126,10 +137,20 @@ def fmt_help(
     *,
     markdown_open: str | None = None,
     markdown_close: str | None = None,
+    escape_markup: Callable[[str], str] | None = None,
 ) -> str | None:
-    """Format the help text for a command option."""
+    """Format the help text for a command option.
+
+    `escape_markup` neutralises markup in author-uncontrolled values (the
+    choice entries) for formatters that re-parse the result as markup. The
+    plain-text formatter leaves it unset.
+    """
     _choices = option.get_choices()
     _markdown_open, _markdown_close = markdown_open or "", markdown_close or ""
+    _escape = escape_markup or (lambda s: s)
+
+    def _fmt_choice(choice: object) -> str:
+        return _escape(fmt_choice(choice))
 
     if show_default and option.default is not None and not option.is_required:
         if option.is_secret:
@@ -149,11 +170,11 @@ def fmt_help(
         return option.help + f" {default_str}" if option.help else default_str
     elif _choices is not None and not option.hide_choices:
         if len(_choices) <= 3:
-            possible_choices = ", ".join(fmt_choice(_choice) for _choice in _choices)
+            possible_choices = ", ".join(_fmt_choice(_choice) for _choice in _choices)
             choices_help = f"{_markdown_open}(choices are: {possible_choices}){_markdown_close}"
         else:
             sep = " \n - "
-            possible_choices = sep + sep.join(fmt_choice(_choice) for _choice in _choices)
+            possible_choices = sep + sep.join(_fmt_choice(_choice) for _choice in _choices)
             choices_help = f"\n{_markdown_open}Possible choices are:{_markdown_close}" + possible_choices
         return option.help + f" {choices_help}" if option.help else choices_help
     else:

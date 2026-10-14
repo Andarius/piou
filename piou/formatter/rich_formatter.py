@@ -57,7 +57,15 @@ def fmt_help(
     markdown_close: str | None = "[/bold]",
 ):
     """Format the help text for a command option with Rich markup."""
-    return _fmt_help_base(option, show_default, markdown_open=markdown_open, markdown_close=markdown_close)
+    from rich.markup import escape
+
+    return _fmt_help_base(
+        option,
+        show_default,
+        markdown_open=markdown_open,
+        markdown_close=markdown_close,
+        escape_markup=escape,
+    )
 
 
 def get_usage(

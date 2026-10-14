@@ -885,3 +885,37 @@ def test_print_exception(formatter_cls, use_rich_traceback, hide_internals, use_
     output = captured.err if use_stderr else captured.out
     assert "ValueError" in output, output
     assert "test error message" in output, output
+
+
+def test_fmt_choice_strips_control_chars():
+    """Choice values must not carry terminal control sequences into output."""
+    from piou.formatter.utils import fmt_choice
+
+    # the ESC and BEL introducers are removed, so the OSC sequence is inert
+    assert fmt_choice("x\x1b]0;hijack\x07y") == "x]0;hijacky"
+    assert "\x1b" not in fmt_choice("x\x1b]0;hijack\x07y")
+    assert fmt_choice("safe") == "safe"
+
+
+def test_rich_help_escapes_markup_in_choices():
+    """Rich help must not interpret choice values as markup."""
+    from piou.utils import CommandOption
+    from piou.formatter.rich_formatter import fmt_help
+
+    opt = CommandOption(..., keyword_args=("--env",), choices=["ok", "[bold red]x[/bold red]"])
+    opt.data_type = str
+    result = fmt_help(opt, show_default=False)
+    # the literal brackets survive (escaped), so Rich renders them as text
+    assert r"\[bold red]x\[/bold red]" in result
+
+
+def test_plain_help_keeps_brackets_literal_in_choices():
+    """Plain formatter must not inject the Rich escape backslash."""
+    from piou.utils import CommandOption
+    from piou.formatter.utils import fmt_help
+
+    opt = CommandOption(..., keyword_args=("--env",), choices=["ok", "[bold]x[/bold]"])
+    opt.data_type = str
+    result = fmt_help(opt, show_default=False)
+    assert "[bold]x[/bold]" in result
+    assert "\\[" not in result
