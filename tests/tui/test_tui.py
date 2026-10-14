@@ -10,7 +10,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from piou import Cli, Option
+from piou import Cli, Option, Secret
 from piou.utils import CommandOption
 from piou.command import Command, CommandGroup
 from piou.tui import (
@@ -995,6 +995,19 @@ class TestGetCommandHelp:
         result = str(get_command_help(cmd))
         assert "-n <value>" in result
         assert "*required" in result
+
+    def test_secret_default_is_masked(self):
+        """Secret defaults must not be shown in clear text in the help panel."""
+        cli = Cli(description="Test")
+
+        @cli.command(cmd="test")
+        def test_cmd(token: Secret = Option("sk-REAL-SECRET-123", "--token")):
+            pass
+
+        cmd = cli.group.commands["test"]
+        result = str(get_command_help(cmd))
+        assert "sk-REAL-SECRET-123" not in result
+        assert "default: ******" in result
 
     @pytest.mark.parametrize(
         "annotation,expected_type",
