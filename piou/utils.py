@@ -123,6 +123,21 @@ def extract_optional_type(t: Any):
     return t
 
 
+def _find_secret_type(t: Any) -> type[_SecretBase] | None:
+    """Return a secret class if `t` is one or wraps one (Union/list), else None."""
+    if isinstance(t, type) and issubclass(t, _SecretBase):
+        return t
+    origin = get_origin(t)
+    if origin is Union or origin is UnionType or origin is list or t is list:
+        for arg in get_args(t):
+            if arg is NoneType:
+                continue
+            found = _find_secret_type(arg)
+            if found is not None:
+                return found
+    return None
+
+
 def get_literals_union_args(literal: Any):
     values = []
     if get_origin(literal) is not Literal:
@@ -381,16 +396,12 @@ class CommandOption(Generic[T]):
 
     @property
     def secret_type(self) -> type[_SecretBase] | None:
-        # Unwrap Optional/Union and list before testing, so Secret | None,
-        # Optional[Secret], list[Secret] and Optional[list[Secret]] all resolve
-        # to their underlying secret class (and get masked in help output).
-        _type = extract_optional_type(self.data_type)
-        if _is_list_type(_type):
-            _args = get_args(_type)
-            _type = extract_optional_type(_args[0]) if _args else _type
-        if isinstance(_type, type) and issubclass(_type, _SecretBase):
-            return _type
-        return None
+        # Recurse through Union and list wrappers so every spelling that can
+        # carry a secret value is masked in help output: Secret | None,
+        # Optional[Secret], Secret | str, list[Secret], list[Secret | str],
+        # list[list[Secret]], Optional[list[Secret]]. If any member resolves to
+        # a secret class, treat the option as secret (never leak a default).
+        return _find_secret_type(self.data_type)
 
     @property
     def is_secret(self) -> bool:

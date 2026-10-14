@@ -176,17 +176,21 @@ class TestSecretType:
         for data_type in (
             Optional[Secret],
             Secret | None,
+            Secret | str,
             list[Secret],
             List[Secret],
             Optional[list[Secret]],
+            list[Secret | str],
+            list[list[Secret]],
         ):
             opt = CommandOption("value")
             opt.data_type = data_type
             assert opt.is_secret is True, data_type
 
-        opt_str = CommandOption("value")
-        opt_str.data_type = Optional[str]
-        assert opt_str.is_secret is False
+        for data_type in (Optional[str], str, list[str], int | None):
+            opt_str = CommandOption("value")
+            opt_str.data_type = data_type
+            assert opt_str.is_secret is False, data_type
 
     @pytest.mark.parametrize(
         "secret_type, value",
