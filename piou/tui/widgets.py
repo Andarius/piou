@@ -15,6 +15,12 @@ class StreamingMessage(Static):
     """
 
     def __init__(self, initial: str = "", **kwargs) -> None:
+        # Streamed text (e.g. LLM tokens) is not Textual markup. Parsing it as
+        # markup styles well-formed tags and, worse, raises MarkupError on the
+        # first unbalanced bracket; since the whole buffer is re-parsed on every
+        # append, one bad chunk permanently breaks the widget. Treat the text as
+        # literal unless the caller explicitly opts into markup.
+        kwargs.setdefault("markup", False)
         super().__init__(initial, **kwargs)
         self._text = initial
 
