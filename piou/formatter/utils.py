@@ -166,6 +166,9 @@ def fmt_help(
             default_str = mask_secret(str(option.default), _show_first, _show_last, _replacement)
         else:
             default_str = option.default
+        # The default is author-uncontrolled data too (and a secret's visible
+        # prefix/suffix can carry control bytes), so sanitize it like a choice.
+        default_str = _escape(strip_control_chars(str(default_str)))
         default_str = f"{_markdown_open}(default: {default_str}){_markdown_close}"
         return option.help + f" {default_str}" if option.help else default_str
     elif _choices is not None and not option.hide_choices:

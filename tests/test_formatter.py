@@ -919,3 +919,21 @@ def test_plain_help_keeps_brackets_literal_in_choices():
     result = fmt_help(opt, show_default=False)
     assert "[bold]x[/bold]" in result
     assert "\\[" not in result
+
+
+def test_help_default_is_sanitized():
+    """A default value must not carry control chars or markup into help."""
+    from piou.utils import CommandOption
+    from piou.formatter.rich_formatter import fmt_help as rich_fmt_help
+    from piou.formatter.utils import fmt_help as plain_fmt_help
+
+    opt = CommandOption("x\x1b]0;hijack\x07[bold]", keyword_args=("--x",))
+    opt.data_type = str
+    rich = rich_fmt_help(opt, show_default=True)
+    assert "\x1b" not in rich
+    assert r"\[bold]" in rich  # markup escaped on the rich path
+
+    opt2 = CommandOption("x\x1b]0;hijack\x07y", keyword_args=("--y",))
+    opt2.data_type = str
+    plain = plain_fmt_help(opt2, show_default=True)
+    assert "\x1b" not in plain
