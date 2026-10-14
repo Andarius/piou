@@ -140,7 +140,7 @@ def fmt_help(
                     option.replacement,
                 )
             else:
-                _secret = cast(type[_SecretBase], option.data_type)
+                _secret = cast(type[_SecretBase], option.secret_type)
                 _show_first, _show_last, _replacement = _secret.show_first, _secret.show_last, _secret.replacement
             default_str = mask_secret(str(option.default), _show_first, _show_last, _replacement)
         else:

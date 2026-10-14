@@ -167,6 +167,27 @@ class TestSecretType:
         opt_str.data_type = str
         assert opt_str.is_secret is False
 
+    def test_is_secret_unwraps_optional_and_list(self):
+        """Optional/Union/list wrappers around a secret type stay recognised."""
+        from typing import Optional, List
+
+        from piou.utils import CommandOption, Secret
+
+        for data_type in (
+            Optional[Secret],
+            Secret | None,
+            list[Secret],
+            List[Secret],
+            Optional[list[Secret]],
+        ):
+            opt = CommandOption("value")
+            opt.data_type = data_type
+            assert opt.is_secret is True, data_type
+
+        opt_str = CommandOption("value")
+        opt_str.data_type = Optional[str]
+        assert opt_str.is_secret is False
+
     @pytest.mark.parametrize(
         "secret_type, value",
         [

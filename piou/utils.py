@@ -380,8 +380,21 @@ class CommandOption(Generic[T]):
         self._literal_values = literals
 
     @property
+    def secret_type(self) -> type[_SecretBase] | None:
+        # Unwrap Optional/Union and list before testing, so Secret | None,
+        # Optional[Secret], list[Secret] and Optional[list[Secret]] all resolve
+        # to their underlying secret class (and get masked in help output).
+        _type = extract_optional_type(self.data_type)
+        if _is_list_type(_type):
+            _args = get_args(_type)
+            _type = extract_optional_type(_args[0]) if _args else _type
+        if isinstance(_type, type) and issubclass(_type, _SecretBase):
+            return _type
+        return None
+
+    @property
     def is_secret(self) -> bool:
-        return isinstance(self.data_type, type) and issubclass(self.data_type, _SecretBase)
+        return self.secret_type is not None
 
     @property
     def is_optional_path(self) -> bool:
