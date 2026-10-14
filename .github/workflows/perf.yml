@@ -53,9 +53,9 @@ jobs:
           tool: customSmallerIsBetter
           output-file-path: benchmark-results.json
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          # Comment on PR with diff vs base branch
-          comment-on-alert: true
-          comment-always: ${{ github.event_name == 'pull_request' }}
+          # Comment on PR with diff vs base branch (fork PRs get a read-only token)
+          comment-on-alert: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+          comment-always: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
           summary-always: true
           # Fail if 20% slower than previous
           alert-threshold: "120%"
