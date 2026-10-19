@@ -113,9 +113,7 @@ def fmt_cmd_options_raw(options: list[CommandOption]) -> str:
     return " ".join([fmt_option_raw(x) for x in options]) if options else ""
 
 
-# C0 controls, DEL and C1 controls. Choice values may come from
-# author-uncontrolled data; an ESC here would otherwise reach the terminal as
-# a control sequence (title change, clipboard write, hyperlink).
+# C0, DEL and C1 controls: an ESC could reach the terminal as a control sequence
 _CONTROL_CHARS = re.compile(r"[\x00-\x1f\x7f-\x9f]")
 
 
@@ -139,17 +137,12 @@ def fmt_help(
     markdown_close: str | None = None,
     escape_markup: Callable[[str], str] | None = None,
 ) -> str | None:
-    """Format the help text for a command option.
-
-    `escape_markup` neutralises markup in author-uncontrolled values (the
-    choice entries) for formatters that re-parse the result as markup. The
-    plain-text formatter leaves it unset.
-    """
+    """Format the help text for a command option; `escape_markup` escapes choices and defaults for markup output."""
     _choices = option.get_choices()
     _markdown_open, _markdown_close = markdown_open or "", markdown_close or ""
     _escape = escape_markup or (lambda s: s)
 
-    def _fmt_choice(choice: object) -> str:
+    def _fmt_choice(choice: str | re.Pattern[str]) -> str:
         return _escape(fmt_choice(choice))
 
     if show_default and option.default is not None and not option.is_required:
@@ -166,8 +159,6 @@ def fmt_help(
             default_str = mask_secret(str(option.default), _show_first, _show_last, _replacement)
         else:
             default_str = option.default
-        # The default is author-uncontrolled data too (and a secret's visible
-        # prefix/suffix can carry control bytes), so sanitize it like a choice.
         default_str = _escape(strip_control_chars(str(default_str)))
         default_str = f"{_markdown_open}(default: {default_str}){_markdown_close}"
         return option.help + f" {default_str}" if option.help else default_str

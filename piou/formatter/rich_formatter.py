@@ -3,14 +3,15 @@ from difflib import get_close_matches
 from functools import cached_property
 
 # PEP 810: rich imports are lazy on Python >= 3.15, ignored on older versions
-__lazy_modules__ = ["rich.console", "rich.padding", "rich.table"]
+__lazy_modules__ = ["rich.console", "rich.markup", "rich.padding", "rich.table"]
 
 from rich.console import Console, RenderableType
+from rich.markup import escape
 from rich.padding import Padding
 from rich.table import Table
 
 from .base import Formatter, Titles
-from .utils import get_program_name, fmt_help as _fmt_help_base
+from .utils import get_program_name, fmt_help as _fmt_help_base, strip_control_chars
 from ..command import Command, CommandOption, ParentArgs, CommandGroup
 
 
@@ -49,6 +50,11 @@ def fmt_cmd_options(options: list[CommandOption]) -> str:
     )
 
 
+def _safe(value: str) -> str:
+    """Make an untrusted value inert in Rich markup output."""
+    return escape(strip_control_chars(value))
+
+
 def fmt_help(
     option: CommandOption,
     show_default: bool,
@@ -57,8 +63,6 @@ def fmt_help(
     markdown_close: str | None = "[/bold]",
 ):
     """Format the help text for a command option with Rich markup."""
-    from rich.markup import escape
-
     return _fmt_help_base(
         option,
         show_default,
@@ -343,10 +347,11 @@ class RichFormatter(Formatter):
     ):
         sep = "\n - "
         parts = []
+        value = _safe(value)
         if literal_choices:
-            parts.append(f"Possible values are:{sep}{sep.join(literal_choices)}")
+            parts.append(f"Possible values are:{sep}{sep.join(_safe(c) for c in literal_choices)}")
         if regex_patterns:
-            parts.append(f"Or matching patterns:{sep}{sep.join(f'/{p}/' for p in regex_patterns)}")
+            parts.append(f"Or matching patterns:{sep}{sep.join(f'/{_safe(p)}/' for p in regex_patterns)}")
         if parts:
             msg = f"Invalid value [bold]{value}[/bold] found.\n" + "\n".join(parts)
         else:

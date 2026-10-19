@@ -1,3 +1,4 @@
+import re
 from typing import Literal
 
 import pytest
@@ -887,53 +888,54 @@ def test_print_exception(formatter_cls, use_rich_traceback, hide_internals, use_
     assert "test error message" in output, output
 
 
-def test_fmt_choice_strips_control_chars():
-    """Choice values must not carry terminal control sequences into output."""
+@pytest.mark.parametrize(
+    "choice, expected",
+    [
+        pytest.param("safe", "safe", id="plain"),
+        pytest.param("x\x1b]0;hijack\x07y", "x]0;hijacky", id="osc_title"),
+        pytest.param(re.compile("a\x1bb"), "/ab/", id="pattern"),
+    ],
+)
+def test_fmt_choice_strips_control_chars(choice, expected):
     from piou.formatter.utils import fmt_choice
 
-    # the ESC and BEL introducers are removed, so the OSC sequence is inert
-    assert fmt_choice("x\x1b]0;hijack\x07y") == "x]0;hijacky"
-    assert "\x1b" not in fmt_choice("x\x1b]0;hijack\x07y")
-    assert fmt_choice("safe") == "safe"
+    assert fmt_choice(choice) == expected
 
 
-def test_rich_help_escapes_markup_in_choices():
-    """Rich help must not interpret choice values as markup."""
-    from piou.utils import CommandOption
-    from piou.formatter.rich_formatter import fmt_help
-
-    opt = CommandOption(..., keyword_args=("--env",), choices=["ok", "[bold red]x[/bold red]"])
-    opt.data_type = str
-    result = fmt_help(opt, show_default=False)
-    # the literal brackets survive (escaped), so Rich renders them as text
-    assert r"\[bold red]x\[/bold red]" in result
-
-
-def test_plain_help_keeps_brackets_literal_in_choices():
-    """Plain formatter must not inject the Rich escape backslash."""
-    from piou.utils import CommandOption
-    from piou.formatter.utils import fmt_help
-
-    opt = CommandOption(..., keyword_args=("--env",), choices=["ok", "[bold]x[/bold]"])
-    opt.data_type = str
-    result = fmt_help(opt, show_default=False)
-    assert "[bold]x[/bold]" in result
-    assert "\\[" not in result
-
-
-def test_help_default_is_sanitized():
-    """A default value must not carry control chars or markup into help."""
-    from piou.utils import CommandOption
+@pytest.mark.parametrize(
+    "rich, default, choices, expected, unexpected",
+    [
+        pytest.param(True, None, ["ok", "[bold]x[/bold]"], r"\[bold]x\[/bold]", None, id="rich_choice_markup"),
+        pytest.param(False, None, ["ok", "[bold]x[/bold]"], "[bold]x[/bold]", "\\[", id="plain_choice_literal"),
+        pytest.param(True, "x\x1b]0;t\x07[bold]", None, r"\[bold]", "\x1b", id="rich_default"),
+        pytest.param(False, "x\x1b]0;t\x07y", None, "x]0;ty", "\x1b", id="plain_default"),
+    ],
+)
+def test_fmt_help_neutralizes_untrusted_values(rich, default, choices, expected, unexpected):
     from piou.formatter.rich_formatter import fmt_help as rich_fmt_help
     from piou.formatter.utils import fmt_help as plain_fmt_help
+    from piou.utils import CommandOption
 
-    opt = CommandOption("x\x1b]0;hijack\x07[bold]", keyword_args=("--x",))
-    opt.data_type = str
-    rich = rich_fmt_help(opt, show_default=True)
-    assert "\x1b" not in rich
-    assert r"\[bold]" in rich  # markup escaped on the rich path
+    option = CommandOption(default, keyword_args=("--env",), choices=choices)
+    option.data_type = str
+    output = (rich_fmt_help if rich else plain_fmt_help)(option, show_default=default is not None)
+    assert output is not None
+    assert expected in output
+    if unexpected is not None:
+        assert unexpected not in output
 
-    opt2 = CommandOption("x\x1b]0;hijack\x07y", keyword_args=("--y",))
-    opt2.data_type = str
-    plain = plain_fmt_help(opt2, show_default=True)
-    assert "\x1b" not in plain
+
+@pytest.mark.parametrize(
+    "formatter_cls", [pytest.param("Formatter", id="plain"), pytest.param("RichFormatter", id="rich")]
+)
+def test_invalid_value_error_neutralizes_untrusted_values(formatter_cls, capsys):
+    from piou.formatter import Formatter, RichFormatter
+
+    formatter = Formatter() if formatter_cls == "Formatter" else RichFormatter()
+    formatter.print_invalid_value_error("[red]v\x1b", ["ok", "[bold]x\x1b[/bold]"], ["p\x1bq"])
+    captured = capsys.readouterr()
+    output = captured.out + captured.err
+    assert "\x1b" not in output
+    assert "[bold]x[/bold]" in output
+    assert "/pq/" in output
+    assert "[red]v" in output

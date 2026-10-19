@@ -5,7 +5,7 @@ from difflib import get_close_matches
 from typing import Callable
 
 from ..command import Command, CommandOption, ParentArgs, CommandGroup
-from .utils import get_program_name, fmt_option_raw, fmt_cmd_options_raw, fmt_help
+from .utils import get_program_name, fmt_option_raw, fmt_cmd_options_raw, fmt_help, strip_control_chars
 
 
 def get_str_side_by_side(a: str, b: str, col_1_size: int, col_2_size: int, space: int):
@@ -320,10 +320,10 @@ class Formatter:
         parts = []
         if literal_choices:
             parts.append("Possible values are:")
-            parts.extend(f" - {choice}" for choice in literal_choices)
+            parts.extend(f" - {strip_control_chars(choice)}" for choice in literal_choices)
         if regex_patterns:
             parts.append("Or matching patterns:")
-            parts.extend(f" - /{pattern}/" for pattern in regex_patterns)
+            parts.extend(f" - /{strip_control_chars(pattern)}/" for pattern in regex_patterns)
         if parts:
             msg = f"Invalid value {value!r} found.\n" + "\n".join(parts)
         else:
