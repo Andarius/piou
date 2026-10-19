@@ -4,8 +4,31 @@ from typing import Literal, Union, get_args, get_origin
 from rich.text import Text
 
 from ..command import Command, CommandGroup
+from ..formatter.utils import mask_secret
 
 __all__ = ("get_command_help",)
+
+
+def _format_default(opt) -> str:
+    """Render an option's default for the help panel, masking secret values.
+
+    The non-interactive formatters mask secret defaults; the TUI panel is a
+    separate renderer and must do the same, otherwise a secret default shows
+    in clear text as soon as the command name is typed.
+    """
+    if not opt.is_secret:
+        return str(opt.default)
+    # Prefer the option's own masking config, else the secret class's.
+    # getattr keeps this correct when data_type is a wrapper (e.g. Secret | None):
+    # unknown params fall back to a full mask, which never leaks.
+    if opt.show_first is not None or opt.show_last is not None:
+        show_first, show_last, replacement = opt.show_first or 0, opt.show_last or 0, opt.replacement
+    else:
+        secret = opt.data_type
+        show_first = getattr(secret, "show_first", 0) or 0
+        show_last = getattr(secret, "show_last", 0) or 0
+        replacement = getattr(secret, "replacement", "*")
+    return mask_secret(str(opt.default), show_first, show_last, replacement)
 
 
 def _format_type_name(t: type) -> str:
@@ -74,7 +97,7 @@ def _build_command_help(cmd: Command, display_name: str) -> Text:
             if opt.is_required:
                 text.append(" *required", style="red")
             elif opt.default is not None:
-                text.append(f" (default: {opt.default})")
+                text.append(f" (default: {_format_default(opt)})")
             if opt.help:
                 text.append(f" - {opt.help}")
             choices = opt.literal_values or (opt.choices if not callable(opt.choices) else None)
