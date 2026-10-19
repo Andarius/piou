@@ -396,11 +396,7 @@ class CommandOption(Generic[T]):
 
     @property
     def secret_type(self) -> type[_SecretBase] | None:
-        # Recurse through Union and list wrappers so every spelling that can
-        # carry a secret value is masked in help output: Secret | None,
-        # Optional[Secret], Secret | str, list[Secret], list[Secret | str],
-        # list[list[Secret]], Optional[list[Secret]]. If any member resolves to
-        # a secret class, treat the option as secret (never leak a default).
+        # Union/list wrappers count too, so a default is never shown in clear
         return _find_secret_type(self.data_type)
 
     @property
