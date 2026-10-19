@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.38.1 (2026-10-19)
+
+### Fix
+
+- **tui**: don't parse streamed text as markup in StreamingMessage (#59)
+- **tui**: mask secret option defaults in the command-help panel (#57)
+
 ## 0.38.0 (2026-10-02)
 
 ### Feat

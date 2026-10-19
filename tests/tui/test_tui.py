@@ -10,7 +10,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from piou import Cli, Option
+from piou import Cli, Option, Secret
 from piou.utils import CommandOption
 from piou.command import Command, CommandGroup
 from piou.tui import (
@@ -223,6 +223,22 @@ class TestTuiApp:
             assert app.query_one("#messages")
             assert app.query_one("#suggestions")
             assert app.query_one("#input-row")
+
+    async def test_streaming_message_survives_bracketed_chunks(self, tui_state):
+        """Streamed text with brackets must not break the widget."""
+        from piou.tui.widgets import StreamingMessage
+
+        app = TuiApp(state=tui_state)
+        async with app.run_test() as pilot:
+            msg = StreamingMessage("")
+            app.mount_widget(msg)
+            await pilot.pause()
+            # A stray/unbalanced bracket used to raise MarkupError and, because
+            # the whole buffer is re-parsed on every append, freeze the widget.
+            for chunk in ["See [link=", "the [bold]docs[/bold]", " for info"]:
+                msg.append(chunk)
+            assert msg._text == "See [link=the [bold]docs[/bold] for info"
+            assert "[link=" in str(msg.render())
 
     async def test_on_tui_ready_called(self):
         """Test that tui_on_ready callback is called when app is ready."""
@@ -995,6 +1011,19 @@ class TestGetCommandHelp:
         result = str(get_command_help(cmd))
         assert "-n <value>" in result
         assert "*required" in result
+
+    def test_secret_default_is_masked(self):
+        """Secret defaults must not be shown in clear text in the help panel."""
+        cli = Cli(description="Test")
+
+        @cli.command(cmd="test")
+        def test_cmd(token: Secret = Option("sk-REAL-SECRET-123", "--token")):
+            pass
+
+        cmd = cli.group.commands["test"]
+        result = str(get_command_help(cmd))
+        assert "sk-REAL-SECRET-123" not in result
+        assert "default: ******" in result
 
     @pytest.mark.parametrize(
         "annotation,expected_type",
