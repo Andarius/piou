@@ -33,7 +33,8 @@ change, update the snapshots with `uv run pytest tests/tui --snapshot-update` an
 ## Guidelines
 
 - Keep the core light: `rich` is the only required runtime dependency, `textual` stays behind the `tui` extra. Import
-  time is benchmarked in CI (`./bin/bench-imports.sh`), so keep optional imports lazy.
+  time is benchmarked on `master` and on PRs labelled `import-bench` (`./bin/bench-imports.sh`), so keep optional
+  imports lazy.
 - New behavior comes with tests; parametrize them with `pytest.param(..., id="...")`.
 - Update `docs/` and `README.md` for user-facing changes. Preview docs with `uv run --group docs mkdocs serve`.
 

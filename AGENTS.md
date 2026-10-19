@@ -23,7 +23,7 @@ Setup, workflow, PR and release conventions: see `CONTRIBUTING.md`.
 
 - Python >=3.10 (CI: 3.10 to 3.15), uv, ruff, pyright (includes `tests/` and `examples/`), pytest, commitizen.
 - Runtime dependency: `rich` only; `textual` (and `watchfiles`) are optional extras. Never add a runtime dependency.
-- Import time is benchmarked in CI (`./bin/bench-imports.sh`); keep `rich`/`textual` imports lazy and keep the
+- Import time is benchmarked on `master` and `import-bench`-labelled PRs (`./bin/bench-imports.sh`); keep `rich`/`textual` imports lazy and keep the
   `__lazy_modules__` declarations (effective on 3.15+).
 
 ## Verify
