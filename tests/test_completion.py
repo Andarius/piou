@@ -203,3 +203,25 @@ def test_dynamic_choices(monkeypatch, capsys, cli_kwargs, env, flag, expected):
     with pytest.raises(SystemExit, match="0"):
         cli.run()
     assert capsys.readouterr().out == expected
+
+
+@pytest.mark.parametrize(
+    "choice, expected",
+    [
+        pytest.param("safe", "safe", id="plain"),
+        pytest.param("evil;touch pwned", "'evil;touch pwned'", id="metachar"),
+        pytest.param("a b", "'a b'", id="space"),
+    ],
+)
+def test_bash_candidates_are_shell_quoted(choice, expected, monkeypatch, capsys):
+    cli = Cli()
+
+    @cli.command(cmd="run")
+    def run(env: str = Option("x", "--env", choices=[choice])):
+        pass
+
+    monkeypatch.setenv("_PIOU_COMPLETE", "bash")
+    monkeypatch.setattr(sys, "argv", ["prog", "run", "--env", ""])
+    with pytest.raises(SystemExit, match="0"):
+        cli.run()
+    assert capsys.readouterr().out == f"{expected}\n"

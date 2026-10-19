@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import shlex
 import sys
 from contextlib import redirect_stdout
 from collections.abc import Sequence
@@ -148,4 +149,5 @@ def print_candidates(group: CommandGroup, shell: str, words: Sequence[str], reso
         elif shell == "fish":
             print(f"{value}\t{text}" if text else value)
         else:
-            print(value)
+            # bash inserts COMPREPLY entries verbatim
+            print(shlex.quote(value))
