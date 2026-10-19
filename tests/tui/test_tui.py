@@ -224,6 +224,22 @@ class TestTuiApp:
             assert app.query_one("#suggestions")
             assert app.query_one("#input-row")
 
+    async def test_streaming_message_survives_bracketed_chunks(self, tui_state):
+        """Streamed text with brackets must not break the widget."""
+        from piou.tui.widgets import StreamingMessage
+
+        app = TuiApp(state=tui_state)
+        async with app.run_test() as pilot:
+            msg = StreamingMessage("")
+            app.mount_widget(msg)
+            await pilot.pause()
+            # A stray/unbalanced bracket used to raise MarkupError and, because
+            # the whole buffer is re-parsed on every append, freeze the widget.
+            for chunk in ["See [link=", "the [bold]docs[/bold]", " for info"]:
+                msg.append(chunk)
+            assert msg._text == "See [link=the [bold]docs[/bold] for info"
+            assert "[link=" in str(msg.render())
+
     async def test_on_tui_ready_called(self):
         """Test that tui_on_ready callback is called when app is ready."""
         cli = Cli(description="Test CLI")
