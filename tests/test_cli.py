@@ -6,7 +6,7 @@ from contextlib import contextmanager, nullcontext
 from enum import Enum
 from functools import partial
 from pathlib import Path
-from typing import Annotated, Literal, Optional
+from typing import Annotated, Any, Literal, Optional, cast
 from uuid import UUID
 from unittest.mock import MagicMock
 
@@ -166,6 +166,26 @@ class TestSecretType:
         opt_str = CommandOption("value")
         opt_str.data_type = str
         assert opt_str.is_secret is False
+
+    @pytest.mark.parametrize(
+        "data_type, expected",
+        [
+            pytest.param(Optional[Secret], True, id="optional"),
+            pytest.param(Secret | None, True, id="pipe_none"),
+            pytest.param(Secret | str, True, id="union_str"),
+            pytest.param(list[Secret], True, id="list"),
+            pytest.param(Optional[list[Secret]], True, id="optional_list"),
+            pytest.param(list[list[Secret]], True, id="nested_list"),
+            pytest.param(Optional[str], False, id="optional_str"),
+            pytest.param(list[str], False, id="list_str"),
+        ],
+    )
+    def test_is_secret_unwraps_wrappers(self, data_type, expected):
+        from piou.utils import CommandOption
+
+        opt = CommandOption("value")
+        opt.data_type = cast(Any, data_type)
+        assert opt.is_secret is expected
 
     @pytest.mark.parametrize(
         "secret_type, value",

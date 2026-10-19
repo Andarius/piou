@@ -123,6 +123,21 @@ def extract_optional_type(t: Any):
     return t
 
 
+def _find_secret_type(t: Any) -> type[_SecretBase] | None:
+    """Return a secret class if `t` is one or wraps one (Union/list), else None."""
+    if isinstance(t, type) and issubclass(t, _SecretBase):
+        return t
+    origin = get_origin(t)
+    if origin is Union or origin is UnionType or origin is list or t is list:
+        for arg in get_args(t):
+            if arg is NoneType:
+                continue
+            found = _find_secret_type(arg)
+            if found is not None:
+                return found
+    return None
+
+
 def get_literals_union_args(literal: Any):
     values = []
     if get_origin(literal) is not Literal:
@@ -380,8 +395,13 @@ class CommandOption(Generic[T]):
         self._literal_values = literals
 
     @property
+    def secret_type(self) -> type[_SecretBase] | None:
+        # Union/list wrappers count too, so a default is never shown in clear
+        return _find_secret_type(self.data_type)
+
+    @property
     def is_secret(self) -> bool:
-        return isinstance(self.data_type, type) and issubclass(self.data_type, _SecretBase)
+        return self.secret_type is not None
 
     @property
     def is_optional_path(self) -> bool:

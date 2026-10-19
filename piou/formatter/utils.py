@@ -33,6 +33,16 @@ def mask_secret(value: str, show_first: int = 0, show_last: int = 0, replacement
     return f"{prefix}{mask}{suffix}"
 
 
+def fmt_default(option: CommandOption) -> str:
+    """Return the option's default as display text, masked when the option is a secret."""
+    if not option.is_secret:
+        return str(option.default)
+    if option.show_first is not None or option.show_last is not None:
+        return mask_secret(str(option.default), option.show_first or 0, option.show_last or 0, option.replacement)
+    secret = cast(type[_SecretBase], option.secret_type)
+    return mask_secret(str(option.default), secret.show_first, secret.show_last, secret.replacement)
+
+
 def get_formatter(formatter_type: FormatterType | None = None) -> Formatter:
     """Return a Formatter instance based on `formatter_type`.
 
@@ -132,19 +142,7 @@ def fmt_help(
     _markdown_open, _markdown_close = markdown_open or "", markdown_close or ""
 
     if show_default and option.default is not None and not option.is_required:
-        if option.is_secret:
-            if option.show_first is not None or option.show_last is not None:
-                _show_first, _show_last, _replacement = (
-                    option.show_first or 0,
-                    option.show_last or 0,
-                    option.replacement,
-                )
-            else:
-                _secret = cast(type[_SecretBase], option.data_type)
-                _show_first, _show_last, _replacement = _secret.show_first, _secret.show_last, _secret.replacement
-            default_str = mask_secret(str(option.default), _show_first, _show_last, _replacement)
-        else:
-            default_str = option.default
+        default_str = fmt_default(option)
         default_str = f"{_markdown_open}(default: {default_str}){_markdown_close}"
         return option.help + f" {default_str}" if option.help else default_str
     elif _choices is not None and not option.hide_choices:
