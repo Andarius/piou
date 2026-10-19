@@ -45,4 +45,4 @@ uv run pytest                    # TUI snapshots: add --snapshot-update only for
 - Code paths for `--help-json` and shell completion must not run command bodies, processors or callable `choices`,
   and completion must print nothing on stdout but candidates.
 - `Cli.add_sub_parser()` / `CommandGroup.add_sub_parser()` are deprecated; use `add_command_group()`.
-- User-facing changes update `docs/` and `README.md`. Don't bump the version: releases are automatic from `master`.
+- User-facing changes update `docs/` and `README.md`. Don't bump the version: releases go through `./bin/release.sh` (see `CONTRIBUTING.md`).

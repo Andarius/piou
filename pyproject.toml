@@ -122,11 +122,8 @@ target-version = "py312"
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-version = "0.38.2"
+version_provider = "pep621"
 tag_format = "$version"
-version_files = [
-    "pyproject.toml:version"
-]
-bump_message = "release $current_version → $new_version [skip ci]"
+bump_message = "chore(release): release $current_version → $new_version"
 update_changelog_on_bump = true
 changelog_file = "CHANGELOG.md"
