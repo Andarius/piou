@@ -205,21 +205,23 @@ def test_dynamic_choices(monkeypatch, capsys, cli_kwargs, env, flag, expected):
     assert capsys.readouterr().out == expected
 
 
-def test_bash_candidates_are_shell_quoted(monkeypatch, capsys):
-    """bash candidates must be shell-quoted so metacharacters stay inert."""
+@pytest.mark.parametrize(
+    "choice, expected",
+    [
+        pytest.param("safe", "safe", id="plain"),
+        pytest.param("evil;touch pwned", "'evil;touch pwned'", id="metachar"),
+        pytest.param("a b", "'a b'", id="space"),
+    ],
+)
+def test_bash_candidates_are_shell_quoted(choice, expected, monkeypatch, capsys):
     cli = Cli()
 
     @cli.command(cmd="run")
-    def run(env: str = Option("x", "--env", choices=["safe", "evil;touch pwned", "a b"])):
+    def run(env: str = Option("x", "--env", choices=[choice])):
         pass
 
     monkeypatch.setenv("_PIOU_COMPLETE", "bash")
     monkeypatch.setattr(sys, "argv", ["prog", "run", "--env", ""])
     with pytest.raises(SystemExit, match="0"):
         cli.run()
-    out = capsys.readouterr().out
-    assert "safe\n" in out
-    # dangerous values are quoted, never emitted as bare shell syntax
-    assert "evil;touch pwned\n" not in out
-    assert "'evil;touch pwned'\n" in out
-    assert "'a b'\n" in out
+    assert capsys.readouterr().out == f"{expected}\n"

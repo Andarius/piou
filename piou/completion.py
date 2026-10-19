@@ -149,8 +149,5 @@ def print_candidates(group: CommandGroup, shell: str, words: Sequence[str], reso
         elif shell == "fish":
             print(f"{value}\t{text}" if text else value)
         else:
-            # bash inserts COMPREPLY entries onto the command line verbatim
-            # (the generated script uses `complete -o default`, no quoting), so
-            # shell metacharacters in a candidate would run as syntax on Enter.
-            # Quote so the candidate is always one inert word.
+            # bash inserts COMPREPLY entries verbatim
             print(shlex.quote(value))
