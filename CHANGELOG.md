@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.38.2 (2026-10-19)
+
+### Fix
+
+- mask wrapped secret defaults and neutralize untrusted help and completion output (#63)
+
 ## 0.38.1 (2026-10-19)
 
 ### Fix
