@@ -1,5 +1,5 @@
 import re
-from typing import Literal
+from typing import Any, Literal, cast
 
 import pytest
 
@@ -66,6 +66,15 @@ def test_mask_secret(value, show_first, show_last, expected):
         pytest.param("4111111111111234", Secret(show_last=4), True, "(default: ******1234)", id="Secret_show_last"),
         pytest.param("abc123xyz", Secret(show_first=3, show_last=3), True, "(default: abc***xyz)", id="Secret_both"),
         pytest.param("token123", Secret(), True, "(default: ******)", id="Secret_full_mask"),
+        pytest.param("sk-12345678", Secret | None, True, "(default: ******)", id="Secret_optional"),
+        pytest.param(
+            "sk-12345678",
+            cast(Any, Secret(show_first=3)) | None,
+            True,
+            "(default: sk-******)",
+            id="Secret_optional_cfg",
+        ),
+        pytest.param(["sk-12345678"], list[Secret], True, "(default: ******)", id="Secret_list"),
         pytest.param(
             None,
             Literal["foo", "bar"],
