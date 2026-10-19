@@ -57,8 +57,8 @@ jobs:
           comment-on-alert: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
           comment-always: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
           summary-always: true
-          # Fail if 20% slower than previous
-          alert-threshold: "120%"
+          # Fail if 50% slower than previous: shared runners are too noisy for less
+          alert-threshold: "150%"
           fail-on-alert: true
           # Store results in gh-pages branch (only on main)
           auto-push: ${{ github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' }}

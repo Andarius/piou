@@ -30,26 +30,30 @@ jobs:
           git config --global user.name "github-actions[bot]"
 
       - name: Bump version
-        run: |
-          uv run --only-group=bump cz bump --yes
-          
-      - name: Get new version
         id: get_version
         run: |
+          BEFORE=$(uv run --only-group=bump cz version --project)
+          # 3: no new commits, 21: no conventional commits to bump
+          uv run --only-group=bump cz --no-raise 3,21 bump --yes
           VERSION=$(uv run --only-group=bump cz version --project)
-          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "BUMPED=$([ "$VERSION" != "$BEFORE" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
 
       - name: Build package
+        if: steps.get_version.outputs.BUMPED == 'true'
         run: uv build
 
       - name: Extract release notes
+        if: steps.get_version.outputs.BUMPED == 'true'
         run: |
           awk '/^## /{if(p) exit; p=1} p' CHANGELOG.md > RELEASE_NOTES.md
 
       - name: Push changes
+        if: steps.get_version.outputs.BUMPED == 'true'
         run: git push origin master --tags
 
       - name: Create GitHub Release
+        if: steps.get_version.outputs.BUMPED == 'true'
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
         with:
           tag_name: ${{ steps.get_version.outputs.VERSION }}
@@ -59,6 +63,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish to PyPI
+        if: steps.get_version.outputs.BUMPED == 'true'
         run: uv publish
         env:
           UV_PUBLISH_TOKEN: ${{ secrets.PYPI_TOKEN }}
