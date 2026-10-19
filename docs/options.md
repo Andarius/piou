@@ -166,6 +166,9 @@ async def fetch_envs() -> list[str]:
 env: str = Option(..., "--env", choices=fetch_envs)
 ```
 
+Choice values and defaults are shown as plain text: Rich markup (`[bold]`) is escaped and terminal control
+characters are stripped, so choices built from external data can't restyle the help or send escape sequences.
+
 ### Regex Patterns
 
 Use `Regex()` to allow values matching a pattern:
@@ -235,6 +238,16 @@ card: Secret = Option("4111111111111234", "--card", show_last=4)
 ```python
 token: Secret = Option("abc123", "--token", show_last=2, replacement="●")
 # Help shows: --token [default: ●●●●23]
+```
+
+Masking also applies through `Optional`, unions and lists (`Secret | None`, `list[Password]`), and everywhere a
+default is displayed: `--help`, `--help-json` (secret defaults are omitted) and the TUI command help.
+
+```python
+import os
+
+token: Secret | None = Option(os.getenv("API_TOKEN"), "--token")
+# Help shows: --token [default: ******]
 ```
 
 ## Annotated Syntax

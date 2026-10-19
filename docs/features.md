@@ -208,6 +208,9 @@ instead of running a command. Command bodies never run. The script is registered
 another one when calling through a wrapper, an alias or `python -m` (`my-cli --completions zsh my-alias`). From Python,
 `cli.completion_script("zsh", prog="my-cli")` returns the same script.
 
+Candidates are quoted for the target shell, so a value like `a b` or `prod;rm -rf` is inserted as a single literal
+argument.
+
 Callable `choices` run on every `<TAB>`, so they are off by default: enable them with
 `Cli(complete_dynamic_choices=True)` when they are cheap, or per user with `export PIOU_COMPLETE_DYNAMIC=1` (an
 explicit `complete_dynamic_choices=` wins over the env var). A choices function that fails gives no candidates.
