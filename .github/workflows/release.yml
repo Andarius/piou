@@ -1,69 +1,76 @@
 name: Release
 
 on:
-  workflow_run:
-    workflows: ["CI"]
+  pull_request:
+    types: [closed]
     branches: [master]
-    types: [completed]
+
+permissions:
+  contents: write
 
 jobs:
-  bump:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+  release:
+    if: >-
+      github.event.pull_request.merged == true &&
+      startsWith(github.event.pull_request.head.ref, 'release/')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract version from branch name
+        id: version
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          VERSION="${HEAD_REF#release/}"
+          if [ -z "$VERSION" ] || [ "$VERSION" = "$HEAD_REF" ]; then
+            echo "error: could not extract version from $HEAD_REF" >&2
+            exit 1
+          fi
+          if ! grep -qx "version = \"$VERSION\"" pyproject.toml; then
+            echo "error: pyproject.toml version does not match $VERSION" >&2
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Save PR body as release notes
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          printf '%s\n' "$PR_BODY" > RELEASE_NOTES.md
+          if [ ! -s RELEASE_NOTES.md ] || [ -z "$PR_BODY" ]; then
+            echo "error: PR body is empty, refusing to release" >&2
+            exit 1
+          fi
 
       - name: Install uv
         uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
 
-      - name: Set up Python
-        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
-        with:
-          python-version: "3.13"
-
-      - name: Configure Git
-        run: |
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git config --global user.name "github-actions[bot]"
-
-      - name: Bump version
-        id: get_version
-        run: |
-          BEFORE=$(uv run --only-group=bump cz version --project)
-          # 3: no new commits, 21: no conventional commits to bump
-          uv run --only-group=bump cz --no-raise 3,21 bump --yes
-          VERSION=$(uv run --only-group=bump cz version --project)
-          echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "BUMPED=$([ "$VERSION" != "$BEFORE" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
-
       - name: Build package
-        if: steps.get_version.outputs.BUMPED == 'true'
         run: uv build
 
-      - name: Extract release notes
-        if: steps.get_version.outputs.BUMPED == 'true'
+      - name: Tag release
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
-          awk '/^## /{if(p) exit; p=1} p' CHANGELOG.md > RELEASE_NOTES.md
-
-      - name: Push changes
-        if: steps.get_version.outputs.BUMPED == 'true'
-        run: git push origin master --tags
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$VERSION" -F RELEASE_NOTES.md
+          git push origin "$VERSION"
 
       - name: Create GitHub Release
-        if: steps.get_version.outputs.BUMPED == 'true'
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
         with:
-          tag_name: ${{ steps.get_version.outputs.VERSION }}
+          tag_name: ${{ steps.version.outputs.version }}
           body_path: RELEASE_NOTES.md
           files: dist/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish to PyPI
-        if: steps.get_version.outputs.BUMPED == 'true'
         run: uv publish
         env:
           UV_PUBLISH_TOKEN: ${{ secrets.PYPI_TOKEN }}

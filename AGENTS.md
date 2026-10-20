@@ -23,8 +23,8 @@ Setup, workflow, PR and release conventions: see `CONTRIBUTING.md`.
 
 - Python >=3.10 (CI: 3.10 to 3.15), uv, ruff, pyright (includes `tests/` and `examples/`), pytest, commitizen.
 - Runtime dependency: `rich` only; `textual` (and `watchfiles`) are optional extras. Never add a runtime dependency.
-- Import time is benchmarked in CI (`./bin/bench-imports.sh`); keep `rich`/`textual` imports lazy and keep the
-  `__lazy_modules__` declarations (effective on 3.15+).
+- Import time is benchmarked on `master` and `import-bench`-labelled PRs (`./bin/bench-imports.sh`); keep
+  `rich`/`textual` imports lazy and keep the `__lazy_modules__` declarations (effective on 3.15+).
 
 ## Verify
 
@@ -45,4 +45,5 @@ uv run pytest                    # TUI snapshots: add --snapshot-update only for
 - Code paths for `--help-json` and shell completion must not run command bodies, processors or callable `choices`,
   and completion must print nothing on stdout but candidates.
 - `Cli.add_sub_parser()` / `CommandGroup.add_sub_parser()` are deprecated; use `add_command_group()`.
-- User-facing changes update `docs/` and `README.md`. Don't bump the version: releases are automatic from `master`.
+- User-facing changes update `docs/` and `README.md`. Don't bump the version: releases go through
+  `./bin/release.sh` (see `CONTRIBUTING.md`).

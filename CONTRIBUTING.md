@@ -33,7 +33,8 @@ change, update the snapshots with `uv run pytest tests/tui --snapshot-update` an
 ## Guidelines
 
 - Keep the core light: `rich` is the only required runtime dependency, `textual` stays behind the `tui` extra. Import
-  time is benchmarked in CI (`./bin/bench-imports.sh`), so keep optional imports lazy.
+  time is benchmarked on `master` and on PRs labelled `import-bench` (`./bin/bench-imports.sh`), so keep optional
+  imports lazy.
 - New behavior comes with tests; parametrize them with `pytest.param(..., id="...")`.
 - Update `docs/` and `README.md` for user-facing changes. Preview docs with `uv run --group docs mkdocs serve`.
 
@@ -51,5 +52,7 @@ autonomously by an agent will be closed.
 
 ## Releases
 
-Releases are automatic: every green CI run on `master` runs `cz bump` (version and `CHANGELOG.md` from the commit
-messages), tags, creates the GitHub release and publishes to PyPI. Don't bump the version by hand.
+Releases go through a `release/<version>` PR opened by `./bin/release.sh [<version>]`: it bumps `pyproject.toml` and
+`CHANGELOG.md` with `cz bump` (the version defaults to the one the conventional commits imply) and uses the release
+notes as the PR body. Edit `.scratch/release-<version>.md` first to curate them. Merging the PR tags the merge commit,
+creates the GitHub release from the PR body and publishes to PyPI. Don't bump the version anywhere else.
