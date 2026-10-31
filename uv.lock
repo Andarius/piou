@@ -1490,7 +1490,7 @@ dev = [
     { name = "pyright", specifier = ">=1.1.414" },
     { name = "pytest", specifier = ">=8.4.1" },
     { name = "pytest-asyncio", specifier = ">=0.24.0" },
-    { name = "pytest-cov", specifier = ">=6.2.1" },
+    { name = "pytest-cov", specifier = ">=7.1.0" },
     { name = "pytest-textual-snapshot", specifier = ">=1.0.0" },
     { name = "ruff", specifier = ">=0.14.4" },
     { name = "textual", specifier = ">=0.40.0" },
