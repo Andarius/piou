@@ -1494,7 +1494,7 @@ dev = [
     { name = "pytest-textual-snapshot", specifier = ">=1.0.0" },
     { name = "ruff", specifier = ">=0.14.4" },
     { name = "textual", specifier = ">=0.40.0" },
-    { name = "textual-dev", specifier = ">=1.0.0" },
+    { name = "textual-dev", specifier = ">=1.8.0" },
     { name = "watchfiles", specifier = ">=1.0.0" },
 ]
 docs = [{ name = "mkdocs-material", specifier = ">=9.5.0" }]
