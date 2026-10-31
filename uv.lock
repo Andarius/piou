@@ -1499,7 +1499,7 @@ dev = [
 ]
 docs = [{ name = "mkdocs-material", specifier = ">=9.5.0" }]
 examples = [
-    { name = "aiohttp", specifier = ">=3.14.0" },
+    { name = "aiohttp", specifier = ">=3.14.5" },
     { name = "httpx", extras = ["http2"], specifier = ">=0.28.1" },
     { name = "niquests", specifier = ">=3.16.1" },
     { name = "textual", specifier = ">=0.40.0" },

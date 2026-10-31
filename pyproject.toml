@@ -71,7 +71,7 @@ bump = [
 ]
 examples = [
     { include-group = "tui" },
-    "aiohttp>=3.14.0",
+    "aiohttp>=3.14.5",
     "httpx[http2]>=0.28.1",
     "niquests>=3.16.1",
 ]
