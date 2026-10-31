@@ -127,3 +127,7 @@ tag_format = "$version"
 bump_message = "chore(release): release $current_version → $new_version"
 update_changelog_on_bump = true
 changelog_file = "CHANGELOG.md"
+
+[tool.uv]
+required-version = ">=0.13.4"
+constraint-dependencies = ["certifi>=2026.10.19", "wassima>=2.1.5"]
