@@ -1476,8 +1476,8 @@ tui-reload = [
 [package.metadata]
 requires-dist = [
     { name = "rich", specifier = ">=10.11.0,<16.0" },
-    { name = "textual", marker = "extra == 'tui'", specifier = ">=0.40.0" },
-    { name = "textual", marker = "extra == 'tui-reload'", specifier = ">=0.40.0" },
+    { name = "textual", marker = "extra == 'tui'", specifier = ">=8.2.8" },
+    { name = "textual", marker = "extra == 'tui-reload'", specifier = ">=8.2.8" },
     { name = "typing-extensions", specifier = ">=4.4.0" },
     { name = "watchfiles", marker = "extra == 'tui-reload'", specifier = ">=1.0.0" },
 ]
@@ -1493,7 +1493,7 @@ dev = [
     { name = "pytest-cov", specifier = ">=7.1.0" },
     { name = "pytest-textual-snapshot", specifier = ">=1.0.0" },
     { name = "ruff", specifier = ">=0.14.4" },
-    { name = "textual", specifier = ">=0.40.0" },
+    { name = "textual", specifier = ">=8.2.8" },
     { name = "textual-dev", specifier = ">=1.0.0" },
     { name = "watchfiles", specifier = ">=1.0.0" },
 ]
@@ -1502,11 +1502,11 @@ examples = [
     { name = "aiohttp", specifier = ">=3.14.0" },
     { name = "httpx", extras = ["http2"], specifier = ">=0.28.1" },
     { name = "niquests", specifier = ">=3.16.1" },
-    { name = "textual", specifier = ">=0.40.0" },
+    { name = "textual", specifier = ">=8.2.8" },
 ]
-tui = [{ name = "textual", specifier = ">=0.40.0" }]
+tui = [{ name = "textual", specifier = ">=8.2.8" }]
 tui-reload = [
-    { name = "textual", specifier = ">=0.40.0" },
+    { name = "textual", specifier = ">=8.2.8" },
     { name = "watchfiles", specifier = ">=1.0.0" },
 ]
 
@@ -2064,7 +2064,7 @@ wheels = [
 
 [[package]]
 name = "textual"
-version = "8.2.5"
+version = "8.2.8"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "markdown-it-py", extra = ["linkify"] },
@@ -2074,9 +2074,9 @@ dependencies = [
     { name = "rich" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/62/1e/1eedc5bac184d00aaa5f9a99095f7e266af3ec46fa926c1051be5d358da1/textual-8.2.5.tar.gz", hash = "sha256:6c894e65a879dadb4f6cf46ddcfedb0173ff7e0cb1fe605ff7b357a597bdbc90", size = 1851596, upload-time = "2026-04-30T08:02:58.956Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/00/21/39a76b01bd5eea82a04baaca7580e105d8c59450df03998345bb2cfb307b/textual-8.2.8.tar.gz", hash = "sha256:3f106a9fbc73e39dd266c9712432087de78a6d644084c7c241d6a25c3169115b", size = 1860502, upload-time = "2026-06-30T06:51:24.495Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/cd/01/c4555f9c8a692ff83d84930150540f743ce94c89234f9e9a15ff4baba3a8/textual-8.2.5-py3-none-any.whl", hash = "sha256:247d2aa2faf222749c321f88a736247f37ee2c023604079c7490bfacddfcd4b2", size = 727050, upload-time = "2026-04-30T08:03:01.421Z" },
+    { url = "https://files.pythonhosted.org/packages/fb/be/35261223d9416a0751cdff1c7b4a6f881387218a12d439fe22fefebc8c04/textual-8.2.8-py3-none-any.whl", hash = "sha256:267375fd402dc8d981457212efa71f0e3365fd17bba144ba9bb3ed7563cb374a", size = 731418, upload-time = "2026-06-30T06:51:26.364Z" },
 ]
 
 [[package]]

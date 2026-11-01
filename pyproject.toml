@@ -32,17 +32,17 @@ dependencies = [
 [project.optional-dependencies]
 
 tui = [
-    "textual>=0.40.0",
+    "textual>=8.2.8",
 ]
 
 tui-reload = [
-    "textual>=0.40.0",
+    "textual>=8.2.8",
     "watchfiles>=1.0.0",
 ]
 
 [dependency-groups]
 tui = [
-    "textual>=0.40.0",
+    "textual>=8.2.8",
 ]
 
 tui-reload = [
