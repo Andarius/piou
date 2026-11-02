@@ -63,7 +63,7 @@ dev = [
 ]
 
 docs = [
-    "mkdocs-material>=9.5.0",
+    "mkdocs-material>=9.8.0",
 ]
 
 bump = [
