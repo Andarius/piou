@@ -59,7 +59,7 @@ dev = [
     "pytest-cov>=7.1.0",
     "pytest-textual-snapshot>=1.0.0",
     "ruff>=0.14.4",
-    "prek>=0.3.0",
+    "prek>=0.5.7",
 ]
 
 docs = [
