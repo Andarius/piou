@@ -2,5 +2,12 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "local>Andarius/renovate-config"
+  ],
+  "packageRules": [
+    {
+      "description": "Library: keep the widest supported requires-python",
+      "matchDepTypes": ["requires-python"],
+      "enabled": false
+    }
   ]
 }
