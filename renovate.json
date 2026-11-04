@@ -8,6 +8,11 @@
       "description": "Library: keep the widest supported requires-python",
       "matchDepTypes": ["requires-python"],
       "enabled": false
+    },
+    {
+      "description": "1.1 needs pytest<9 (via syrupy 4.8)",
+      "matchPackageNames": ["pytest-textual-snapshot"],
+      "allowedVersions": "<1.1.0"
     }
   ]
 }
