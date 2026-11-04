@@ -20,14 +20,14 @@ A CLI tool to build beautiful command-line interfaces with type validation.
 ```python
 from piou import Cli, Option
 
-cli = Cli(description='A CLI tool')
+cli = Cli(description="A CLI tool")
 
 
-@cli.command(cmd='foo', help='Run foo command')
+@cli.command(cmd="foo", help="Run foo command")
 def foo_main(
-        bar: int = Option(help='Bar positional argument (required)'),
-        baz: str = Option('-b', '--baz', help='Baz keyword argument (required)'),
-        foo: str | None = Option(None, '--foo', help='Foo keyword argument'),
+    bar: int = Option(help="Bar positional argument (required)"),
+    baz: str = Option("-b", "--baz", help="Baz keyword argument (required)"),
+    foo: str | None = Option(None, "--foo", help="Foo keyword argument"),
 ):
     """
     A longer description on what the function is doing.
@@ -35,7 +35,7 @@ def foo_main(
     pass
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     cli.run()
 ```
 
@@ -103,16 +103,19 @@ Commands can be `async` functions — piou detects coroutines and runs them auto
 ```python
 from piou import Cli, Option
 
-cli = Cli(description='Async example')
+cli = Cli(description="Async example")
 
-@cli.command(cmd='fetch', help='Fetch data')
-async def fetch(url: str = Option(help='URL to fetch')):
+
+@cli.command(cmd="fetch", help="Fetch data")
+async def fetch(url: str = Option(help="URL to fetch")):
     import niquests
+
     async with niquests.AsyncSession() as client:
         r = await client.get(url)
         print(r.status_code)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     cli.run()
 ```
 
@@ -159,13 +162,15 @@ Enable TUI mode by setting `tui=True` when creating your CLI:
 ```python
 from piou import Cli, Option
 
-cli = Cli(description='My Interactive CLI', tui=True)
+cli = Cli(description="My Interactive CLI", tui=True)
 
-@cli.command(cmd='hello', help='Say hello')
-def hello(name: str = Option(..., help='Name to greet')):
-    print(f'Hello, {name}!')
 
-if __name__ == '__main__':
+@cli.command(cmd="hello", help="Say hello")
+def hello(name: str = Option(..., help="Name to greet")):
+    print(f"Hello, {name}!")
+
+
+if __name__ == "__main__":
     cli.run()
 ```
 
@@ -224,7 +229,7 @@ To run custom code after each reload (e.g., refresh cached data), use the `@cli.
 ```python
 @cli.tui_on_reload
 def on_reload():
-    print('Code reloaded!')
+    print("Code reloaded!")
 ```
 
 ### Advanced Example: HTTP Benchmark

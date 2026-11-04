@@ -48,8 +48,8 @@ Usage: `fetch --url https://example.com -t 60`
 - **Optional**: Provide a default value (including `None`)
 
 ```python
-required_arg: str = Option(..., "--name")      # Must be provided
-optional_arg: str = Option("default", "--name") # Has fallback
+required_arg: str = Option(..., "--name")  # Must be provided
+optional_arg: str = Option("default", "--name")  # Has fallback
 nullable_arg: str | None = Option(None, "--name")  # Can be omitted
 ```
 
@@ -154,6 +154,7 @@ Provide a callable that returns choices at runtime:
 def get_environments() -> list[str]:
     return ["dev", "staging", "prod"]
 
+
 env: str = Option(..., "--env", choices=get_environments)
 ```
 
@@ -162,6 +163,7 @@ Async callables are also supported:
 ```python
 async def fetch_envs() -> list[str]:
     return await api.get_environments()
+
 
 env: str = Option(..., "--env", choices=fetch_envs)
 ```
@@ -177,11 +179,15 @@ Use `Regex()` to allow values matching a pattern:
 from piou import Regex
 
 # Accept "prod", "staging", or any "dev-{number}" pattern
-env: str = Option(..., "--env", choices=[
-    "prod",
-    "staging",
-    Regex(r"dev-\d+"),  # matches dev-1, dev-123, etc.
-])
+env: str = Option(
+    ...,
+    "--env",
+    choices=[
+        "prod",
+        "staging",
+        Regex(r"dev-\d+"),  # matches dev-1, dev-123, etc.
+    ],
+)
 ```
 
 For case-insensitive regex, use `re.IGNORECASE`:
@@ -258,6 +264,7 @@ As an alternative to default value syntax, you can use `Annotated`:
 from typing import Annotated
 from piou import Option
 
+
 @cli.command()
 def greet(
     name: Annotated[str, Option(..., help="Name to greet")],
@@ -283,31 +290,27 @@ from piou import Cli, Option, Password, MaybePath, Regex
 
 cli = Cli(description="Database migration tool")
 
+
 @cli.command(cmd="migrate", help="Run database migrations")
 def migrate(
     # Positional arguments
     direction: Literal["up", "down"] = Option(..., help="Migration direction"),
-
     # Required keyword arguments
     database: str = Option(..., "-d", "--database", help="Database name"),
-
     # Optional with defaults
     host: str = Option("localhost", "--host", help="Database host"),
     port: int = Option(5432, "--port", help="Database port"),
-
     # Boolean flag
     dry_run: bool = Option(False, "--dry-run", help="Preview without applying"),
-
     # Password (masked in help)
     password: Password = Option("", "--password", help="Database password"),
-
     # Path that may not exist
     output: MaybePath = Option(None, "--output", help="Output log file"),
-
     # Dynamic choices with regex
     env: str = Option("dev", "--env", choices=["prod", "staging", Regex(r"dev-\d+")]),
 ):
     pass
+
 
 if __name__ == "__main__":
     cli.run()
