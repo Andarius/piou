@@ -103,6 +103,10 @@ pythonPlatform = "Linux"
 line-length = 120
 target-version = "py312"
 
+[tool.ruff.lint]
+# pre-0.17 ruff defaults
+select = ["E4", "E7", "E9", "F"]
+
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = [
     # imported but unused

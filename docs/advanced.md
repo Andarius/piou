@@ -16,18 +16,19 @@ Derived options allow you to group multiple arguments into a single object or re
 from piou import Cli, Option, Derived, Password
 import psycopg2
 
+
 def get_pg_conn(
-        pg_user: str = Option('postgres', '--pg-user'),
-        pg_pwd: Password = Option('postgres', '--pg-pwd'),
-        pg_host: str = Option('localhost', '--pg-host'),
-        pg_port: int = Option(5432, '--pg-port'),
-        pg_db: str = Option('postgres', '--pg-db')
+    pg_user: str = Option("postgres", "--pg-user"),
+    pg_pwd: Password = Option("postgres", "--pg-pwd"),
+    pg_host: str = Option("localhost", "--pg-host"),
+    pg_port: int = Option(5432, "--pg-port"),
+    pg_db: str = Option("postgres", "--pg-db"),
 ):
-    conn = psycopg2.connect(dbname=pg_db, user=pg_user, password=pg_pwd,
-                            host=pg_host, port=pg_port)
+    conn = psycopg2.connect(dbname=pg_db, user=pg_user, password=pg_pwd, host=pg_host, port=pg_port)
     return conn
 
-@cli.command(help='Run foo command')
+
+@cli.command(help="Run foo command")
 def foo(pg_conn=Derived(get_pg_conn)):
     # pg_conn is the connection object returned by get_pg_conn
     ...
@@ -60,11 +61,13 @@ For debugging or auditing, you can hook into the command execution lifecycle usi
 ```python
 from piou import Cli, CommandMeta
 
+
 def on_cmd_run(meta: CommandMeta):
     print(f"Running command: {meta.cmd_name}")
     print(f"Args: {meta.cmd_args}")
 
-cli = Cli(description='A CLI tool', on_cmd_run=on_cmd_run)
+
+cli = Cli(description="A CLI tool", on_cmd_run=on_cmd_run)
 ```
 
 ## Formatters
@@ -79,14 +82,16 @@ The default formatter uses [Rich](https://rich.readthedocs.io/) for colorful, st
 from piou import Cli
 from piou.formatter import RichFormatter
 
-cli = Cli(formatter=RichFormatter(
-    cmd_color='cyan',
-    option_color='cyan',
-    default_color='white',
-    show_default=True,
-    use_markdown=True,
-    code_theme='solarized-dark',
-))
+cli = Cli(
+    formatter=RichFormatter(
+        cmd_color="cyan",
+        option_color="cyan",
+        default_color="white",
+        show_default=True,
+        use_markdown=True,
+        code_theme="solarized-dark",
+    )
+)
 ```
 
 **Options:**
@@ -140,8 +145,8 @@ from piou.formatter import get_formatter
 cli = Cli(formatter=get_formatter())
 
 # Force specific formatter
-cli = Cli(formatter=get_formatter('raw'))
-cli = Cli(formatter=get_formatter('rich'))
+cli = Cli(formatter=get_formatter("raw"))
+cli = Cli(formatter=get_formatter("rich"))
 ```
 
 **3. Direct instantiation:**
@@ -150,8 +155,8 @@ cli = Cli(formatter=get_formatter('rich'))
 from piou import Cli
 from piou.formatter import Formatter, RichFormatter
 
-cli = Cli(formatter=Formatter())        # Raw
-cli = Cli(formatter=RichFormatter())    # Rich
+cli = Cli(formatter=Formatter())  # Raw
+cli = Cli(formatter=RichFormatter())  # Rich
 ```
 
 ### Custom Formatter
@@ -160,6 +165,7 @@ You can create your own formatter by subclassing `Formatter`:
 
 ```python
 from piou.formatter import Formatter
+
 
 class MyFormatter(Formatter):
     def print_cli_help(self, group):
@@ -182,6 +188,7 @@ Use `Password` when values should be completely hidden:
 ```python
 from piou import Cli, Option, Password
 
+
 @cli.command()
 def connect(
     password: Password = Option("secret123", "--password", help="Database password"),
@@ -195,6 +202,7 @@ Use `Secret` with `show_first` or `show_last` on the Option to reveal part of th
 
 ```python
 from piou import Cli, Option, Secret
+
 
 @cli.command()
 def auth(

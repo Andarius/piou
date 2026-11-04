@@ -83,6 +83,7 @@ from piou import Cli, Option
 
 cli = Cli(description="Interactive CLI Demo", tui=True)
 
+
 @cli.command(cmd="hello", help="Say hello to someone")
 def hello(
     name: str = Option(help="Name to greet"),
@@ -93,14 +94,17 @@ def hello(
         message = message.upper()
     print(message)
 
+
 # Subcommands
 stats = cli.add_command_group("stats", help="View statistics")
+
 
 @stats.command(cmd="uploads", help="Show upload statistics")
 def stats_uploads(
     days: int = Option(7, "-d", "--days", help="Number of days"),
 ):
     print(f"Upload stats for {days} days...")
+
 
 if __name__ == "__main__":
     cli.run()
@@ -171,6 +175,7 @@ from piou.tui import TuiContext, TuiOption
 
 cli = Cli(description="My CLI", tui=True)
 
+
 @cli.command(cmd="greet")
 def greet(name: str = Option(), ctx: TuiContext = TuiOption()):
     ctx.notify(f"Hello, {name}!", title="Greeting")
@@ -209,6 +214,7 @@ Mount any Textual widget to display rich output:
 ```python
 from textual.widgets import DataTable, ProgressBar
 
+
 @cli.command(cmd="stats")
 async def stats(ctx: TuiContext = TuiOption()):
     table = DataTable()
@@ -225,6 +231,7 @@ Use `StreamingMessage` to display content that arrives incrementally (e.g. LLM t
 ```python
 import asyncio
 from piou.tui import StreamingMessage, TuiContext, TuiOption
+
 
 @cli.command(cmd="generate")
 async def generate(ctx: TuiContext = TuiOption()):
@@ -273,7 +280,8 @@ cli = Cli(
 )
 
 # In your app setup or via TuiApp directly:
-app = cli.tui_app(css="""
+app = cli.tui_app(
+    css="""
     #name {
         color: cyan;
         text-style: bold;
@@ -281,7 +289,8 @@ app = cli.tui_app(css="""
     .suggestion.selected {
         background: darkblue;
     }
-""")
+"""
+)
 ```
 
 ### CSS Classes
@@ -316,6 +325,7 @@ Customize the input prompt:
 
 ```python
 from piou.tui import PromptStyle
+
 
 @cli.command(cmd="login")
 async def login(ctx: TuiContext = TuiOption()):
