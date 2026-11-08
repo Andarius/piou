@@ -1457,7 +1457,7 @@ provides-extras = ["tui", "tui-reload"]
 [package.metadata.requires-dev]
 bump = [{ name = "commitizen", specifier = ">=4.19.3" }]
 dev = [
-    { name = "prek", specifier = ">=0.5.9" },
+    { name = "prek", specifier = ">=0.5.10" },
     { name = "pyright", specifier = ">=1.1.414" },
     { name = "pytest", specifier = ">=9.2.0" },
     { name = "pytest-asyncio", specifier = ">=1.4.1.post1" },
