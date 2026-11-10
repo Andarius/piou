@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.38.3 (2026-11-10)
+
+### Fix
+
+  - non-boolean options given without a value (e.g. --count at the end, or --name --verbose) now fail with a missing value error naming the option instead of being coerced to True or crashing; Optional[bool] options are parsed as flags (#98)
+  - raise the typing-extensions floor to >= 4.16.0 (#86)
+  - raise the textual floor to >= 8.2.8 for the tui extras (#74)
+
 ## 0.38.2 (2026-10-19)
 
 ### Fix
