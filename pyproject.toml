@@ -64,7 +64,7 @@ dev = [
 
 docs = [
     # 9.8 dropped Python 3.10; docs build on the latest Python
-    "mkdocs-material>=9.8.0; python_version >= '3.11'",
+    "mkdocs-material>=9.8.1; python_version >= '3.11'",
 ]
 
 bump = [
