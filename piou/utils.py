@@ -242,11 +242,6 @@ def validate_value(
     """
     _data_type = extract_optional_type(data_type)
 
-    if isinstance(value, bool) and _data_type is not bool and _data_type is not Any:
-        # A trailing flag with no value (e.g. `--count` with nothing after
-        # it) reaches validation as `True`; only boolean options accept that.
-        raise InvalidValueError(value, "option value", "missing value for option")
-
     if choices:
         is_valid = False
 
@@ -550,6 +545,11 @@ def _split_cmd(cmd: str, types: dict[str, Any] | None = None) -> list[str]:
     return cmd_split
 
 
+def _is_known_flag(arg: str, types: dict[str, Any], negative_flags: dict[str, str] | None) -> bool:
+    """Whether `arg` is an option of the command (so not a value like `-1`)."""
+    return arg.startswith("-") and (keyword_arg_to_name(arg) in types or arg in (negative_flags or {}))
+
+
 def get_cmd_args(
     cmd: str, types: dict[str, Any], negative_flags: dict[str, str] | None = None
 ) -> tuple[list[str], dict[str, str | bool]]:
@@ -564,7 +564,8 @@ def get_cmd_args(
     - Arguments before the first "-" or "--" flag are treated as positional
     - Boolean-typed flags are set to True when present (no value expected)
     - Negative flags (--no-flag) are set to False when present
-    - Non-boolean flags consume the next argument as their value
+    - Non-boolean flags consume the next argument as their value; a missing value (end of input or another
+      known flag) raises KeywordParamMissingError
     - Multi-value arguments are grouped together as space-separated strings
     - Unknown flags raise KeywordParamNotFoundError
 
@@ -610,16 +611,13 @@ def get_cmd_args(
             raise KeywordParamNotFoundError(f"Could not find parameter {_arg!r}", _arg)
 
         # Boolean parameters: Simply set to True when present (flags like --verbose)
-        if curr_type is bool:
+        if extract_optional_type(curr_type) is bool:
             keyword_params[_arg] = True
         else:
             # Value parameters: Take the next argument as their value and mark that position to be skipped
-            value = (
-                cmd_split[i + 1]
-                if i + 1 < len(cmd_split)
-                # In case of "store_true"
-                else True
-            )
+            value = cmd_split[i + 1] if i + 1 < len(cmd_split) else None
+            if value is None or _is_known_flag(value, types, negative_flags):
+                raise KeywordParamMissingError(f"Missing value for keyword parameter {_arg!r}", _arg)
             previous = keyword_params.get(_arg)
             # Repeated list flags accumulate (--foo 1 --foo 2 == --foo 1 2)
             if _is_list_type(curr_type) and isinstance(previous, str) and isinstance(value, str):

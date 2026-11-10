@@ -13,7 +13,7 @@ from unittest.mock import MagicMock
 import pytest
 from typing_extensions import LiteralString
 
-from piou.exceptions import InvalidChoiceError
+from piou.exceptions import InvalidChoiceError, KeywordParamMissingError
 
 _IS_GE_PY310 = f"{sys.version_info.major}.{sys.version_info.minor:02}" >= "3.10"
 
@@ -424,13 +424,13 @@ def test_invalid_validate_value(data_type, value, expected, expected_str):
         ("--foo buz", {"foo": str}, [], {"--foo": "buz"}),
         ('--foo "buz biz"', {"foo": str}, [], {"--foo": "buz biz"}),
         ("--foo buz -b baz", {"foo": str, "b": str}, [], {"--foo": "buz", "-b": "baz"}),
-        ("--foo -b", {"foo": bool, "b": True}, [], {"--foo": True, "-b": True}),
+        ("--foo -b", {"foo": bool, "b": bool}, [], {"--foo": True, "-b": True}),
         ("foo buz -b baz", {"b": str}, ["foo", "buz"], {"-b": "baz"}),
         ('"buz baz"', {}, ["buz baz"], {}),
         ("foo", {}, ["foo"], {}),
         (
             "--foo 1 2 3 --bar",
-            {"foo": list[int], "bar": str},
+            {"foo": list[int], "bar": bool},
             [],
             {"--foo": "1 2 3", "--bar": True},
         ),
@@ -1731,38 +1731,28 @@ def test_slash_prefix_triggers_tui(argv, expected_tui, monkeypatch):
 
 
 @pytest.mark.parametrize(
-    "data_type",
+    "data_type, args, expected",
     [
-        pytest.param(str, id="str"),
-        pytest.param(int, id="int"),
-        pytest.param(list[int], id="list"),
+        pytest.param(str, ["--x"], pytest.raises(KeywordParamMissingError), id="str_trailing"),
+        pytest.param(int, ["--x"], pytest.raises(KeywordParamMissingError), id="int_trailing"),
+        pytest.param(list[int], ["--x"], pytest.raises(KeywordParamMissingError), id="list_trailing"),
+        pytest.param(str, ["--x", "--y"], pytest.raises(KeywordParamMissingError), id="str_then_known_flag"),
+        pytest.param(int, ["--x", "-1"], nullcontext(-1), id="negative_number_value"),
+        pytest.param(bool, ["--x"], nullcontext(True), id="bool_flag"),
+        pytest.param(Optional[bool], ["--x", "--y"], nullcontext(True), id="optional_bool_flag"),
     ],
 )
-def test_valueless_non_bool_option_is_rejected(data_type):
-    """A trailing flag with no value must fail cleanly, not coerce or crash."""
-    from piou import Cli, Option
-    from piou.exceptions import InvalidValueError
-
-    cli = Cli(description="Test CLI")
-
-    @cli.command(cmd="foo", help="Run foo command")
-    def foo_main(count: data_type = Option(None, "--count")):  # type: ignore[valid-type]
-        raise AssertionError("command must not run without a value")
-
-    with pytest.raises(InvalidValueError, match="missing value"):
-        cli._group.run_with_args("foo", "--count")
-
-
-def test_valueless_bool_option_still_works():
-    """Boolean flags keep their store-true behavior."""
+def test_option_missing_value(data_type, args, expected):
+    """A non-bool option without a value fails instead of being coerced from `True`."""
     from piou import Cli, Option
 
     cli = Cli(description="Test CLI")
     seen = {}
 
-    @cli.command(cmd="foo", help="Run foo command")
-    def foo_main(verbose: bool = Option(False, "--verbose")):
-        seen["verbose"] = verbose
+    @cli.command(cmd="foo")
+    def foo_main(x: data_type = Option(None, "--x"), y: bool = Option(False, "--y")):  # type: ignore[valid-type]
+        seen["x"] = x
 
-    cli._group.run_with_args("foo", "--verbose")
-    assert seen["verbose"] is True
+    with expected as exp:
+        cli._group.run_with_args("foo", *args)
+        assert seen["x"] == exp
