@@ -1728,3 +1728,41 @@ def test_slash_prefix_triggers_tui(argv, expected_tui, monkeypatch):
 
     assert cli.tui_run.called is expected_tui
     assert cli.run_with_args.called is (not expected_tui)
+
+
+@pytest.mark.parametrize(
+    "data_type",
+    [
+        pytest.param(str, id="str"),
+        pytest.param(int, id="int"),
+        pytest.param(list[int], id="list"),
+    ],
+)
+def test_valueless_non_bool_option_is_rejected(data_type):
+    """A trailing flag with no value must fail cleanly, not coerce or crash."""
+    from piou import Cli, Option
+    from piou.exceptions import InvalidValueError
+
+    cli = Cli(description="Test CLI")
+
+    @cli.command(cmd="foo", help="Run foo command")
+    def foo_main(count: data_type = Option(None, "--count")):  # type: ignore[valid-type]
+        raise AssertionError("command must not run without a value")
+
+    with pytest.raises(InvalidValueError, match="missing value"):
+        cli._group.run_with_args("foo", "--count")
+
+
+def test_valueless_bool_option_still_works():
+    """Boolean flags keep their store-true behavior."""
+    from piou import Cli, Option
+
+    cli = Cli(description="Test CLI")
+    seen = {}
+
+    @cli.command(cmd="foo", help="Run foo command")
+    def foo_main(verbose: bool = Option(False, "--verbose")):
+        seen["verbose"] = verbose
+
+    cli._group.run_with_args("foo", "--verbose")
+    assert seen["verbose"] is True

@@ -242,6 +242,11 @@ def validate_value(
     """
     _data_type = extract_optional_type(data_type)
 
+    if isinstance(value, bool) and _data_type is not bool and _data_type is not Any:
+        # A trailing flag with no value (e.g. `--count` with nothing after
+        # it) reaches validation as `True`; only boolean options accept that.
+        raise InvalidValueError(value, "option value", "missing value for option")
+
     if choices:
         is_valid = False
 
