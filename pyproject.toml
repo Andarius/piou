@@ -58,7 +58,7 @@ dev = [
     "pytest-asyncio>=1.5.0",
     "pytest-cov>=7.1.0",
     "pytest-textual-snapshot>=1.0.0",
-    "ruff>=0.17.5",
+    "ruff>=0.17.6",
     "prek>=0.5.11",
 ]
 
@@ -68,7 +68,7 @@ docs = [
 ]
 
 bump = [
-    "commitizen>=4.19.3",
+    "commitizen>=4.19.4",
 ]
 examples = [
     { include-group = "tui" },
