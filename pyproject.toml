@@ -68,7 +68,7 @@ docs = [
 ]
 
 bump = [
-    "commitizen>=4.19.4",
+    "commitizen>=4.20.0",
 ]
 examples = [
     { include-group = "tui" },
